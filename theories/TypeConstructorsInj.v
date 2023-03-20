@@ -581,6 +581,7 @@ Definition termGenData (Γ : context) (t T : term) : Type :=
     | tRefl A x => [× T = tId A x x, [Γ |- A] & [Γ |- x : A]]
     | tIdElim A x P hr y e => 
       [× T = P[e .: y..], [Γ |- A], [Γ |- x : A], [Γ,, A,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) |- P], [Γ |- hr : P[tRefl A x .: x..]], [Γ |- y : A] & [Γ |- e : tId A x y]]
+    | tQuote _ => False
   end.
 
 Lemma termGen Γ t A :
