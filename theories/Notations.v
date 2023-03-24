@@ -107,6 +107,10 @@ Class RedTerm (ta : tag) := red_tm : context -> term -> term -> term -> Set.
 Reserved Notation "[ t ⤳ t' ]" (at level 0, t, t' at level 50).
 (** Term t untyped multi-step weak-head reduces to term t' *)
 Reserved Notation "[ t ⤳* t' ]" (at level 0, t, t' at level 50).
+(** Hereditary one-step weak-head reduction *)
+Reserved Notation "[ t ⇶ t' ]" (at level 0, t, t' at level 50).
+(** Hereditary multi-step weak-head reduction *)
+Reserved Notation "[ t ⇶* t' ]" (at level 0, t, t' at level 50).
 
 (** Type A one-step weak-head reduces to type B in Γ *)
 Reserved Notation "[ Γ |- A ⤳ B ]" (at level 0, Γ, A, B at level 50).

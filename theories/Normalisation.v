@@ -134,7 +134,8 @@ all: try now (intros; apply redalg_one_step; constructor).
 + intros; now apply redalg_snd.
 + intros; now eapply redalg_idElim.
 + intros; assumption.
-+ intros; reflexivity.
++ intros; compute; reflexivity.
++ intros; compute; intros; now etransitivity.
 Qed.
 
 #[export, refine] Instance RedTypeDeclProperties : RedTypeProperties (ta := nf) := {}.
@@ -142,7 +143,8 @@ Proof.
 all: try now intros; eassumption.
 + intros; now apply credalg_wk.
 + constructor.
-+ intros; reflexivity.
++ intros; compute; reflexivity.
++ intros; compute; intros; now etransitivity.
 Qed.
 
 #[export] Instance DeclarativeTypingProperties : GenericTypingProperties nf _ _ _ _ _ _ _ _ _ _ := {}.

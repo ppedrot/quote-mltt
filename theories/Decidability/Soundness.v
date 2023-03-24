@@ -19,7 +19,8 @@ Proof.
   intros Hred.
   induction π as [|[]] in t, t', Hred |- * ; cbn in *.
   1: eassumption.
-  all: apply IHπ ; now econstructor.
+  all: apply IHπ; econstructor; tea.
+  all: inversion Hred; first [reflexivity|congruence].
 Qed.
 
 Lemma zip_red t t' π : [t ⤳* t'] -> [zip t π ⤳* zip t' π].

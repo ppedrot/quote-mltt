@@ -89,3 +89,28 @@ Proof. now asimpl. Qed.
 
 Definition elimSuccHypTy P :=
   tProd tNat (arr P P[tSucc (tRel 0)]⇑).
+
+Definition ren_inj (ρ : nat -> nat) := forall m n, ρ m = ρ n -> m = n.
+
+Lemma shift_inj : ren_inj ↑.
+Proof.
+intros [] []; compute; try congruence.
+Qed.
+
+Lemma upRen_term_term_inj : forall ρ, ren_inj ρ -> ren_inj (upRen_term_term ρ).
+Proof.
+intros ρ Hρ.
+intros [] []; compute; try congruence.
+intros; f_equal; now apply Hρ.
+Qed.
+
+Lemma ren_inj_inv : forall t u ρ, ren_inj ρ -> t⟨ρ⟩ = u⟨ρ⟩ -> t = u.
+Proof.
+induction t; intros u ρ Hρ He; cbn in *.
+all: destruct u; cbn in *; try discriminate.
+all: try injection He; intros; subst.
+all: repeat match goal with H : ?t⟨?ρ⟩ = ?u⟨?ρ⟩, H' : forall u : term, _ |- _ =>
+  apply H' in H; [|eauto using upRen_term_term_inj]; subst t
+end; try congruence.
+{ f_equal; now apply Hρ. }
+Qed.

@@ -1694,16 +1694,14 @@ Module IntermediateTypingProperties.
       + now econstructor.
       + clear -buni_red_tm.
         induction buni_red_tm.
-        1: econstructor.
-        econstructor.
-        1: now econstructor.
-        eassumption.
+        * reflexivity.
+        * econstructor; [now eapply oredalg_appSubst|assumption].
     - intros ? ? ? ? ? ? ? ? ? [? ? Hr]; econstructor.
       + now eapply boundary_tm_ctx.
       + now constructor.
       + clear - Hr; induction Hr; try constructor.
         econstructor; [|eassumption].
-        now constructor.
+        now apply oredalg_natElimSubst.
     - intros ? ? ? ? ? [? ? Hr]; econstructor.
       + now eapply boundary_tm_ctx.
       + now constructor.
@@ -1721,8 +1719,8 @@ Module IntermediateTypingProperties.
       1: gen_typing.
       clear -buni_red_tm; induction buni_red_tm.
       1: reflexivity.
-      econstructor; eauto. 
-      now constructor.
+      etransitivity; [|tea].
+      now apply redalg_fst, redalg_one_step.
     - intros; econstructor; tea.
       1: boundary.
       1: gen_typing.
@@ -1734,8 +1732,8 @@ Module IntermediateTypingProperties.
       1: gen_typing.
       clear -buni_red_tm; induction buni_red_tm.
       1: reflexivity.
-      econstructor; eauto. 
-      now constructor.
+      etransitivity; [|tea].
+      now apply redalg_snd, redalg_one_step.
     - intros * ??????? convA convxy convxz.
       pose proof convA as ?%bn_conv_sound.
       pose proof convxy as ?%bn_conv_sound.

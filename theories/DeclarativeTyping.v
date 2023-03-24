@@ -310,7 +310,7 @@ Section Definitions.
 
   Record RedClosureDecl (Γ : context) (A : class) (t u : term) := {
     reddecl_typ : match A with istype => [Γ |- t] | isterm A => [Γ |- t : A] end;
-    reddecl_red : RedClosureAlg t u;
+    reddecl_red : RedClosureAlg (deep := false) t u;
     reddecl_conv : match A with istype => [ Γ |- t ≅ u ] | isterm A => [Γ |- t ≅ u : A] end;
   }.
 

@@ -150,8 +150,8 @@ Section Definitions.
   and "[ Γ |- m ~h n ▹ T ]" := (ConvNeuRedAlg Γ T m n)
   and "[ Γ |- t ≅ u : T ]" := (ConvTermAlg Γ T t u)
   and "[ Γ |- t ≅h u : T ]" := (ConvTermRedAlg Γ T t u)
-  and "[ t ⤳ t' ]" := (OneRedAlg t t')
-  and "[ t ⤳* t' ]" := (RedClosureAlg t t').
+  and "[ t ⤳ t' ]" := (OneRedAlg (deep := false) t t')
+  and "[ t ⤳* t' ]" := (RedClosureAlg (deep := false) t t').
 
 (** ** Typing *)
 

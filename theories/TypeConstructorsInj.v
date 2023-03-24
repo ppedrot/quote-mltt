@@ -663,7 +663,9 @@ Theorem subject_reduction_one Γ A t t' :
     [Γ |- t ≅ t' : A].
 Proof.
   intros Hty Hred.
+  remember true as deep in Hred.
   induction Hred in Hty, A |- *.
+  all: try match goal with [ H : is_true false |- _ ] => elim ssrbool.notF; exact H end.
   - apply termGen' in Hty as (?&((?&?&[-> Hty])&Heq)).
     apply termGen' in Hty as (?&((?&[->])&Heq')).
     eapply prod_ty_inj in Heq' as [? HeqB].
@@ -732,8 +734,10 @@ Proof.
   [A ⤳ A'] ->
   [Γ |- A ≅ A'].
 Proof.
+  remember true as deep.
   intros Hty Hred.
   destruct Hred.
+  all: try match goal with [ H : is_true false |- _ ] => elim ssrbool.notF; exact H end.
   all: inversion Hty ; subst ; clear Hty ; refold.
   all: econstructor.
   all: eapply subject_reduction_one ; tea.
