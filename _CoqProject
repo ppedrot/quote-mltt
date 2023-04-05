@@ -12,6 +12,7 @@ theories/AutoSubst/Extra.v
 theories/Context.v
 theories/Notations.v
 
+theories/Closed.v
 theories/NormalForms.v
 theories/Weakening.v
 theories/UntypedReduction.v

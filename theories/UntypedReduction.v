@@ -1,7 +1,7 @@
 (** * LogRel.UntypedReduction: untyped reduction, used to define algorithmic typing.*)
 From Coq Require Import CRelationClasses ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening.
+From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms Weakening.
 
 (** ** Reductions *)
 
@@ -888,4 +888,26 @@ transitivity (tIdElim A x P hr y t₀);
   + constructor.
   + econstructor; [|now eauto].
     constructor; eauto.
+Qed.
+
+(** Stability of closedness by deep reduction *)
+
+Lemma dred_closedn : forall t u n, [t ⇶ u] -> closedn n t -> closedn n u.
+Proof.
+unfold closedn.
+intros t u n Hr; revert n; induction Hr; intros k Hc; cbn in *.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
+all: try now apply IHHr.
+now apply closedn_beta.
+Qed.
+
+Lemma dredalg_closedn : forall t u n, [t ⇶* u] -> closedn n t -> closedn n u.
+Proof.
+intros t u n Hr Hc; induction Hr; eauto using dred_closedn.
+Qed.
+
+Lemma dredalg_closed0 : forall t u, [t ⇶* u] -> closed0 t -> closed0 u.
+Proof.
+intros; now eapply dredalg_closedn.
 Qed.
