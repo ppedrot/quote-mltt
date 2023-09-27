@@ -400,3 +400,12 @@ Proof. now bsimpl. Qed.
 
 Lemma wk1_irr {Γ Γ' A A' t} : t⟨@wk1 Γ A⟩ = t⟨@wk1 Γ' A'⟩.
 Proof. intros; now rewrite 2!wk1_ren_on. Qed.
+
+Lemma wk_inj {Γ Δ} (ρ : Δ ≤ Γ) : ren_inj ρ.
+Proof.
+destruct ρ as [ρ ?]; cbn. clear - ρ.
+induction ρ; simpl.
+- intros m n; eauto.
+- intros m n [=]; now apply IHρ.
+- now apply upRen_term_term_inj.
+Qed.
