@@ -533,6 +533,20 @@ split.
   - constructor; tea; etransitivity; tea.
 Qed.
 
+Lemma NeTermDecl_tQuote : forall Γ n n₀, ~ closed0 n -> dnf n ->
+  NfTermDecl Γ (arr tNat tNat) n n₀ ->
+  NeTermDecl Γ tNat (tQuote n) (tQuote n₀).
+Proof.
+intros * Hc Hnf [].
+split; [now constructor|].
+split.
++ now apply dred_red, redalg_quote.
++ do 2 constructor; [|tea].
+  replace n₀ with n by now eapply dred_dnf.
+  assumption.
++ now constructor.
+Qed.
+
 End Nf.
 
 Module DeepTypingData.
@@ -936,6 +950,7 @@ Module DeepTypingProperties.
   #[export, refine] Instance TypingDeclProperties : TypingProperties (ta := nf) := {}.
   Proof.
   all: try apply DeclarativeTypingProperties.TypingDeclProperties.
+  + intros * []; now constructor.
   + intros * ? []; now econstructor.
   Qed.
 
@@ -1002,6 +1017,15 @@ Module DeepTypingProperties.
     - eapply NeTermDecl_tIdElim; tea.
       now eapply convtm_convneu.
     - now apply eqnf_tIdElim.
+  + intros ? n n' **; invnf; eexists.
+    - now eapply convneu_quote.
+    - now apply NeTermDecl_tQuote.
+    - now apply NeTermDecl_tQuote.
+    - match goal with |- eqnf (tQuote ?t) (tQuote ?u) =>
+        replace t with n in * by eauto using dred_dnf, nftmdecl_red, nftmdecl_nf;
+        replace u with n' in * by eauto using dred_dnf, nftmdecl_red, nftmdecl_nf
+      end.
+      now apply eqnf_tQuote.
   Qed.
 
   #[export, refine] Instance RedTypeDeclProperties : RedTypeProperties (ta := nf) := {}.
@@ -1013,10 +1037,36 @@ Module DeepTypingProperties.
   Proof.
   all: try apply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; change (@red_tm nf) with (@red_tm de).
     now eapply redtm_conv.
   Qed.
 
   #[export] Instance DeclarativeTypingProperties : GenericTypingProperties nf _ _ _ _ _ _ _ _ _ _ := {}.
+
+  #[local]
+  Lemma NfConvBuild : forall Γ A t t₀, [Γ |-[ de ] t ≅ t₀ : A] -> [t ⇶* t₀] -> eqnf t₀ t₀ -> dnf t₀ -> [Γ |-[ nf ] t ≅ t₀ : A].
+  Proof.
+  intros; exists t₀ t₀; tea; try now split.
+  + split; tea.
+    - reflexivity.
+    - now eapply urefl.
+  Qed.
+
+  #[export] Instance DeclarativeSNProperties : SNTypingProperties nf _ _ _ _ _.
+  Proof.
+  assert (Hper : forall t u, eqnf t u -> eqnf t t).
+  { intros; eapply Transitive_eqnf; [tea|now eapply Symmetric_eqnf]. }
+  split.
+  + intros * [t₀ u₀ ? [] []].
+    assert (eqnf t₀ t₀) by eauto.
+    assert (eqnf u₀ u₀) by eauto using Symmetric_eqnf.
+    exists t₀, u₀; prod_splitter; tea.
+    - now split.
+    - now split.
+    - now apply NfConvBuild.
+    - now apply NfConvBuild.
+  Qed.
 
 End DeepTypingProperties.

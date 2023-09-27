@@ -1,7 +1,7 @@
 (** * LogRel.DeclarativeInstance: proof that declarative typing is an instance of generic typing. *)
 From Coq Require Import CRelationClasses.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms UntypedReduction Weakening GenericTyping DeclarativeTyping.
+From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms UntypedReduction Weakening GenericTyping DeclarativeTyping.
 
 Import DeclarativeTypingData.
 
@@ -122,6 +122,9 @@ Section TypingWk.
         * rewrite <- 2!wk_up_wk1, 2!wk_step_wk1; eauto.
         * rewrite <- wk_up_wk1, wk1_ren_on; cbn; constructor; tea; constructor.
       + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
+    - intros * _ IH **; cbn.
+      econstructor.
+      now apply IH.
     - intros * _ IHt _ IHAB ? ρ ?.
       econstructor.
       1: now eapply IHt.
@@ -162,6 +165,11 @@ Section TypingWk.
       + now eapply IHu.
       + now asimpl.
       + now asimpl. 
+    - intros * H IH **; cbn.
+      constructor; [now apply IH|now apply dnf_ren|now apply closed0_ren].
+    - intros * * He IHe **; cbn.
+      constructor.
+      now apply IHe.
     - intros Γ A A' B B' _ IHA _ IHAA' _ IHBB' ? ρ ?.
       cbn.
       econstructor.
@@ -300,6 +308,22 @@ by substitution and injectivity of type constructors, which we get from the logi
 Section Boundaries.
   Import DeclarativeTypingData.
 
+  Section TypingBoundaries.
+
+    Let PCon (Γ : context) := True.
+    Let PTy (Γ : context) (A : term) := [|- Γ].
+    Let PTm (Γ : context) (A t : term) := [|- Γ].
+    Let PTyEq (Γ : context) (A B : term) := [|- Γ].
+    Let PTmEq (Γ : context) (A t u : term) := [|- Γ].
+
+    Theorem typing_boundary : WfDeclInductionConcl PCon PTy PTm PTyEq PTmEq.
+    Proof.
+      subst PCon PTy PTm PTyEq PTmEq.
+      apply WfDeclInduction; eauto.
+    Qed.
+
+  End TypingBoundaries.
+
   Definition boundary_ctx_ctx {Γ A} : [|- Γ,, A] -> [|- Γ].
   Proof.
     now inversion 1.
@@ -314,7 +338,7 @@ Section Boundaries.
       [ Γ |- t : A ] -> 
       [ |- Γ ].
   Proof.
-    induction 1 ; now eauto using boundary_ctx_ctx.
+    apply typing_boundary.
   Qed.
 
   Definition boundary_ty_ctx {Γ} {A} :
@@ -563,6 +587,7 @@ Module DeclarativeTypingProperties.
   - intros ????? []; split; now econstructor.
   - intros ????? []; split; now econstructor.
   - intros * ??????? []; split; now econstructor.
+  - intros; econstructor; now econstructor.
   Qed.
 
   #[export, refine] Instance RedTermDeclProperties : RedTermProperties (ta := de) := {}.
@@ -624,6 +649,15 @@ Module DeclarativeTypingProperties.
     + now econstructor.
     + now eapply redalg_idElim.
     + econstructor; tea; now (eapply TypeRefl + eapply TermRefl).
+  - intros; split.
+    + now constructor.
+    + econstructor; [|reflexivity].
+      now constructor.
+    + now constructor.
+  - intros; split.
+    + constructor; now apply TermRefl.
+    + now apply redalg_quote.
+    + now constructor.
   - intros; now eapply redtmdecl_conv.
   - intros; split.
     + assumption.

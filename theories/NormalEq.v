@@ -394,6 +394,12 @@ Proof.
 unfold eqnf; cbn; now intros -> -> -> -> -> ->.
 Qed.
 
+Lemma eqnf_tQuote {t t'} :
+  eqnf t t' -> eqnf (tQuote t) (tQuote t').
+Proof.
+unfold eqnf; cbn; now intros ->.
+Qed.
+
 (*
 Ltac unren t := lazymatch t with
 | ?t⟨?ρ⟩ => open_constr:(_ : term)

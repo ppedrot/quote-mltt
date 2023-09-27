@@ -2,7 +2,7 @@
 From Coq Require Import ssreflect.
 From smpl Require Import Smpl.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening UntypedReduction.
+From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms Weakening UntypedReduction.
 
 Set Primitive Projections.
 
@@ -128,6 +128,9 @@ Section Definitions.
           [Γ |- y : A] ->
           [Γ |- e : tId A x y] ->
           [Γ |- tIdElim A x P hr y e : P[e .: y..]]
+      | wfTermQuote {Γ} {t} :
+          [ Γ |- t ≅ t : arr tNat tNat ] ->
+          [ Γ |- tQuote t : tNat ]
       | wfTermConv {Γ} {t A B} :
           [ Γ |- t : A ] -> 
           [ Γ |- A ≅ B ] -> 
@@ -170,6 +173,13 @@ Section Definitions.
               [ Γ ,, A |- t : B ] ->
               [ Γ |- a : A ] ->
               [ Γ |- tApp (tLambda A t) a ≅ t[a..] : B[a..] ]
+      | TermQuoteRed {Γ} {t} :
+          [ Γ |- t ≅ t : arr tNat tNat ] ->
+          dnf t -> closed0 t ->
+          [ Γ |- tQuote t ≅ tZero : tNat ]
+      | TermQuoteCong {Γ} {t t'} :
+          [ Γ |- t ≅ t' : arr tNat tNat ] ->
+          [ Γ |- tQuote t ≅ tQuote t' : tNat ]
       | TermPiCong {Γ} {A B C D} :
           [ Γ |- A : U] ->
           [ Γ |- A ≅ B : U ] ->

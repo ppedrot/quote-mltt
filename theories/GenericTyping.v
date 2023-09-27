@@ -1,7 +1,7 @@
 (** * LogRel.GenericTyping: the generic interface of typing used to build the logical relation. *)
 From Coq Require Import CRelationClasses ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening UntypedReduction.
+From LogRel Require Import Utils BasicAst Notations Closed Context NormalForms NormalEq Weakening UntypedReduction.
 
 (** In order to factor the work, the logical relation is defined over a generic
 notion of typing (and conversion),
@@ -307,6 +307,9 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e : tId A x y] ->
       [Γ |- tIdElim A x P hr y e : P[e .: y..]];
+    ty_quote {Γ} {t} :
+      [ Γ |- t ≅ t : arr tNat tNat ] ->
+      [ Γ |- tQuote t : tNat ];
     ty_exp {Γ t A A'} : [Γ |- t : A'] -> [Γ |- A ⤳* A'] -> [Γ |- t : A] ;
     ty_conv {Γ t A A'} : [Γ |- t : A'] -> [Γ |- A' ≅ A] -> [Γ |- t : A] ;
   }.
@@ -438,6 +441,11 @@ Section GenericTyping.
       [Γ |- y ≅ y' : A] ->
       [Γ |- e ~ e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ~ tIdElim A' x' P' hr' y' e' : P[e .: y..]];
+    convneu_quote {Γ n n'} :
+        [Γ |- n ≅ n' : arr tNat tNat] ->
+        dnf n -> dnf n' ->
+        ~ closed0 n -> ~ closed0 n' ->
+        [Γ |- tQuote n ~ tQuote n' : tNat];
   }.
 
   Class RedTypeProperties :=
@@ -529,6 +537,14 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e ⤳* e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ⤳* tIdElim A x P hr y e' : P[e .: y..]];
+    redtm_eval {Γ t} :
+      [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t ->
+      [Γ |- tQuote t ⤳* tZero : tNat];
+    redtm_quote {Γ t t'} :
+      [Γ |- t : arr tNat tNat] ->
+      [Γ |- t ≅ t' : arr tNat tNat] ->
+      [ t ⇶* t' ] ->
+      [Γ |- tQuote t ⤳* tQuote t' : tNat ];
     redtm_conv {Γ t u A A'} : 
       [Γ |- t ⤳* u : A] ->
       [Γ |- A ≅ A'] ->
@@ -561,6 +577,17 @@ Class GenericTypingProperties `(ta : tag)
   convne_prop :> ConvNeuProperties ;
   redty_prop :> RedTypeProperties ;
   redtm_prop :> RedTermProperties ;
+}.
+
+Record isNf (t t₀ : term) := {
+  isnf_red : [t ⇶* t₀];
+  isnf_dnf : dnf t₀;
+}.
+
+Class SNTypingProperties `(ta : tag) `(WfContext ta) `(WfType ta) `(Typing ta) `(ConvType ta) `(ConvTerm ta)
+:= {
+  snty_nf : forall Γ A t u, [ Γ |- t ≅ u : A ] ->
+    ∑ (t₀ : term), ∑ (u₀ : term), isNf t t₀ × isNf u u₀ × [Γ |- t ≅ t₀ : A] × [Γ |- u ≅ u₀ : A] × eqnf t₀ u₀;
 }.
 
 (** Hints for gen_typing *)

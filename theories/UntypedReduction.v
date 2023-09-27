@@ -44,6 +44,10 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   negb (isIdConstructor e) ->
   [e ⤳ e'] ->
   [ tIdElim A x P hr y e ⤳ tIdElim A x P hr y e' ]
+| termEvalAlg {t} :
+  dnf t ->
+  closed0 t ->
+  [ tQuote t ⤳ tZero ]
 
 (* Hereditary normal forms *)
 
@@ -108,6 +112,9 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | idElimRHS {A x P hr y y' e} : deep ->
   dne e -> dnf A -> dnf x -> dnf P -> dnf hr ->
   [ y ⤳ y' ] -> [ tIdElim A x P hr y e ⤳ tIdElim A x P hr y' e ]
+| quoteSubst {t t'} :
+  @OneRedAlg true t t' ->
+  [ tQuote t ⤳ tQuote t' ]
 
 where "[ t ⤳ t' ]" := (OneRedAlg t t') : typing_scope.
 
@@ -199,7 +206,8 @@ Proof.
   intros ne red.
   revert Hd; induction red; intros Hd.
   all: inversion ne ; subst ; clear ne; auto.
-  all: inv_whne.
+  all: try inv_whne.
+  - now eelim dnf_nored.
 Qed.
 
 Lemma whnf_nored n u :
@@ -239,6 +247,10 @@ Proof.
   - inversion H; subst.
     eapply IHred; [|trivial].
     now constructor.
+  - inversion H ; subst.
+    contradiction.
+  - inversion H; subst.
+    now eelim dnf_nored.
 Qed.
 
 (** *** Determinism of reduction *)
@@ -287,6 +299,8 @@ Lemma dred_whne : forall t u, [t ⇶ u] -> whne t -> whne u.
 Proof.
 intros t u Hr Ht; revert u Hr.
 induction Ht; intros u Hr; inversion Hr; subst; first [constructor; now eauto|now inv_whne|idtac].
++ contradiction.
++ now eelim dnf_nored.
 Qed.
 
 Lemma dredalg_whne : forall t u, [t ⇶* u] -> whne t -> whne u.
@@ -400,6 +414,7 @@ all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition).
   destruct p; first [constructor|now elim notF].
 + constructor; [|now intuition].
   destruct e; first [constructor|now elim notF].
++ constructor; [now apply dnf_ren|now apply closed0_ren].
 Qed.
 
 Lemma oredalg_wk (ρ : nat -> nat) (t u : term) :
@@ -481,6 +496,8 @@ all: try now (constructor; eauto using dne_ren_rev, dnf_ren_rev, upRen_term_term
 + assert (forall t, isIdConstructor t -> isIdConstructor t⟨ρ⟩).
   { intros []; cbn in *; eauto. }
   constructor; eauto using contraNN.
++ constructor; [now eapply dnf_ren_rev|].
+  now eapply closed0_ren_rev.
 Qed.
 
 Ltac unren t := lazymatch t with
@@ -562,6 +579,7 @@ all: let t := lazymatch goal with |- ∑ n, ?t = _ => t end in
      try (let t := unren t in now eexists t).
 + assert (Hrw : forall t u, t⟨upRen_term_term ρ⟩[(u⟨ρ⟩)..] = (t[u..])⟨ρ⟩) by now asimpl.
   rewrite Hrw; now eexists.
++ eexists (tQuote _); reflexivity.
 Qed.
 
 Lemma redalg_ren_inv : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶* u⟨ρ⟩] -> [t ⇶* u].
@@ -633,6 +651,13 @@ Proof.
   econstructor; tea; constructor; [|tea].
   destruct t; try constructor.
   eelim whnf_nored; [eapply whnf_tRefl|eassumption].
+Qed.
+
+Lemma redalg_quote {t t'} : [t ⇶* t'] -> [tQuote t ⤳* tQuote t'].
+Proof.
+induction 1; [reflexivity|].
+econstructor; [|tea].
+now constructor.
 Qed.
 
 Lemma redalg_one_step {t t'} : [t ⤳ t'] -> [t ⤳* t'].

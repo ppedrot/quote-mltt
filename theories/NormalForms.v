@@ -1,7 +1,7 @@
 (** * LogRel.NormalForms: definition of normal and neutral forms, and properties. *)
 From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Context.
+From LogRel Require Import Utils BasicAst Context Closed.
 
 (** Deep normal forms *)
 
@@ -50,6 +50,7 @@ with dne : term -> Set :=
   | dne_tFst {n} : dne n -> dne (tFst n)
   | dne_tSnd {n} : dne n -> dne (tSnd n)
   | dne_tIdElim {A x P hr y e} : dnf A -> dnf x -> dnf P -> dnf hr -> dnf y -> dne e -> dne (tIdElim A x P hr y e)
+  | dne_tQuote {t} : ~ closed0 t -> dnf t -> dne (tQuote t)
 .
 
 Set Elimination Schemes.
@@ -58,10 +59,10 @@ Scheme
   Induction for dnf Sort Type with
   Induction for dne Sort Type.
 
-Definition dnf_dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 :=
+Definition dnf_dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 :=
   pair
-    (dnf_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19)
-    (dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19).
+    (dnf_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20)
+    (dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20).
 
 (** ** Weak-head normal forms and neutrals. *)
 
@@ -85,7 +86,10 @@ with whne : term -> Type :=
   | whne_tEmptyElim {P e} : whne e -> whne (tEmptyElim P e)
   | whne_tFst {p} : whne p -> whne (tFst p)
   | whne_tSnd {p} : whne p -> whne (tSnd p)
-  | whne_tIdElim {A x P hr y e} : whne e -> whne (tIdElim A x P hr y e).
+  | whne_tIdElim {A x P hr y e} : whne e -> whne (tIdElim A x P hr y e)
+  | whne_tQuote {t} :  ~ closed0 t -> dnf t -> whne (tQuote t)
+.
+
 
 #[global] Hint Constructors whne whnf : gen_typing.
 
@@ -135,6 +139,8 @@ Section RenDnf.
 Lemma dnf_dne_ren : (forall t, dnf t -> forall ρ, dnf t⟨ρ⟩) × (forall t, dne t -> forall ρ, dne t⟨ρ⟩).
 Proof.
 apply dnf_dne_rect; cbn; intros; try now econstructor.
+constructor; [|now eauto].
+intros Hc; now apply closed0_ren_rev in Hc.
 Qed.
 
 Local Ltac inv_dne := try match goal with H : dne _ |- _ => inversion H; subst end.
@@ -154,6 +160,10 @@ all: try now (
   match goal with H : dnf ?t |- _ => inversion H; subst; clear H end;
   match goal with H : dne ?t |- _ => inversion H; subst; clear H end;
   do 2 constructor; eauto; apply dne_dnf_whne; eauto using dnf_dne, dne_whne).
++ inversion H; subst; inversion H2; subst.
+  do 2 constructor; [now eintros ?%closed0_ren|eauto].
++ inversion H; subst.
+  constructor; [now eintros ?%closed0_ren|eauto].
 Qed.
 
 Lemma dnf_ren_rev : forall t ρ, dnf t⟨ρ⟩ -> dnf t.
@@ -190,6 +200,10 @@ End RenDnf.
 #[global] Hint Resolve neSort nePi neLambda : gen_typing.
 
 (** ** Restricted classes of normal forms *)
+
+Inductive is_eta_expanded : term -> Type :=
+| is_eta_expanded_intro :
+  forall f, is_eta_expanded (tApp f⟨↑⟩ (tRel 0)).
 
 Inductive isType : term -> Type :=
   | UnivType {s} : isType (tSort s)
@@ -275,8 +289,9 @@ Section RenWhnf.
 
   Lemma whne_ren t : whne t -> whne (t⟨ρ⟩).
   Proof.
-    induction 1 ; cbn.
-    all: now econstructor.
+    induction 1 ; cbn; try now econstructor.
+    econstructor; [|now eapply dnf_ren].
+    intros Hc; now apply closed0_ren_rev in Hc.
   Qed.
 
   Lemma whnf_ren t : whnf t -> whnf (t⟨ρ⟩).

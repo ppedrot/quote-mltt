@@ -2,9 +2,10 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening
   DeclarativeTyping GenericTyping LogicalRelation Validity.
+
 From LogRel.LogicalRelation Require Import Escape Irrelevance Reflexivity Transitivity Universe Weakening Neutral Induction NormalRed.
 From LogRel.Substitution Require Import Irrelevance Properties Conversion Reflexivity SingleSubst Escape.
-From LogRel.Substitution.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id.
+From LogRel.Substitution.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id Quote.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -112,6 +113,7 @@ Section Fundamental.
   (** We need to have in scope both the declarative instance and a generic one, which we use
   for the logical relation. *)
   Context `{GenericTypingProperties}.
+  Context {SN : SNTypingProperties ta _ _ _ _ _}.
   Import DeclarativeTypingData.
 
   Lemma FundConNil : FundCon ε.
@@ -205,6 +207,15 @@ Section Fundamental.
     Unshelve. all: irrValid.
   Qed.
 
+  Lemma FundTmQuote : forall (Γ : context) (t : term),
+    FundTmEq Γ (arr tNat tNat) t t -> FundTm Γ tNat (tQuote t).
+  Proof.
+    intros * []; unshelve econstructor.
+    + assumption.
+    + apply natValid.
+    + eapply QuoteValid; irrValid.
+  Qed.
+
   Lemma FundTmConv : forall (Γ : context) (t A B : term),
     FundTm Γ A t ->
     FundTyEq Γ A B -> FundTm Γ B t.
@@ -269,6 +280,28 @@ Section Fundamental.
       tea.
     - unshelve epose (betaValid VA _ _ _). 2,5-7:irrValid.
       Unshelve. all: tea; try irrValid.
+  Qed.
+
+  Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),
+    FundTmEq Γ (arr tNat tNat) t t -> dnf t -> Closed.closed0 t -> FundTmEq Γ tNat (tQuote t) tZero.
+  Proof.
+  intros * []? ?; unshelve econstructor.
+  - assumption.
+  - apply natValid.
+  - eapply QuoteValid; irrValid.
+  - apply zeroValid.
+  - apply evalValid; [irrValid|tea|tea].
+  Qed.
+
+  Lemma FundTmEqQuoteCong : forall (Γ : context) (t t' : term),
+    FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat (tQuote t) (tQuote t').
+  Proof.
+  intros * []; unshelve econstructor.
+  - assumption.
+  - apply natValid.
+  - eapply QuoteValid; irrValid.
+  - eapply QuoteValid; irrValid.
+  - apply QuoteCongValid; irrValid.
   Qed.
 
   Lemma FundTmEqPiCong : forall (Γ : context) (A B C D : term),
@@ -1183,6 +1216,7 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmId.
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
+  + intros; now apply FundTmQuote.
   + intros; now eapply FundTmConv.
   + intros; now apply FundTyEqPiCong.
   + intros; now apply FundTyEqSigCong.
@@ -1192,6 +1226,8 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTyEqSym.
   + intros; now eapply FundTyEqTrans.
   + intros; now apply FundTmEqBRed.
+  + intros; now apply FundTmEqQuoteEval.
+  + intros; now apply FundTmEqQuoteCong.
   + intros; now apply FundTmEqPiCong.
   + intros; now eapply FundTmEqAppCong.
   + intros; now apply FundTmEqLambdaCong.
