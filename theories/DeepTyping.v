@@ -5,41 +5,45 @@ From LogRel Require Import Utils BasicAst Notations Context NormalForms UntypedR
 
 Import DeclarativeTypingData.
 
-Record NfTypeDecl Γ (A : term) := {
-  nftydecl_val : term;
-  nftydecl_red : [A ⇶* nftydecl_val];
-  nftydecl_nf : dnf nftydecl_val;
-  nftydecl_conv : [Γ |- A ≅ nftydecl_val];
+Record NfTypeDecl Γ (A A₀ : term) := {
+  nftydecl_red : [A ⇶* A₀];
+  nftydecl_nf : dnf A₀;
+  nftydecl_conv : [Γ |- A ≅ A₀];
 }.
 
-Record NfTermDecl Γ (A t : term) := {
-  nftmdecl_val : term;
-  nftmdecl_red : [t ⇶* nftmdecl_val];
-  nftmdecl_nf : dnf nftmdecl_val;
-  nftmdecl_conv : [Γ |- t ≅ nftmdecl_val : A];
+Record NfTermDecl Γ (A t t₀ : term) := {
+  nftmdecl_red : [t ⇶* t₀];
+  nftmdecl_nf : dnf t₀;
+  nftmdecl_conv : [Γ |- t ≅ t₀ : A];
 }.
 
-Record NeTermDecl Γ (A t : term) := {
+Record NeTermDecl Γ (A t t₀ : term) := {
   netmdecl_whne : whne t;
-  netmdecl_nf : NfTermDecl Γ A t;
+  netmdecl_nf : NfTermDecl Γ A t t₀;
 }.
 
 Record ConvTypeNfDecl Γ A B := {
+  nfconvty_lhs : term;
+  nfconvty_rhs : term;
   nfconvty_conv : [Γ |- A ≅ B];
-  nfconvty_nfl : NfTypeDecl Γ A;
-  nfconvty_nfr : NfTypeDecl Γ B;
+  nfconvty_nfl : NfTypeDecl Γ A nfconvty_lhs;
+  nfconvty_nfr : NfTypeDecl Γ B nfconvty_rhs;
 }.
 
 Record ConvTermNfDecl Γ A t u := {
+  nfconvtm_lhs : term;
+  nfconvtm_rhs : term;
   nfconvtm_conv : [Γ |- t ≅ u : A];
-  nfconvtm_nfl : NfTermDecl Γ A t;
-  nfconvtm_nfr : NfTermDecl Γ A u;
+  nfconvtm_nfl : NfTermDecl Γ A t nfconvtm_lhs;
+  nfconvtm_nfr : NfTermDecl Γ A u nfconvtm_rhs;
 }.
 
 Record ConvTermNeDecl Γ A t u := {
+  neconvtm_lhs : term;
+  neconvtm_rhs : term;
   neconvtm_conv : [Γ |- t ~ u : A];
-  neconvtm_nfl : NeTermDecl Γ A t;
-  neconvtm_nfr : NeTermDecl Γ A u;
+  neconvtm_nfl : NeTermDecl Γ A t neconvtm_lhs;
+  neconvtm_nfr : NeTermDecl Γ A u neconvtm_rhs;
 }.
 
 Section Nf.
@@ -50,40 +54,40 @@ Import DeclarativeTypingProperties.
 Lemma ConvTypeNf_PER : forall Γ, PER (ConvTypeNfDecl Γ).
 Proof.
 intros Γ; split.
-- intros t u []; split; tea.
+- intros t u []; esplit; tea.
   now apply TypeSym.
-- intros t u r [] []; split; tea.
+- intros t u r [] []; esplit; tea.
   now eapply TypeTrans.
 Qed.
 
-Lemma NfTermConv : forall Γ A B t, [Γ |-[de] A ≅ B] -> NfTermDecl Γ A t -> NfTermDecl Γ B t.
+Lemma NfTermConv : forall Γ A B t t₀, [Γ |-[de] A ≅ B] -> NfTermDecl Γ A t t₀ -> NfTermDecl Γ B t t₀.
 Proof.
-intros * H [r]; exists r; tea.
+intros * H []; split; tea.
 now eapply TermConv.
 Qed.
 
-Lemma NeTermConv : forall Γ A B t, [Γ |-[de] A ≅ B] -> NeTermDecl Γ A t -> NeTermDecl Γ B t.
+Lemma NeTermConv : forall Γ A B t t₀, [Γ |-[de] A ≅ B] -> NeTermDecl Γ A t t₀ -> NeTermDecl Γ B t t₀.
 Proof.
 intros * ? [Hne Hnf]; split; [tea|].
 now eapply NfTermConv.
 Qed.
 
-Lemma NfTypeDecl_tSort : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ U.
+Lemma NfTypeDecl_tSort : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ U U.
 Proof.
-intros; exists U.
+intros; split.
 + reflexivity.
 + constructor.
 + now do 2 constructor.
 Qed.
 
-Lemma NfTypeDecl_tProd : forall Γ A A' B,
+Lemma NfTypeDecl_tProd : forall Γ A A' A₀ B B₀,
   [Γ |-[de] A] ->
   [Γ |-[de] A ≅ A'] ->
   [Γ,, A |-[de] B ≅ B] ->
-  NfTypeDecl Γ A' -> NfTypeDecl (Γ,, A) B -> NfTypeDecl Γ (tProd A' B).
+  NfTypeDecl Γ A' A₀ -> NfTypeDecl (Γ,, A) B B₀ -> NfTypeDecl Γ (tProd A' B) (tProd A₀ B₀).
 Proof.
-intros Γ A A' B HA HAA' HBB [A₀ HRA HAnf] [B₀ HRB HBnf].
-exists (tProd A₀ B₀).
+intros Γ A A' A₀ B B₀ HA HAA' HBB [HRA HAnf] [HRB HBnf].
+split.
 + now apply dredalg_prod.
 + now constructor.
 + assert [ Γ |-[de] tProd A B ≅ tProd A' B ].
@@ -92,14 +96,14 @@ exists (tProd A₀ B₀).
   constructor; [tea|now eapply TypeTrans|tea].
 Qed.
 
-Lemma NfTermDecl_tProd : forall Γ A A' B,
+Lemma NfTermDecl_tProd : forall Γ A A' A₀ B B₀,
   [Γ |-[de] A : U] ->
   [Γ |-[de] A ≅ A' : U] ->
   [Γ,, A |-[de] B ≅ B : U] ->
-  NfTermDecl Γ U A' -> NfTermDecl (Γ,, A) U B -> NfTermDecl Γ U (tProd A' B).
+  NfTermDecl Γ U A' A₀ -> NfTermDecl (Γ,, A) U B B₀ -> NfTermDecl Γ U (tProd A' B) (tProd A₀ B₀).
 Proof.
-intros Γ A A' B HA HAA' HBB [A₀ HRA HAnf] [B₀ HRB HBnf].
-exists (tProd A₀ B₀).
+intros Γ A A' A₀ B B₀ HA HAA' HBB [HRA HAnf] [HRB HBnf].
+split.
 + now apply dredalg_prod.
 + now constructor.
 + assert [ Γ |-[de] tProd A B ≅ tProd A' B : U ].
@@ -108,7 +112,7 @@ exists (tProd A₀ B₀).
   constructor; [tea|now eapply TermTrans|tea].
 Qed.
 
-Lemma NfTermDecl_tLambda : forall Γ A A' B t,
+Lemma NfTermDecl_tLambda : forall Γ A A' A₀ B t t₀,
   [Γ |-[ de ] A] ->
   [Γ |-[ de ] A'] ->
   [Γ,, A |-[ de ] B] ->
@@ -116,14 +120,14 @@ Lemma NfTermDecl_tLambda : forall Γ A A' B t,
   [Γ |-[ de ] tLambda A' t : tProd A B] ->
   [Γ,, A |-[ de ] t : B] ->
   [Γ,, A' |-[ de ] t : B] ->
-  NfTypeDecl Γ A' ->
-  NfTermDecl (Γ,, A) B (tApp (tLambda A' t)⟨↑⟩ (tRel 0)) ->
-  NfTermDecl Γ (tProd A B) (tLambda A' t).
+  NfTypeDecl Γ A' A₀ ->
+  NfTermDecl (Γ,, A) B (tApp (tLambda A' t)⟨↑⟩ (tRel 0)) t₀ ->
+  NfTermDecl Γ (tProd A B) (tLambda A' t) (tLambda A₀ t₀).
 Proof.
-intros * ? ? ? ? ? ? Ht [A₀] [t₀].
+intros * ? ? ? ? ? ? Ht [] [].
 assert (eq0 : forall t, t⟨upRen_term_term ↑⟩[(tRel 0)..] = t).
 { bsimpl; apply idSubst_term; intros [|]; reflexivity. }
-exists (tLambda A₀ t₀).
+split.
 + apply dredalg_lambda; tea.
   assert (Hr : [tApp (tLambda A' t)⟨↑⟩ (tRel 0) ⇶ t]).
   { cbn. set (t' := t) at 2; rewrite <- (eq0 t'); constructor. }
@@ -149,14 +153,14 @@ exists (tLambda A₀ t₀).
     * do 2 rewrite eq0; apply TermRefl; tea.
 Qed.
 
-Lemma NfTypeDecl_tSig : forall Γ A A' B,
+Lemma NfTypeDecl_tSig : forall Γ A A' A₀ B B₀,
   [Γ |-[de] A] ->
   [Γ |-[de] A ≅ A'] ->
   [Γ,, A |-[de] B ≅ B] ->
-  NfTypeDecl Γ A' -> NfTypeDecl (Γ,, A) B -> NfTypeDecl Γ (tSig A' B).
+  NfTypeDecl Γ A' A₀ -> NfTypeDecl (Γ,, A) B B₀ -> NfTypeDecl Γ (tSig A' B) (tSig A₀ B₀).
 Proof.
-intros Γ A A' B HA HAA' HBB [A₀ HRA HAnf] [B₀ HRB HBnf].
-exists (tSig A₀ B₀).
+intros Γ A A' A₀ B B₀ HA HAA' HBB [HRA HAnf] [HRB HBnf].
+split.
 + now apply dredalg_sig.
 + now constructor.
 + assert [ Γ |-[de] tSig A B ≅ tSig A' B ].
@@ -165,14 +169,14 @@ exists (tSig A₀ B₀).
   constructor; [tea|now eapply TypeTrans|tea].
 Qed.
 
-Lemma NfTermDecl_tSig : forall Γ A A' B,
+Lemma NfTermDecl_tSig : forall Γ A A' A₀ B B₀,
   [Γ |-[de] A : U] ->
   [Γ |-[de] A ≅ A' : U] ->
   [Γ,, A |-[de] B ≅ B : U] ->
-  NfTermDecl Γ U A' -> NfTermDecl (Γ,, A) U B -> NfTermDecl Γ U (tSig A' B).
+  NfTermDecl Γ U A' A₀ -> NfTermDecl (Γ,, A) U B B₀ -> NfTermDecl Γ U (tSig A' B) (tSig A₀ B₀).
 Proof.
-intros Γ A A' B HA HAA' HBB [A₀ HRA HAnf] [B₀ HRB HBnf].
-exists (tSig A₀ B₀).
+intros Γ A A' A₀ B B₀ HA HAA' HBB [HRA HAnf] [HRB HBnf].
+split.
 + now apply dredalg_sig.
 + now constructor.
 + assert [ Γ |-[de] tSig A B ≅ tSig A' B : U ].
@@ -181,106 +185,108 @@ exists (tSig A₀ B₀).
   constructor; [tea|now eapply TermTrans|tea].
 Qed.
 
-Lemma NfTypeDecl_tId : forall Γ A t u, NfTypeDecl Γ A -> NfTermDecl Γ A t -> NfTermDecl Γ A u -> NfTypeDecl Γ (tId A t u).
+Lemma NfTypeDecl_tId : forall Γ A A₀ t t₀ u u₀,
+  NfTypeDecl Γ A A₀ -> NfTermDecl Γ A t t₀ -> NfTermDecl Γ A u u₀ -> NfTypeDecl Γ (tId A t u) (tId A₀ t₀ u₀).
 Proof.
-intros Γ A t u [A₀ HRA HAnf] [t₀] [u₀].
-exists (tId A₀ t₀ u₀).
+intros Γ A A₀ t t₀ u u₀ [HRA HAnf] [] [].
+split.
 + now apply dredalg_id.
 + now constructor.
 + constructor; tea.
 Qed.
 
-Lemma NfTermDecl_tId : forall Γ A t u, NfTermDecl Γ U A -> NfTermDecl Γ A t -> NfTermDecl Γ A u -> NfTermDecl Γ U (tId A t u).
+Lemma NfTermDecl_tId : forall Γ A A₀ t t₀ u u₀,
+  NfTermDecl Γ U A A₀ -> NfTermDecl Γ A t t₀ -> NfTermDecl Γ A u u₀ -> NfTermDecl Γ U (tId A t u) (tId A₀ t₀ u₀).
 Proof.
-intros Γ A t u [A₀ HRA HAnf] [t₀] [u₀].
-exists (tId A₀ t₀ u₀).
+intros Γ A A₀ t t₀ u u₀ [HRA HAnf] [] [].
+split.
 + now apply dredalg_id.
 + now constructor.
 + constructor; tea.
 Qed.
 
-Lemma NfTermDecl_Refl : forall Γ A x,
-  NfTypeDecl Γ A -> NfTermDecl Γ A x -> NfTermDecl Γ (tId A x x) (tRefl A x).
+Lemma NfTermDecl_Refl : forall Γ A A₀ x x₀,
+  NfTypeDecl Γ A A₀ -> NfTermDecl Γ A x x₀ -> NfTermDecl Γ (tId A x x) (tRefl A x) (tRefl A₀ x₀).
 Proof.
-intros * [A₀] [x₀].
-exists (tRefl A₀ x₀).
+intros * [] [].
+split.
 + now apply dredalg_refl.
 + now constructor.
 + constructor; tea.
 Qed.
 
-Lemma NfTypeDecl_wk : forall Γ Δ A (ρ : Δ ≤ Γ), [|- Δ] -> NfTypeDecl Γ A -> NfTypeDecl Δ A⟨ρ⟩.
+Lemma NfTypeDecl_wk : forall Γ Δ A A₀ (ρ : Δ ≤ Γ), [|- Δ] -> NfTypeDecl Γ A A₀ -> NfTypeDecl Δ A⟨ρ⟩ A₀⟨ρ⟩.
 Proof.
-intros * tΔ [R]; exists R⟨ρ⟩.
+intros * tΔ []; split.
 + now apply gcredalg_wk.
 + now apply dnf_ren.
 + now apply typing_wk.
 Qed.
 
-Lemma NfTermDecl_wk : forall Γ Δ A t (ρ : Δ ≤ Γ), [|- Δ] -> NfTermDecl Γ A t -> NfTermDecl Δ A⟨ρ⟩ t⟨ρ⟩.
+Lemma NfTermDecl_wk : forall Γ Δ A t t₀ (ρ : Δ ≤ Γ), [|- Δ] -> NfTermDecl Γ A t t₀ -> NfTermDecl Δ A⟨ρ⟩ t⟨ρ⟩ t₀⟨ρ⟩.
 Proof.
-intros * tΔ [r]; exists r⟨ρ⟩.
+intros * tΔ []; split.
 + now apply gcredalg_wk.
 + now apply dnf_ren.
 + now apply typing_wk.
 Qed.
 
-Lemma NeTermDecl_wk : forall Γ Δ A t (ρ : Δ ≤ Γ), [|- Δ] -> NeTermDecl Γ A t -> NeTermDecl Δ A⟨ρ⟩ t⟨ρ⟩.
+Lemma NeTermDecl_wk : forall Γ Δ A t t₀ (ρ : Δ ≤ Γ), [|- Δ] -> NeTermDecl Γ A t t₀ -> NeTermDecl Δ A⟨ρ⟩ t⟨ρ⟩ t₀⟨ρ⟩.
 Proof.
 intros * tΔ [Hne Hnf]; split.
 + now eapply whne_ren.
 + now eapply NfTermDecl_wk.
 Qed.
 
-Lemma NfTypeDecl_tNat : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ tNat.
+Lemma NfTypeDecl_tNat : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ tNat tNat.
 Proof.
-intros; exists tNat.
+intros; split.
 + reflexivity.
 + constructor.
 + now repeat econstructor.
 Qed.
 
-Lemma NfTermDecl_tNat : forall Γ, [|-[de] Γ] -> NfTermDecl Γ U tNat.
+Lemma NfTermDecl_tNat : forall Γ, [|-[de] Γ] -> NfTermDecl Γ U tNat tNat.
 Proof.
-intros; exists tNat.
+intros; split.
 + reflexivity.
 + constructor.
 + now repeat econstructor.
 Qed.
 
-Lemma NfTermDecl_tZero : forall Γ, [|-[de] Γ] -> NfTermDecl Γ tNat tZero.
+Lemma NfTermDecl_tZero : forall Γ, [|-[de] Γ] -> NfTermDecl Γ tNat tZero tZero.
 Proof.
-intros; exists tZero.
+intros; split.
 + reflexivity.
 + constructor.
 + now do 2 constructor.
 Qed.
 
-Lemma NfTermDecl_tSucc : forall Γ n, NfTermDecl Γ tNat n -> NfTermDecl Γ tNat (tSucc n).
+Lemma NfTermDecl_tSucc : forall Γ n n₀, NfTermDecl Γ tNat n n₀ -> NfTermDecl Γ tNat (tSucc n) (tSucc n₀).
 Proof.
-intros * [n₀]; exists (tSucc n₀).
+intros * []; split.
 + now apply dredalg_succ.
 + now constructor.
 + now do 2 constructor.
 Qed.
 
-Lemma NfTypeDecl_tEmpty : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ tEmpty.
+Lemma NfTypeDecl_tEmpty : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ tEmpty tEmpty.
 Proof.
-intros; exists tEmpty.
+intros; split.
 + reflexivity.
 + constructor.
 + now repeat econstructor.
 Qed.
 
-Lemma NfTermDecl_tEmpty : forall Γ, [|-[de] Γ] -> NfTermDecl Γ U tEmpty.
+Lemma NfTermDecl_tEmpty : forall Γ, [|-[de] Γ] -> NfTermDecl Γ U tEmpty tEmpty.
 Proof.
-intros; exists tEmpty.
+intros; split.
 + reflexivity.
 + constructor.
 + now repeat econstructor.
 Qed.
 
-Lemma NfTermDecl_tPair : forall Γ A A' B B' a a' b',
+Lemma NfTermDecl_tPair : forall Γ A A' A₀ B B' B₀ a a' a₀ b' b₀,
   [Γ |-[ de ] A] ->
   [Γ,, A |-[ de ] B] ->
   [Γ |-[ de ] tPair A' B' a' b' : tSig A B] ->
@@ -288,14 +294,14 @@ Lemma NfTermDecl_tPair : forall Γ A A' B B' a a' b',
   [Γ,, A |-[ de ] B ≅ B'] ->
   [Γ |-[ de ] B[a..] ≅ B[a'..]] ->
   [Γ |-[ de ] a ≅ a' : A] ->
-  NfTypeDecl Γ A' ->
-  NfTypeDecl (Γ,, A) B' ->
-  NfTermDecl Γ A a' ->
-  NfTermDecl Γ B[a..] b' ->
-  NfTermDecl Γ (tSig A B) (tPair A' B' a' b').
+  NfTypeDecl Γ A' A₀ ->
+  NfTypeDecl (Γ,, A) B' B₀ ->
+  NfTermDecl Γ A a' a₀ ->
+  NfTermDecl Γ B[a..] b' b₀ ->
+  NfTermDecl Γ (tSig A B) (tPair A' B' a' b') (tPair A₀ B₀ a₀ b₀).
 Proof.
-intros * ? ? ? ? ? ? ? [A₀] [B₀] [a₀] [b₀].
-exists (tPair A₀ B₀ a₀ b₀).
+intros * ? ? ? ? ? ? ? [] [] [] [].
+split.
 + apply dredalg_pair; tea.
 + now constructor.
 + apply TermPairCong; tea.
@@ -304,32 +310,32 @@ exists (tPair A₀ B₀ a₀ b₀).
   - eapply convtm_conv; tea.
 Qed.
 
-Lemma NeTermDecl_NfTermDecl : forall Γ A n,
-  NeTermDecl Γ A n -> NfTermDecl Γ A n.
+Lemma NeTermDecl_NfTermDecl : forall Γ A n n₀,
+  NeTermDecl Γ A n n₀ -> NfTermDecl Γ A n n₀.
 Proof.
 intros * []; tea.
 Qed.
 
 Lemma NeTermDecl_dne : forall Γ A n,
-  [Γ |-[de] n : A] -> dne n -> NeTermDecl Γ A n.
+  [Γ |-[de] n : A] -> dne n -> NeTermDecl Γ A n n.
 Proof.
 intros; split.
 + now apply dnf_dne_whnf_whne.
-+ exists n.
++ split.
   - reflexivity.
   - now constructor.
   - now apply TermRefl.
 Qed.
 
-Lemma NfTermDecl_exp : forall Γ A t t',
+Lemma NfTermDecl_exp : forall Γ A t t' t₀,
   [Γ |-[de] t ⤳* t' : A] ->
   [Γ |-[de] A] ->
   [Γ |-[de] A ≅ A] ->
   [Γ |- t' : A] ->
-  NfTermDecl Γ A t' -> NfTermDecl Γ A t.
+  NfTermDecl Γ A t' t₀ -> NfTermDecl Γ A t t₀.
 Proof.
-intros * ? ? ? ? [t₀].
-exists t₀; tea.
+intros * ? ? ? ? [].
+split; tea.
 + etransitivity; [|tea].
   now eapply dred_red, redtm_sound.
 + transitivity t'; [|tea].
@@ -338,15 +344,15 @@ exists t₀; tea.
   * now eapply TermRefl.
 Qed.
 
-Lemma NeTermDecl_tApp : forall Γ A B t t' u u',
+Lemma NeTermDecl_tApp : forall Γ A B t t' t₀ u u' u₀,
   [Γ |-[de] t ≅ t' : tProd A B] ->
   [Γ |-[de] u ≅ u' : A] ->
-  NeTermDecl Γ (tProd A B) t' ->
-  NfTermDecl Γ A u' ->
-  NeTermDecl Γ B[u..] (tApp t' u').
+  NeTermDecl Γ (tProd A B) t' t₀ ->
+  NfTermDecl Γ A u' u₀ ->
+  NeTermDecl Γ B[u..] (tApp t' u') (tApp t₀ u₀).
 Proof.
-intros * ? ? [? [t₀]] [u₀]; split; [now constructor|].
-exists (tApp t₀ u₀).
+intros * ? ? [? []] []; split; [now constructor|].
+split.
 + apply dredalg_app; tea.
   apply dne_dnf_whne; [tea|].
   now eapply dredalg_whne.
@@ -360,12 +366,12 @@ exists (tApp t₀ u₀).
     * transitivity u'; tea.
 Qed.
 
-Lemma NeTermDecl_tFst : forall Γ A B p,
-  NeTermDecl Γ (tSig A B) p ->
-  NeTermDecl Γ A (tFst p).
+Lemma NeTermDecl_tFst : forall Γ A B p p₀,
+  NeTermDecl Γ (tSig A B) p p₀ ->
+  NeTermDecl Γ A (tFst p) (tFst p₀).
 Proof.
-intros * [? [p₀]]; split; [now constructor|].
-exists (tFst p₀).
+intros * [? []]; split; [now constructor|].
+split.
 + now apply dredalg_fst.
 + do 2 constructor.
   apply dne_dnf_whne; [tea|].
@@ -373,13 +379,13 @@ exists (tFst p₀).
 + now eapply TermFstCong.
 Qed.
 
-Lemma NeTermDecl_tSnd : forall Γ A B p p',
+Lemma NeTermDecl_tSnd : forall Γ A B p p' p₀,
   [Γ |-[de] p ≅ p' : tSig A B] ->
-  NeTermDecl Γ (tSig A B) p' ->
-  NeTermDecl Γ B[(tFst p)..] (tSnd p').
+  NeTermDecl Γ (tSig A B) p' p₀ ->
+  NeTermDecl Γ B[(tFst p)..] (tSnd p') (tSnd p₀).
 Proof.
-intros * ? [? [p₀]]; split; [now constructor|].
-exists (tSnd p₀).
+intros * ? [? []]; split; [now constructor|].
+split.
 + now apply dredalg_snd.
 + do 2 constructor.
   apply dne_dnf_whne; [tea|].
@@ -388,19 +394,19 @@ exists (tSnd p₀).
   eapply TermTrans; tea.
 Qed.
 
-Lemma NeTermDecl_tNatElim : forall Γ P P' hz hz' hs hs' t t',
+Lemma NeTermDecl_tNatElim : forall Γ P P' P₀ hz hz' hz₀ hs hs' hs₀ t t' t₀,
   [Γ,, tNat |-[de] P ≅ P'] ->
   [Γ |-[de] hz ≅ hz' : P[tZero..]] ->
   [Γ |-[de] hs ≅ hs' : elimSuccHypTy P] ->
   [Γ |-[de] t ≅ t' : tNat] ->
-  NfTypeDecl (Γ,, tNat) P' ->
-  NfTermDecl Γ P[tZero..] hz' ->
-  NfTermDecl Γ (elimSuccHypTy P) hs' ->
-  NeTermDecl Γ tNat t' ->
-  NeTermDecl Γ P[t..] (tNatElim P' hz' hs' t').
+  NfTypeDecl (Γ,, tNat) P' P₀ ->
+  NfTermDecl Γ P[tZero..] hz' hz₀ ->
+  NfTermDecl Γ (elimSuccHypTy P) hs' hs₀ ->
+  NeTermDecl Γ tNat t' t₀ ->
+  NeTermDecl Γ P[t..] (tNatElim P' hz' hs' t') (tNatElim P₀ hz₀ hs₀ t₀).
 Proof.
-intros * ? ? ? ? [P₀] [hz₀] [hs₀] [? [t₀]]; split; [now constructor|].
-exists (tNatElim P₀ hz₀ hs₀ t₀).
+intros * ? ? ? ? [] [] [] [? []]; split; [now constructor|].
+split.
 + eapply dredalg_natElim; tea.
   apply dne_dnf_whne; [tea|].
   now eapply dredalg_whne.
@@ -412,15 +418,15 @@ exists (tNatElim P₀ hz₀ hs₀ t₀).
   - constructor; etransitivity; tea.
 Qed.
 
-Lemma NeTermDecl_tEmptyElim : forall Γ P P' t t',
+Lemma NeTermDecl_tEmptyElim : forall Γ P P' P₀ t t' t₀,
   [Γ,, tEmpty |-[de] P ≅ P'] ->
   [Γ |-[de] t ≅ t' : tEmpty] ->
-  NfTypeDecl (Γ,, tEmpty) P' ->
-  NeTermDecl Γ tEmpty t' ->
-  NeTermDecl Γ P[t..] (tEmptyElim P' t').
+  NfTypeDecl (Γ,, tEmpty) P' P₀ ->
+  NeTermDecl Γ tEmpty t' t₀ ->
+  NeTermDecl Γ P[t..] (tEmptyElim P' t') (tEmptyElim P₀ t₀).
 Proof.
-intros * ? ? [P₀] [? [t₀]]; split; [now constructor|].
-exists (tEmptyElim P₀ t₀).
+intros * ? ? [] [? []]; split; [now constructor|].
+split.
 + eapply dredalg_emptyElim; tea.
   apply dne_dnf_whne; [tea|].
   now eapply dredalg_whne.
@@ -432,7 +438,7 @@ exists (tEmptyElim P₀ t₀).
   - constructor; etransitivity; tea.
 Qed.
 
-Lemma NeTermDecl_tIdElim : forall Γ A A' x x' P P' hr hr' y y' t t',
+Lemma NeTermDecl_tIdElim : forall Γ A A' A₀ x x' x₀ P P' P₀ hr hr' hr₀ y y' y₀ t t' t₀,
   [Γ |-[de] A] ->
   [Γ |-[de] A ≅ A'] ->
   [Γ |-[de] x : A] ->
@@ -441,16 +447,16 @@ Lemma NeTermDecl_tIdElim : forall Γ A A' x x' P P' hr hr' y y' t t',
   [Γ |-[de] hr ≅ hr' : P[tRefl A x .: x..]] ->
   [Γ |-[de] y ≅ y' : A] ->
   [Γ |-[de] t ≅ t' : tId A x y] ->
-  NfTypeDecl Γ A' ->
-  NfTermDecl Γ A x' ->
-  NfTypeDecl (Γ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0)) P' ->
-  NfTermDecl Γ  P[tRefl A x .: x..] hr' ->
-  NfTermDecl Γ A y' ->
-  NeTermDecl Γ (tId A x y) t' ->
-  NeTermDecl Γ P[t .: y..] (tIdElim A' x' P' hr' y' t').
+  NfTypeDecl Γ A' A₀ ->
+  NfTermDecl Γ A x' x₀ ->
+  NfTypeDecl (Γ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0)) P' P₀ ->
+  NfTermDecl Γ  P[tRefl A x .: x..] hr' hr₀ ->
+  NfTermDecl Γ A y' y₀ ->
+  NeTermDecl Γ (tId A x y) t' t₀ ->
+  NeTermDecl Γ P[t .: y..] (tIdElim A' x' P' hr' y' t') (tIdElim A₀ x₀ P₀ hr₀ y₀ t₀).
 Proof.
-intros * ? ? ? ? ? ? ? ? [A₀] [x₀] [P₀] [hr₀] [y₀] [? [t₀]]; split; [now constructor|].
-exists (tIdElim A₀ x₀ P₀ hr₀ y₀ t₀).
+intros * ? ? ? ? ? ? ? ? [] [] [] [] [] [? []]; split; [now constructor|].
+split.
 + eapply dredalg_idElim; tea.
   apply dne_dnf_whne; [tea|].
   now eapply dredalg_whne.
@@ -511,47 +517,47 @@ Module DeepTypingProperties.
 
   #[export, refine] Instance ConvTypeDeclProperties : ConvTypeProperties (ta := nf) := {}.
   Proof.
-  - intros * []; split.
+  - intros * [A₀ B₀]; exists A₀ B₀.
     + now econstructor.
-    + destruct nfconvtm_nfl0 as [r]; exists r; tea; try now econstructor.
-    + destruct nfconvtm_nfr0 as [r]; exists r; tea; try now econstructor.
+    + destruct nfconvtm_nfl0; split; tea; try now econstructor.
+    + destruct nfconvtm_nfr0; split; tea; try now econstructor.
   - intros; apply ConvTypeNf_PER.
-  - intros; invnf; split.
+  - intros; invnf; eexists.
     + now apply typing_wk.
     + now apply NfTypeDecl_wk.
     + now apply NfTypeDecl_wk.
-  - intros; invnf; split.
+  - intros; invnf; eexists.
     + eapply TypeTrans ; [eapply TypeTrans | ..].
       2: eassumption.
       2: eapply TypeSym.
       all: now eapply RedConvTyC.
-    + destruct nfconvty_nfl0 as [r]; exists r; tea.
+    + destruct nfconvty_nfl0; split; tea.
       * etransitivity; [|eassumption].
         apply dred_red, H.
       * eapply TypeTrans; [apply H|tea].
-    + destruct nfconvty_nfr0 as [r]; exists r; tea.
+    + destruct nfconvty_nfr0; split; tea.
       * etransitivity; [|eassumption].
         apply dred_red, H0.
       * eapply TypeTrans; [apply H0|tea].
-  - intros; invnf; split.
+  - intros; invnf; eexists.
     + now do 2 constructor.
     + now apply NfTypeDecl_tSort.
     + now apply NfTypeDecl_tSort.
-  - intros; invnf; split.
+  - intros; invnf; eexists.
     + constructor; tea.
     + eapply NfTypeDecl_tProd; tea.
       * now eapply lrefl.
       * now eapply lrefl.
     + eapply NfTypeDecl_tProd; tea.
       now eapply urefl.
-  - intros; invnf; split.
+  - intros; invnf; eexists.
     + constructor; match goal with H : _ |- _ => now apply H end.
     + eapply NfTypeDecl_tSig; tea.
       * now eapply lrefl.
       * now eapply lrefl.
     + eapply NfTypeDecl_tSig; tea.
       now eapply urefl.
-  - intros; invnf; split.
+  - intros; invnf; eexists.
     + constructor; now assumption.
     + apply NfTypeDecl_tId; tea.
     + apply NfTypeDecl_tId; tea.
@@ -559,89 +565,153 @@ Module DeepTypingProperties.
       * now eapply NfTermConv.
   Qed.
 
+  Inductive isNfFun Γ A B : term -> Set :=
+  | LamNfFun : forall A' A₀ t t₀,
+    [Γ |-[ de ] A'] ->
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ,, A |-[ de ] t : B] ->
+    [Γ,, A' |-[ de ] t : B] ->
+    NfTypeDecl Γ A' A₀ -> NfTermDecl (Γ,, A) B (tApp (tLambda A' t)⟨↑⟩ (tRel 0)) t₀ ->
+    isWfFun (ta := de) Γ A B (tLambda A' t) -> isNfFun Γ A B (tLambda A' t)
+  | NeNfFun : forall n n₀, [Γ |-[de] n ~ n : tProd A B] ->
+    NeTermDecl Γ (tProd A B) n n₀ -> isNfFun Γ A B n.
+  Arguments LamNfFun {_ _ _}.
+  Arguments NeNfFun {_ _ _}.
+
+  Inductive isNfPair Γ A B : term -> Set :=
+  | PairNfPair : forall A' A₀ B' B₀ a a₀ b b₀,
+    [Γ |-[ de ] A'] ->
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ,, A |-[ de ] B ≅ B'] ->
+    [Γ |-[ de ] B[a..] ≅ B'[a..]] ->
+    [Γ |-[ de ] a ≅ a : A] ->
+    NfTypeDecl Γ A' A₀ ->
+    NfTypeDecl (Γ,, A) B' B₀ ->
+    NfTermDecl Γ A a a₀ ->
+    NfTermDecl Γ B[a..] b b₀ ->
+    isWfPair (ta := de) Γ A B (tPair A' B' a b) -> isNfPair Γ A B (tPair A' B' a b)
+  | NeNfPair : forall n n₀, [Γ |-[de] n ~ n : tSig A B] ->
+    NeTermDecl Γ (tSig A B) n n₀ -> isNfPair Γ A B n.
+  Arguments PairNfPair {_ _ _}.
+  Arguments NeNfPair {_ _ _}.
+
+  Lemma isWfFun_isNfFun : forall Γ A B t t₀,
+    NfTermDecl (Γ,, A) B (tApp t⟨↑⟩ (tRel 0)) t₀ -> isWfFun Γ A B t -> isNfFun Γ A B t.
+  Proof.
+  intros * H Hwf; revert H; destruct Hwf; intros; invnf.
+  + econstructor; tea.
+    constructor; tea.
+  + econstructor; tea.
+  Qed.
+
+  Lemma isWfPair_isNfPair : forall Γ A B t (* p₀ q₀ *),
+    isWfPair Γ A B t -> isNfPair Γ A B t.
+  Proof.
+  intros * Hwf; destruct Hwf; intros; invnf.
+  + econstructor; tea.
+    constructor; tea.
+  + econstructor; tea.
+  Qed.
+
+  Definition exp_fun {Γ A B f} (w : isNfFun Γ A B f) : term := match w with
+  | LamNfFun _ A₀ _ t₀ _ _ _ _ _ _ _ => tLambda A₀ t₀
+  | NeNfFun _ n₀ _ _ => n₀
+  end.
+
+  Definition exp_pair {Γ A B p} (w : isNfPair Γ A B p) : term := match w with
+  | PairNfPair _ A₀ _ B₀ _ a₀ _ b₀ _ _ _ _ _ _ _ _ _ _ => tPair A₀ B₀ a₀ b₀
+  | NeNfPair _ n₀ _ _ => n₀
+  end.
+
   #[export, refine] Instance ConvTermDeclProperties : ConvTermProperties (ta := nf) := {}.
   Proof.
   + intros; split.
-    - intros ? ? []; split; tea.
+    - intros ? ? []; eexists; tea.
       now symmetry.
-    - intros ? ? ? [] []; split; tea.
+    - intros ? ? ? [] []; eexists; tea.
       now etransitivity.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply TermConv.
     - now eapply NfTermConv.
     - now eapply NfTermConv.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now apply typing_wk.
     - now apply NfTermDecl_wk.
     - now apply NfTermDecl_wk.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convtm_exp.
     - eapply NfTermDecl_exp with (t' := t'); tea.
     - eapply NfTermDecl_exp with (t' := u'); tea.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now apply convtm_convneu.
     - now apply NeTermDecl_NfTermDecl.
     - now apply NeTermDecl_NfTermDecl.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now apply convtm_prod.
     - eapply NfTermDecl_tProd; tea.
       * now eapply lrefl.
       * now eapply lrefl.
     - eapply NfTermDecl_tProd; tea.
       now eapply urefl.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - constructor; tea.
     - eapply NfTermDecl_tSig; tea.
       * now eapply lrefl.
       * now eapply lrefl.
     - eapply NfTermDecl_tSig; tea.
       * now eapply urefl.
-  + intros * ? ? ? Hf ? Hg []; split.
+  + intros * ? ? ? Hf ? Hg [].
+    eapply isWfFun_isNfFun in Hf; [|tea].
+    eapply isWfFun_isNfFun in Hg; [|tea].
+    eexists (exp_fun Hf) (exp_fun Hg).
     - apply convtm_eta; tea.
-      * destruct Hf as [? ? ? []|? []]; now constructor.
-      * destruct Hg as [? ? ? []|? []]; now constructor.
-    - destruct Hf as [A₀ f₀ ? []|? Hf₀].
+      * destruct Hf; constructor; tea.
+      * destruct Hg; constructor; tea.
+    - destruct Hf; cbn.
       * apply NfTermDecl_tLambda; tea.
-      * apply Hf₀.
-    - destruct Hg as [A₀ g₀ ? []|? Hg₀].
+      * now apply netmdecl_nf.
+    - destruct Hg; cbn.
       * apply NfTermDecl_tLambda; tea.
-      * apply Hg₀.
-  + intros; split; tea.
+      * now apply netmdecl_nf.
+  + intros; eexists; tea.
     - do 2 constructor; tea.
     - now apply NfTermDecl_tNat.
     - now apply NfTermDecl_tNat.
-  + intros; split.
+  + intros; eexists.
     - now do 2 constructor.
     - now apply NfTermDecl_tZero.
     - now apply NfTermDecl_tZero.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - constructor; tea.
     - now apply NfTermDecl_tSucc.
     - now apply NfTermDecl_tSucc.
-  + intros * ? ? ? Hp ? Hp' [] []; split.
+  + intros * ? ? ? Hp ? Hp' [] [].
+    eapply isWfPair_isNfPair in Hp; tea.
+    eapply isWfPair_isNfPair in Hp'; tea.
+    eexists (exp_pair Hp) (exp_pair Hp').
     - etransitivity; [|now eapply TermPairEta].
       etransitivity; [now symmetry; eapply TermPairEta|].
       constructor; tea; now apply TypeRefl.
-    - destruct Hp as [A₀ B₀ a b|? Hp₀].
+    - destruct Hp.
+      * invnf.
+        eapply NfTermDecl_tPair; [..|tea]; tea.
+        now eapply lrefl.
+      * now eapply netmdecl_nf.
+    - destruct Hp'.
       * invnf.
         eapply NfTermDecl_tPair; tea.
         now eapply lrefl.
-      * apply Hp₀.
-    - destruct Hp' as [A₀ B₀ a b|? Hp₀].
-      * invnf.
-        eapply NfTermDecl_tPair; tea.
-        now eapply lrefl.
-      * apply Hp₀.
-  + intros; invnf; split.
+      * now eapply netmdecl_nf.
+  + intros; invnf; eexists.
     - now do 2 constructor.
     - now apply NfTermDecl_tEmpty.
     - now apply NfTermDecl_tEmpty.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now constructor.
     - now apply NfTermDecl_tId.
     - apply NfTermDecl_tId; tea.
       all: eapply NfTermConv; tea; now constructor.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now constructor.
     - now apply NfTermDecl_Refl.
     - eapply NfTermConv; [symmetry; now constructor|apply NfTermDecl_Refl; tea].
@@ -657,55 +727,55 @@ Module DeepTypingProperties.
   #[export, refine] Instance ConvNeuDeclProperties : ConvNeuProperties (ta := nf) := {}.
   Proof.
   + intros; split.
-    - intros ? ? []; split; tea.
+    - intros ? ? []; eexists; tea.
       now symmetry.
-    - intros ? ? ? [] []; split; tea.
+    - intros ? ? ? [] []; eexists; tea.
       now etransitivity.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_conv.
     - now eapply NeTermConv.
     - now eapply NeTermConv.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_wk.
     - now eapply NeTermDecl_wk.
     - now eapply NeTermDecl_wk.
   + intros; invnf; now eapply convneu_whne.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now apply convneu_var.
     - apply NeTermDecl_dne; tea; now constructor.
     - apply NeTermDecl_dne; tea; now constructor.
-  + intros * [Hfg] []; split; tea.
+  + intros * [f₀ g₀ Hfg] []; eexists; tea.
     - now eapply convneu_app.
     - eapply NeTermDecl_tApp; tea.
       * eapply lrefl, Hfg.
       * eapply lrefl; tea.
     - eapply NeTermDecl_tApp; tea.
       apply Hfg.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_natElim.
     - eapply NeTermDecl_tNatElim; tea; try now symmetry.
       * now eapply lrefl.
       * now eapply lrefl, convtm_convneu.
     - eapply NeTermDecl_tNatElim; tea.
       now eapply convtm_convneu.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_emptyElim.
     - eapply NeTermDecl_tEmptyElim; tea.
       * now eapply lrefl.
       * now eapply lrefl, convtm_convneu.
     - eapply NeTermDecl_tEmptyElim; tea.
       now eapply convtm_convneu.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_fst.
     - now eapply NeTermDecl_tFst.
     - now eapply NeTermDecl_tFst.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_snd.
     - eapply NeTermDecl_tSnd; tea.
       eapply lrefl; tea; apply neconvtm_conv0.
     - eapply NeTermDecl_tSnd; tea.
       now apply neconvtm_conv0.
-  + intros; invnf; split.
+  + intros; invnf; eexists.
     - now eapply convneu_IdElim.
     - eapply NeTermDecl_tIdElim; tea.
       all: try now eapply lrefl.
