@@ -1,7 +1,7 @@
 (** * LogRel.DeclarativeInstance: proof that declarative typing is an instance of generic typing. *)
 From Coq Require Import CRelationClasses.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms UntypedReduction Weakening GenericTyping DeclarativeTyping DeclarativeInstance.
+From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms UntypedReduction Weakening NormalEq GenericTyping DeclarativeTyping DeclarativeInstance.
 
 Import DeclarativeTypingData.
 
@@ -28,6 +28,7 @@ Record ConvTypeNfDecl Γ A B := {
   nfconvty_conv : [Γ |- A ≅ B];
   nfconvty_nfl : NfTypeDecl Γ A nfconvty_lhs;
   nfconvty_nfr : NfTypeDecl Γ B nfconvty_rhs;
+  nfconvty_eqv : eqnf nfconvty_lhs nfconvty_rhs;
 }.
 
 Record ConvTermNfDecl Γ A t u := {
@@ -36,6 +37,7 @@ Record ConvTermNfDecl Γ A t u := {
   nfconvtm_conv : [Γ |- t ≅ u : A];
   nfconvtm_nfl : NfTermDecl Γ A t nfconvtm_lhs;
   nfconvtm_nfr : NfTermDecl Γ A u nfconvtm_rhs;
+  nfconvtm_eqv : eqnf nfconvtm_lhs nfconvtm_rhs;
 }.
 
 Record ConvTermNeDecl Γ A t u := {
@@ -44,20 +46,71 @@ Record ConvTermNeDecl Γ A t u := {
   neconvtm_conv : [Γ |- t ~ u : A];
   neconvtm_nfl : NeTermDecl Γ A t neconvtm_lhs;
   neconvtm_nfr : NeTermDecl Γ A u neconvtm_rhs;
+  neconvtm_eqv : eqnf neconvtm_lhs neconvtm_rhs;
 }.
 
 Section Nf.
 
 Import DeclarativeTypingProperties.
 
+Lemma NfTypeDecl_unique : forall Γ Γ' A A₀ A₀',
+  NfTypeDecl Γ A A₀ -> NfTypeDecl Γ' A A₀' -> A₀ = A₀'.
+Proof.
+intros * [] []; apply dred_dnf; tea.
+now eapply dred_red_det.
+Qed.
+
+Lemma NfTermDecl_unique : forall Γ Γ' A A' t t₀ t₀',
+  NfTermDecl Γ A t t₀ -> NfTermDecl Γ' A' t t₀' -> t₀ = t₀'.
+Proof.
+intros * [] []; apply dred_dnf; tea.
+now eapply dred_red_det.
+Qed.
+
+Lemma NeTermDecl_unique : forall Γ Γ' A A' t t₀ t₀',
+  NeTermDecl Γ A t t₀ -> NeTermDecl Γ' A' t t₀' -> t₀ = t₀'.
+Proof.
+intros * [? []] [? []]; apply dred_dnf; tea.
+now eapply dred_red_det.
+Qed.
+
 #[local]
 Lemma ConvTypeNf_PER : forall Γ, PER (ConvTypeNfDecl Γ).
 Proof.
 intros Γ; split.
 - intros t u []; esplit; tea.
-  now apply TypeSym.
-- intros t u r [] []; esplit; tea.
-  now eapply TypeTrans.
+  + now apply TypeSym.
+  + now apply Symmetric_eqnf.
+- intros t u r [t₀ u₀] [u₀' r₀]; esplit; tea.
+  + now eapply TypeTrans.
+  + replace u₀' with u₀ in * by now eapply NfTypeDecl_unique.
+    now eapply Transitive_eqnf.
+Qed.
+
+#[local]
+Lemma ConvTermNf_PER : forall Γ A, PER (ConvTermNfDecl Γ A).
+Proof.
+intros Γ A; split.
+- intros t u []; esplit; tea.
+  + now apply TermSym.
+  + now apply Symmetric_eqnf.
+- intros t u r [t₀ u₀] [u₀' r₀]; esplit; tea.
+  + now eapply TermTrans.
+  + replace u₀' with u₀ in * by now eapply NfTermDecl_unique.
+    now eapply Transitive_eqnf.
+Qed.
+
+#[local]
+Lemma ConvTermNe_PER : forall Γ A, PER (ConvTermNeDecl Γ A).
+Proof.
+intros Γ A; split.
+- intros t u []; esplit; tea.
+  + now symmetry.
+  + now apply Symmetric_eqnf.
+- intros t u r [t₀ u₀] [u₀' r₀]; esplit; tea.
+  + now etransitivity.
+  + replace u₀' with u₀ in * by now eapply NeTermDecl_unique.
+    now eapply Transitive_eqnf.
 Qed.
 
 Lemma NfTermConv : forall Γ A B t t₀, [Γ |-[de] A ≅ B] -> NfTermDecl Γ A t t₀ -> NfTermDecl Γ B t t₀.
@@ -70,6 +123,18 @@ Lemma NeTermConv : forall Γ A B t t₀, [Γ |-[de] A ≅ B] -> NeTermDecl Γ A 
 Proof.
 intros * ? [Hne Hnf]; split; [tea|].
 now eapply NfTermConv.
+Qed.
+
+Lemma NeTerm_whne : forall Γ A t t₀, NeTermDecl Γ A t t₀ -> whne t₀.
+Proof.
+eauto using dredalg_whne, netmdecl_whne, netmdecl_nf, nftmdecl_red.
+Qed.
+
+Lemma NeTerm_dne : forall Γ A t t₀, NeTermDecl Γ A t t₀ -> dne t₀.
+Proof.
+intros; apply dne_dnf_whne.
++ now eapply netmdecl_nf.
++ now eapply NeTerm_whne.
 Qed.
 
 Lemma NfTypeDecl_tSort : forall Γ, [|-[de] Γ] -> NfTypeDecl Γ U U.
@@ -521,11 +586,13 @@ Module DeepTypingProperties.
     + now econstructor.
     + destruct nfconvtm_nfl0; split; tea; try now econstructor.
     + destruct nfconvtm_nfr0; split; tea; try now econstructor.
+    + tea.
   - intros; apply ConvTypeNf_PER.
   - intros; invnf; eexists.
     + now apply typing_wk.
     + now apply NfTypeDecl_wk.
     + now apply NfTypeDecl_wk.
+    + now eauto using eqnf_ren, wk_inj.
   - intros; invnf; eexists.
     + eapply TypeTrans ; [eapply TypeTrans | ..].
       2: eassumption.
@@ -539,10 +606,12 @@ Module DeepTypingProperties.
       * etransitivity; [|eassumption].
         apply dred_red, H0.
       * eapply TypeTrans; [apply H0|tea].
+    + tea.
   - intros; invnf; eexists.
     + now do 2 constructor.
     + now apply NfTypeDecl_tSort.
     + now apply NfTypeDecl_tSort.
+    + now constructor.
   - intros; invnf; eexists.
     + constructor; tea.
     + eapply NfTypeDecl_tProd; tea.
@@ -550,6 +619,7 @@ Module DeepTypingProperties.
       * now eapply lrefl.
     + eapply NfTypeDecl_tProd; tea.
       now eapply urefl.
+    + now apply eqnf_tProd.
   - intros; invnf; eexists.
     + constructor; match goal with H : _ |- _ => now apply H end.
     + eapply NfTypeDecl_tSig; tea.
@@ -557,12 +627,14 @@ Module DeepTypingProperties.
       * now eapply lrefl.
     + eapply NfTypeDecl_tSig; tea.
       now eapply urefl.
+    + now eapply eqnf_tSig.
   - intros; invnf; eexists.
     + constructor; now assumption.
     + apply NfTypeDecl_tId; tea.
     + apply NfTypeDecl_tId; tea.
       * now eapply NfTermConv.
       * now eapply NfTermConv.
+    + now eapply eqnf_tId.
   Qed.
 
   Inductive isNfFun Γ A B : term -> Set :=
@@ -623,29 +695,162 @@ Module DeepTypingProperties.
   | NeNfPair _ n₀ _ _ => n₀
   end.
 
+  Lemma NfTerm_eta_fun : forall Γ A B n n₀ t₀,
+    NeTermDecl Γ (tProd A B) n n₀ ->
+    NfTermDecl (Γ,, A) B (tApp n⟨↑⟩ (tRel 0)) t₀ ->
+    t₀ = tApp n₀⟨↑⟩ (tRel 0).
+  Proof.
+  intros.
+  assert (dne n₀⟨↑⟩).
+  { now eapply dne_ren, NeTerm_dne. }
+  eapply dredalg_det; [now eapply nftmdecl_nf| |now eapply nftmdecl_red|].
+  - do 2 constructor; [|repeat constructor]; tea.
+  - apply dredalg_app; [| |tea|reflexivity].
+    * now eapply whne_ren, netmdecl_whne.
+    * now eapply gcredalg_wk, netmdecl_nf.
+  Qed.
+
+  Lemma eqnf_exp_fun : forall Γ A B f f₀ g g₀ (nf : isNfFun Γ A B f) (ng : isNfFun Γ A B g),
+    NfTermDecl (Γ,, A) B (tApp f⟨↑⟩ (tRel 0)) f₀ ->
+    NfTermDecl (Γ,, A) B (tApp g⟨↑⟩ (tRel 0)) g₀ ->
+    eqnf f₀ g₀ ->
+    eqnf (exp_fun nf) (exp_fun ng).
+  Proof.
+  intros Γ A B f f₀ g g₀ [] [] ? ? ?; cbn.
+  + apply eqnf_tLambda; eauto using nftydecl_nf.
+    repeat match goal with H : NfTermDecl _ _ _ ?t, H' : NfTermDecl _ _ _ ?u |- _ =>
+      (assert (t = u) by now eapply NfTermDecl_unique); subst; clear H
+    end.
+    tea.
+  + repeat match goal with H : NfTermDecl _ _ _ ?t, H' : NfTermDecl _ _ _ ?u |- _ =>
+      (assert (t = u) by now eapply NfTermDecl_unique); subst; clear H
+    end.
+    apply eqnf_tLambda_whne; eauto using NeTerm_whne, nftydecl_nf.
+    etransitivity; [tea|].
+    replace (tApp n₀⟨↑⟩ (tRel 0)) with g₀; [now eapply urefl|].
+    now eapply NfTerm_eta_fun.
+  + repeat match goal with H : NfTermDecl _ _ _ ?t, H' : NfTermDecl _ _ _ ?u |- _ =>
+      (assert (t = u) by now eapply NfTermDecl_unique); subst; clear H
+    end.
+    apply eqnf_whne_tLambda; eauto using NeTerm_whne, nftydecl_nf.
+    etransitivity; [|tea].
+    replace (tApp n₀⟨↑⟩ (tRel 0)) with f₀; [now eapply lrefl|].
+    now eapply NfTerm_eta_fun.
+  + rename n₀0 into m₀.
+    assert (f₀ = tApp n₀⟨↑⟩ (tRel 0)) by now eapply NfTerm_eta_fun.
+    assert (g₀ = tApp m₀⟨↑⟩ (tRel 0)) by now eapply NfTerm_eta_fun.
+    subst.
+    assert (Hn₀ : whne n₀⟨↑⟩) by now eapply whne_ren, NeTerm_whne.
+    assert (Hm₀ : whne m₀⟨↑⟩) by now eapply whne_ren, NeTerm_whne.
+    inversion H1; subst.
+    eapply eqnf_ren_rev; [apply shift_inj|tea].
+  Qed.
+
+  Lemma NfTerm_eta_pair_fst : forall Γ A B n n₀ p₀,
+    NeTermDecl Γ (tSig A B) n n₀ ->
+    NfTermDecl Γ A (tFst n) p₀ ->
+    p₀ = tFst n₀.
+  Proof.
+  intros * [? []] [].
+  eapply dredalg_det; eauto using dnf, dne, dne_dnf_whne, dredalg_whne.
+  now eapply dredalg_fst.
+  Qed.
+
+  Lemma NfTerm_eta_pair_snd : forall Γ P A B n n₀ p₀,
+    NeTermDecl Γ (tSig A B) n n₀ ->
+    NfTermDecl Γ P (tSnd n) p₀ ->
+    p₀ = tSnd n₀.
+  Proof.
+  intros * [? []] [].
+  eapply dredalg_det; eauto using dnf, dne, dne_dnf_whne, dredalg_whne.
+  now eapply dredalg_snd.
+  Qed.
+
+  Lemma NfTerm_fst_red : forall Γ P Q A B a b p₀ q₀,
+    NfTermDecl Γ Q a p₀ ->
+    NfTermDecl Γ P (tFst (tPair A B a b)) q₀ -> p₀ = q₀.
+  Proof.
+  intros * [] []; eapply dredalg_det; tea.
+  eapply dred_red_det; tea.
+  econstructor; [constructor|reflexivity].
+  Qed.
+
+  Lemma NfTerm_snd_red : forall Γ P Q A B a b p₀ q₀,
+    NfTermDecl Γ Q b p₀ ->
+    NfTermDecl Γ P (tSnd (tPair A B a b)) q₀ -> p₀ = q₀.
+  Proof.
+  intros * [] []; eapply dredalg_det; tea.
+  eapply dred_red_det; tea.
+  econstructor; [constructor|reflexivity].
+  Qed.
+
+  Lemma eqnf_exp_pair : forall Γ A B p pl₀ pr₀ q ql₀ qr₀ (np : isNfPair Γ A B p) (nq : isNfPair Γ A B q),
+    NfTermDecl Γ A (tFst p) pl₀ ->
+    NfTermDecl Γ A (tFst q) ql₀ ->
+    eqnf pl₀ ql₀ ->
+    NfTermDecl Γ B[(tFst p)..] (tSnd p) pr₀ ->
+    NfTermDecl Γ B[(tFst p)..] (tSnd q) qr₀ ->
+    eqnf pr₀ qr₀ ->
+    eqnf (exp_pair np) (exp_pair nq).
+  Proof.
+  intros Γ A B p pl₀ pr₀ q ql₀ qr₀ [] [] **; cbn.
+  + apply eqnf_tPair.
+    - match goal with |- eqnf ?l ?r =>
+        replace l with pl₀ by (now symmetry; eapply NfTerm_fst_red);
+        replace r with ql₀ by (now symmetry; eapply NfTerm_fst_red)
+      end; tea.
+    - match goal with |- eqnf ?l ?r =>
+        replace l with pr₀ by (now symmetry; eapply NfTerm_snd_red);
+        replace r with qr₀ by (now symmetry; eapply NfTerm_snd_red)
+      end; tea.
+  + apply eqnf_tPair_whne.
+    - match goal with |- eqnf ?l ?r =>
+        replace l with pl₀ by (now symmetry; eapply NfTerm_fst_red);
+        replace r with ql₀ by (now eapply NfTerm_eta_pair_fst)
+      end; tea.
+    - match goal with |- eqnf ?l ?r =>
+        replace l with pr₀ by (now symmetry; eapply NfTerm_snd_red);
+        replace r with qr₀ by (now eapply NfTerm_eta_pair_snd)
+      end; tea.
+  + apply eqnf_whne_tPair.
+    - match goal with |- eqnf ?l ?r =>
+        replace l with pl₀ by (now eapply NfTerm_eta_pair_fst);
+        replace r with ql₀ by (now symmetry; eapply NfTerm_fst_red)
+      end; tea.
+    - match goal with |- eqnf ?l ?r =>
+        replace l with pr₀ by (now eapply NfTerm_eta_pair_snd);
+        replace r with qr₀ by (now symmetry; eapply NfTerm_snd_red)
+      end; tea.
+  + match goal with |- eqnf ?l ?r =>
+      assert (pl₀ = tFst l) by (now eapply NfTerm_eta_pair_fst);
+      assert (ql₀ = tFst r) by (now eapply NfTerm_eta_pair_fst)
+    end.
+    subst; inversion H1; tea.
+  Qed.
+
   #[export, refine] Instance ConvTermDeclProperties : ConvTermProperties (ta := nf) := {}.
   Proof.
-  + intros; split.
-    - intros ? ? []; eexists; tea.
-      now symmetry.
-    - intros ? ? ? [] []; eexists; tea.
-      now etransitivity.
+  + apply ConvTermNf_PER.
   + intros; invnf; eexists.
     - now eapply TermConv.
     - now eapply NfTermConv.
     - now eapply NfTermConv.
+    - tea.
   + intros; invnf; eexists.
     - now apply typing_wk.
     - now apply NfTermDecl_wk.
     - now apply NfTermDecl_wk.
+    - now eauto using eqnf_ren, wk_inj.
   + intros; invnf; eexists.
     - now eapply convtm_exp.
     - eapply NfTermDecl_exp with (t' := t'); tea.
     - eapply NfTermDecl_exp with (t' := u'); tea.
+    - tea.
   + intros; invnf; eexists.
     - now apply convtm_convneu.
     - now apply NeTermDecl_NfTermDecl.
     - now apply NeTermDecl_NfTermDecl.
+    - tea.
   + intros; invnf; eexists.
     - now apply convtm_prod.
     - eapply NfTermDecl_tProd; tea.
@@ -653,6 +858,7 @@ Module DeepTypingProperties.
       * now eapply lrefl.
     - eapply NfTermDecl_tProd; tea.
       now eapply urefl.
+    - now apply eqnf_tProd.
   + intros; invnf; eexists.
     - constructor; tea.
     - eapply NfTermDecl_tSig; tea.
@@ -660,6 +866,7 @@ Module DeepTypingProperties.
       * now eapply lrefl.
     - eapply NfTermDecl_tSig; tea.
       * now eapply urefl.
+    - now apply eqnf_tSig.
   + intros * ? ? ? Hf ? Hg [].
     eapply isWfFun_isNfFun in Hf; [|tea].
     eapply isWfFun_isNfFun in Hg; [|tea].
@@ -673,18 +880,22 @@ Module DeepTypingProperties.
     - destruct Hg; cbn.
       * apply NfTermDecl_tLambda; tea.
       * now apply netmdecl_nf.
+    - now eapply eqnf_exp_fun.
   + intros; eexists; tea.
     - do 2 constructor; tea.
     - now apply NfTermDecl_tNat.
     - now apply NfTermDecl_tNat.
+    - now apply eqnf_tNat.
   + intros; eexists.
     - now do 2 constructor.
     - now apply NfTermDecl_tZero.
     - now apply NfTermDecl_tZero.
+    - now apply eqnf_tZero.
   + intros; invnf; eexists.
     - constructor; tea.
     - now apply NfTermDecl_tSucc.
     - now apply NfTermDecl_tSucc.
+    - now apply eqnf_tSucc.
   + intros * ? ? ? Hp ? Hp' [] [].
     eapply isWfPair_isNfPair in Hp; tea.
     eapply isWfPair_isNfPair in Hp'; tea.
@@ -702,20 +913,24 @@ Module DeepTypingProperties.
         eapply NfTermDecl_tPair; tea.
         now eapply lrefl.
       * now eapply netmdecl_nf.
+    - now eapply eqnf_exp_pair.
   + intros; invnf; eexists.
     - now do 2 constructor.
     - now apply NfTermDecl_tEmpty.
     - now apply NfTermDecl_tEmpty.
+    - now apply eqnf_tEmpty.
   + intros; invnf; eexists.
     - now constructor.
     - now apply NfTermDecl_tId.
     - apply NfTermDecl_tId; tea.
       all: eapply NfTermConv; tea; now constructor.
+    - now apply eqnf_tId.
   + intros; invnf; eexists.
     - now constructor.
     - now apply NfTermDecl_Refl.
     - eapply NfTermConv; [symmetry; now constructor|apply NfTermDecl_Refl; tea].
       eapply NfTermConv; tea.
+    - now apply eqnf_tRefl.
   Qed.
 
   #[export, refine] Instance TypingDeclProperties : TypingProperties (ta := nf) := {}.
@@ -726,31 +941,31 @@ Module DeepTypingProperties.
 
   #[export, refine] Instance ConvNeuDeclProperties : ConvNeuProperties (ta := nf) := {}.
   Proof.
-  + intros; split.
-    - intros ? ? []; eexists; tea.
-      now symmetry.
-    - intros ? ? ? [] []; eexists; tea.
-      now etransitivity.
+  + apply ConvTermNe_PER.
   + intros; invnf; eexists.
     - now eapply convneu_conv.
     - now eapply NeTermConv.
     - now eapply NeTermConv.
+    - tea.
   + intros; invnf; eexists.
     - now eapply convneu_wk.
     - now eapply NeTermDecl_wk.
     - now eapply NeTermDecl_wk.
+    - eauto using eqnf_ren, wk_inj.
   + intros; invnf; now eapply convneu_whne.
   + intros; invnf; eexists.
     - now apply convneu_var.
     - apply NeTermDecl_dne; tea; now constructor.
     - apply NeTermDecl_dne; tea; now constructor.
-  + intros * [f₀ g₀ Hfg] []; eexists; tea.
+    - now apply eqnf_tRel.
+  + intros * [f₀ g₀ Hfg] []; eexists.
     - now eapply convneu_app.
     - eapply NeTermDecl_tApp; tea.
       * eapply lrefl, Hfg.
       * eapply lrefl; tea.
     - eapply NeTermDecl_tApp; tea.
       apply Hfg.
+    - now apply eqnf_tApp.
   + intros; invnf; eexists.
     - now eapply convneu_natElim.
     - eapply NeTermDecl_tNatElim; tea; try now symmetry.
@@ -758,6 +973,7 @@ Module DeepTypingProperties.
       * now eapply lrefl, convtm_convneu.
     - eapply NeTermDecl_tNatElim; tea.
       now eapply convtm_convneu.
+    - now apply eqnf_tNatElim.
   + intros; invnf; eexists.
     - now eapply convneu_emptyElim.
     - eapply NeTermDecl_tEmptyElim; tea.
@@ -765,16 +981,19 @@ Module DeepTypingProperties.
       * now eapply lrefl, convtm_convneu.
     - eapply NeTermDecl_tEmptyElim; tea.
       now eapply convtm_convneu.
+    - now apply eqnf_tEmptyElim.
   + intros; invnf; eexists.
     - now eapply convneu_fst.
     - now eapply NeTermDecl_tFst.
     - now eapply NeTermDecl_tFst.
+    - now apply eqnf_tFst.
   + intros; invnf; eexists.
     - now eapply convneu_snd.
     - eapply NeTermDecl_tSnd; tea.
       eapply lrefl; tea; apply neconvtm_conv0.
     - eapply NeTermDecl_tSnd; tea.
       now apply neconvtm_conv0.
+    - now apply eqnf_tSnd.
   + intros; invnf; eexists.
     - now eapply convneu_IdElim.
     - eapply NeTermDecl_tIdElim; tea.
@@ -782,6 +1001,7 @@ Module DeepTypingProperties.
       now eapply lrefl, convtm_convneu.
     - eapply NeTermDecl_tIdElim; tea.
       now eapply convtm_convneu.
+    - now apply eqnf_tIdElim.
   Qed.
 
   #[export, refine] Instance RedTypeDeclProperties : RedTypeProperties (ta := nf) := {}.
