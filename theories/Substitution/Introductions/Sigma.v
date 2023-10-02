@@ -522,9 +522,17 @@ Section PairRed.
         Unshelve. tea.
     + eapply convtm_eta_sig; tea.
       * now eapply ty_pair.
-      * constructor; tea; (unshelve eapply escapeEq, reflLRTyEq; [|tea]).
+      * constructor; tea;
+        first [
+          unshelve eapply escapeEq, reflLRTyEq; [|tea]|
+          unshelve eapply escapeEqTerm, reflLRTmEq; [..|tea]
+        ].
       * now eapply ty_pair.
-      * constructor; tea; (unshelve eapply escapeEq, reflLRTyEq; [|tea]).
+      * constructor; tea;
+        first [
+          unshelve eapply escapeEq, reflLRTyEq; [|tea]|
+          unshelve eapply escapeEqTerm, reflLRTmEq; [..|tea]
+        ].
       * enough [Γ |- tFst (tPair A B a b) ≅ a : A].
         1: transitivity a; tea; now symmetry.
         eapply convtm_exp.
@@ -602,6 +610,8 @@ Section PairRed.
       rewrite <- (@wk1_ren_on Γ A' A'); apply convty_wk; [tea|now symmetry].
   - rewrite <- (wk_id_ren_on Γ A), <- (wk_id_ren_on Γ a).
     now unshelve eapply escapeTerm, Ha.
+  - rewrite <- (wk_id_ren_on Γ A), <- (wk_id_ren_on Γ a).
+    now unshelve eapply escapeEqTerm, reflLRTmEq, Ha.
   - rewrite <- Hrw'.
     unshelve eapply escape, RB; tea.
     rewrite <- (wk_id_ren_on Γ a); now unshelve apply Ha.
@@ -611,6 +621,8 @@ Section PairRed.
     rewrite <- (wk_id_ren_on Γ a); now unshelve apply Ha.
   - rewrite <- Hrw', <- (wk_id_ren_on Γ b), <- (wk_id_ren_on Γ a).
     now unshelve eapply escapeTerm, Hb.
+  - rewrite <- Hrw', <- (wk_id_ren_on Γ b), <- (wk_id_ren_on Γ a).
+    now unshelve eapply escapeEqTerm, reflLRTmEq, Hb.
   Qed.
 
   Lemma isLRPair_isPair {Γ A B l p} (ΣA : [Γ ||-Σ<l> tSig A B]) (Rp : [Γ ||-Σ p : _ | normRedΣ0 ΣA]) :
