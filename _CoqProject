@@ -11,6 +11,7 @@ theories/AutoSubst/Ast.v
 theories/AutoSubst/Extra.v
 theories/Context.v
 theories/Notations.v
+theories/Computation.v
 
 theories/Closed.v
 theories/NormalForms.v

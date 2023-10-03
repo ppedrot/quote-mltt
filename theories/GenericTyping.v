@@ -1,7 +1,7 @@
 (** * LogRel.GenericTyping: the generic interface of typing used to build the logical relation. *)
 From Coq Require Import CRelationClasses ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Closed Context NormalForms NormalEq Weakening UntypedReduction.
+From LogRel Require Import Utils BasicAst Computation Notations Closed Context NormalForms NormalEq Weakening UntypedReduction.
 
 (** In order to factor the work, the logical relation is defined over a generic
 notion of typing (and conversion),
@@ -1246,8 +1246,17 @@ Section GenericConsequences.
       rewrite scons_eta'.
       now bsimpl.
   Qed.
-  
-  
+
+  (** Typing rules for the computation built-ins *)
+
+  Lemma ty_qNat {Γ n} : [|- Γ] -> [Γ |- qNat n : tNat].
+  Proof.
+    intros.
+    induction n; cbn.
+    + now apply ty_zero.
+    + now apply ty_succ.
+  Qed.
+
   (** *** Lifting determinism properties from untyped reduction to typed reduction. *)
 
   Lemma redtm_whnf {Γ t u A} : [Γ |- t ⤳* u : A] -> whnf t -> t = u.
