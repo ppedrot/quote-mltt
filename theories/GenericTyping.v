@@ -539,7 +539,7 @@ Section GenericTyping.
       [Γ |- tIdElim A x P hr y e ⤳* tIdElim A x P hr y e' : P[e .: y..]];
     redtm_eval {Γ t} :
       [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t ->
-      [Γ |- tQuote t ⤳* tZero : tNat];
+      [Γ |- tQuote t ⤳* qNat (model.(quote) (erase t)) : tNat];
     redtm_quote {Γ t t'} :
       [Γ |- t : arr tNat tNat] ->
       [Γ |- t ≅ t' : arr tNat tNat] ->
@@ -1255,6 +1255,14 @@ Section GenericConsequences.
     induction n; cbn.
     + now apply ty_zero.
     + now apply ty_succ.
+  Qed.
+
+  Lemma convtm_qNat {Γ n} : [|- Γ] -> [Γ |- qNat n ≅ qNat n : tNat].
+  Proof.
+    intros.
+    induction n; cbn.
+    + now apply convtm_zero.
+    + now apply convtm_succ.
   Qed.
 
   (** *** Lifting determinism properties from untyped reduction to typed reduction. *)

@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping LogicalRelation Validity.
+From LogRel Require Import Utils BasicAst Computation Notations Context NormalForms Weakening GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Induction Irrelevance Escape Reflexivity Weakening Neutral Transitivity Reduction Application Universe SimpleArr.
 From LogRel.Substitution Require Import Irrelevance Properties Conversion SingleSubst Reflexivity.
 From LogRel.Substitution.Introductions Require Import Universe Pi SimpleArr Var.
@@ -126,6 +126,11 @@ Proof.
   constructor; intros; cbn; instValid Vσ; now unshelve eapply succRedEq.
 Qed.
 
+Lemma qNatValid {Γ l n} (VΓ : [||-v Γ]) :
+  [Γ ||-v<l> qNat n : tNat | VΓ | natValid VΓ].
+Proof.
+induction n; cbn in *; [apply zeroValid|apply succValid; tea].
+Qed.
 
 Lemma elimSuccHypTy_subst {P} σ :
   elimSuccHypTy P[up_term_term σ] = (elimSuccHypTy P)[σ].

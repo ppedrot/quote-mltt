@@ -2,7 +2,7 @@
 From Coq Require Import ssreflect.
 From smpl Require Import Smpl.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms Weakening UntypedReduction.
+From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening UntypedReduction.
 
 Set Primitive Projections.
 
@@ -176,7 +176,7 @@ Section Definitions.
       | TermQuoteRed {Γ} {t} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
           dnf t -> closed0 t ->
-          [ Γ |- tQuote t ≅ tZero : tNat ]
+          [ Γ |- tQuote t ≅ qNat (model.(quote) (erase t)) : tNat ]
       | TermQuoteCong {Γ} {t t'} :
           [ Γ |- t ≅ t' : arr tNat tNat ] ->
           [ Γ |- tQuote t ≅ tQuote t' : tNat ]

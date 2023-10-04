@@ -1,6 +1,6 @@
 From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Context Closed NormalForms.
+From LogRel Require Import Utils BasicAst Computation Context Closed NormalForms.
 
 (** Lossy equality on normal forms *)
 
@@ -79,6 +79,21 @@ all: eauto using upRen_term_term_inj.
   - intros ?%PeanoNat.Nat.eqb_eq%Hρ%PeanoNat.Nat.eqb_eq; eauto.
 Qed.
 
+Lemma noccurn_ren_rev : forall n t ρ, ρ n = n -> noccurn (ρ n) t⟨ρ⟩ -> noccurn n t.
+Proof.
+intros n t; revert n; induction t; cbn in *; intros k ρ Hρ Ht.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: repeat (apply andb_true_intro; split); unfold is_true in *.
+all: try match goal with
+| |- true = true => reflexivity
+| H : forall (n : nat) (ρ : nat -> nat), _ |- noccurn (S (S ?k)) _ = true => eapply (H (S (S k)) (upRen_term_term (upRen_term_term ρ))); [|tea]; compute; congruence
+| H : forall (n : nat) (ρ : nat -> nat), _ |- noccurn (S ?k) _ = true => eapply (H (S k) (upRen_term_term ρ)); [|tea]; compute; congruence
+| H : forall (n : nat) (ρ : nat -> nat), _ |- noccurn ?k _ = true => eapply (H k ρ); [|tea]; compute; congruence
+end.
++ eapply contraNN; [|tea].
+  intros ?%PeanoNat.Nat.eqb_eq; subst; now apply PeanoNat.Nat.eqb_eq.
+Qed.
+
 Lemma noccurn_ren_ignore : forall n t ρ,
   (forall m, ρ m <> n) -> noccurn n t⟨ρ⟩ = true.
 Proof.
@@ -89,6 +104,12 @@ intros n t; revert n; induction t; cbn in *; intros k ρ Hρ.
 all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: repeat (apply andb_true_intro; split); f_equal; eauto.
 apply negbT; apply PeanoNat.Nat.eqb_neq, Hρ.
+Qed.
+
+Lemma noccurn_shift_ignore : forall t, noccurn 0 t⟨↑⟩ = true.
+Proof.
+intros; apply noccurn_ren_ignore.
+intros; compute; Lia.lia.
 Qed.
 
 Definition get_eta_fun t := match t with
@@ -184,7 +205,7 @@ intros; remember (is_closedn m t) as b eqn:Ht; symmetry in Ht; destruct b.
   intros []; compute; Lia.lia.
 Qed.
 
-Lemma get_eta_fun_ren_None : forall t ρ, ren_inj ρ ->
+Lemma get_eta_fun_ren_None : forall t ρ,
    get_eta_fun t = None -> get_eta_fun t⟨upRen_term_term ρ⟩ = None.
 Proof.
 intros [] ρ **; cbn in *; try reflexivity.
@@ -192,8 +213,10 @@ destruct t0; cbn in *; try reflexivity.
 destruct n; cbn; [|reflexivity].
 remember (noccurn 0 t) as b eqn:Hb; symmetry in Hb; destruct b.
 + exfalso; congruence.
-+ change 0 with (upRen_term_term ρ 0); rewrite <- noccur_ren; [|eauto using upRen_term_term_inj].
-  now rewrite Hb.
++ change 0 with (upRen_term_term ρ 0).
+  replace (noccurn (upRen_term_term ρ 0) t⟨upRen_term_term ρ⟩) with false; [trivial|].
+  symmetry; eapply contraFF; [|tea].
+  apply noccurn_ren_rev; reflexivity.
 Qed.
 
 Lemma get_eta_pair_ren_None : forall t u ρ, ren_inj ρ ->
@@ -214,12 +237,12 @@ induction t; intros ρ Hρ; cbn.
 all: repeat match goal with H : forall (ρ : nat -> nat), _ |- _ => rewrite H end; eauto using  upRen_term_term_inj.
 + remember (erase t2) as u.
   destruct (eta_fun_intro u); cbn.
-  - eapply get_eta_fun_ren_None in e; [|tea].
+  - eapply get_eta_fun_ren_None in e.
     rewrite <- IHt2; [|now apply upRen_term_term_inj].
     now rewrite e.
   - rewrite <- IHt2; [|now apply upRen_term_term_inj]; cbn.
     replace t⟨↑⟩⟨upRen_term_term ρ⟩ with t⟨ρ⟩⟨↑⟩ by now asimpl.
-    rewrite noccurn_ren_ignore; [|intros; compute; Lia.lia].
+    rewrite noccurn_shift_ignore.
     asimpl; now apply rinstInst'_term.
 + remember (erase t3) as u; remember (erase t4) as v.
   destruct (eta_pair_intro u v); cbn.
@@ -227,6 +250,65 @@ all: repeat match goal with H : forall (ρ : nat -> nat), _ |- _ => rewrite H en
     rewrite <- IHt3, <- IHt4, e; now tea.
   - rewrite <- IHt3, <- IHt4; tea; cbn.
     now rewrite term_eq_beq.
+Qed.
+
+Lemma erase_idempotent : forall t, erase (erase t) = erase t.
+Proof.
+induction t; cbn in *; f_equal; eauto.
++ remember (erase t2) as t₀; destruct (eta_fun_intro t₀).
+  - cbn; rewrite IHt2, e; reflexivity.
+  - cbn in *; injection IHt2; intros Hrw.
+    rewrite <- erase_ren in Hrw; [|apply shift_inj].
+    eapply ren_inj_inv; [apply shift_inj|tea].
++ remember (erase t3) as a₀; remember (erase t4) as b₀.
+  destruct (eta_pair_intro a₀ b₀).
+  - cbn; rewrite IHt3, IHt4, e; reflexivity.
+  - cbn in *; injection IHt3; auto.
+Qed.
+
+Lemma erase_subst : forall t σ, erase (t[σ]) = erase ((erase t)[fun n => erase (σ n)]).
+Proof.
+assert (Hup : forall σ (n : nat), erase (up_term_term σ n) = up_term_term (fun n : nat => erase (σ n)) n).
+{ intros σ []; cbn; eauto.
+  symmetry; apply erase_ren, shift_inj. }
+induction t; intros; cbn in *; try now (f_equal; eauto).
++ destruct n; cbn; now rewrite erase_idempotent.
++ f_equal; eauto.
+  etransitivity; [eauto|].
+  f_equal; now apply ext_term.
++ remember (erase t2) as t₀.
+  destruct (eta_fun_intro t₀).
+  - cbn; rewrite IHt2.
+    replace (t[fun n : nat => erase (up_term_term σ n)]) with (t[up_term_term (fun n : nat => erase (σ n))]); [reflexivity|].
+    apply ext_term.
+    intros []; eauto.
+  - cbn in *; rewrite IHt2; cbn.
+    assert (Hrw : t⟨↑⟩[fun n : nat => erase (up_term_term σ n)] = t[fun n : nat => erase (σ n)]⟨↑⟩).
+    { asimpl; apply ext_term.
+      intros []; cbn; unfold funcomp.
+      - rewrite erase_ren; [eauto|apply shift_inj].
+      - rewrite erase_ren; [eauto|apply shift_inj]. }
+    rewrite Hrw, <- erase_ren, noccurn_shift_ignore; [|apply shift_inj].
+    now asimpl.
++ f_equal; eauto.
+  etransitivity; [eapply IHt1|].
+  f_equal; now apply ext_term.
++ f_equal; eauto.
+  etransitivity; [eapply IHt1|].
+  f_equal; now apply ext_term.
++ f_equal; eauto.
+  etransitivity; [eapply IHt2|].
+  f_equal; now apply ext_term.
++ remember (erase t3) as a₀.
+  remember (erase t4) as b₀.
+  destruct (eta_pair_intro a₀ b₀); cbn.
+  - rewrite IHt3, IHt4; reflexivity.
+  - rewrite IHt3, IHt4; cbn; rewrite term_eq_beq; reflexivity.
++ f_equal; eauto.
+  etransitivity; [eapply IHt3|].
+  f_equal; apply ext_term.
+  intros [|[]]; cbn; eauto.
+  rewrite erase_ren, erase_ren; eauto using shift_inj.
 Qed.
 
 Lemma erase_is_closedn : forall n t, is_closedn n (erase t) = is_closedn n t.
@@ -244,6 +326,280 @@ all: try now eauto.
   - f_equal; eauto.
   - symmetry; apply Bool.andb_diag.
 Qed.
+
+Lemma erase_is_closedn_ren_id : forall n t ρ, (forall m, m < n -> ρ m = m) -> is_closedn n t -> erase t⟨ρ⟩ = erase t.
+Proof.
+assert (Hup : forall n ρ, (forall m, m < n -> ρ m = m) -> (forall m, m < S n -> upRen_term_term ρ m = m)).
+{ intros n ρ Hρ [] ?; [reflexivity|].
+  compute; f_equal; apply Hρ; Lia.lia. }
+intros n t; revert n; induction t; intros k ρ Hρ Ht; cbn in *.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: f_equal; eauto.
++ destruct k; [discriminate|].
+  apply Hρ; apply PeanoNat.Nat.leb_le in Ht; Lia.lia.
++ remember (erase t2) as u eqn:Hu.
+  destruct (eta_fun_intro u); cbn.
+  - erewrite IHt2, e; eauto.
+  - erewrite IHt2; eauto.
+    cbn; rewrite noccurn_shift_ignore.
+    now asimpl.
++ destruct (eta_pair_intro (erase t3) (erase t4)).
+  - erewrite IHt3, IHt4, e; eauto.
+  - erewrite IHt3, IHt4; tea.
+    cbn; destruct (term_beq_spec t t); congruence.
+Qed.
+
+Lemma erase_is_closedn_subst_id : forall n t σ, (forall m, m < n -> σ m = tRel m) -> is_closedn n t -> erase t[σ] = erase t.
+Proof.
+assert (Hup : forall n σ, (forall m, m < n -> σ m = tRel m) -> (forall m, m < S n -> up_term_term σ m = tRel m)).
+{ intros n ρ Hρ [] ?; [reflexivity|].
+  cbn; unfold funcomp; rewrite Hρ; [reflexivity|Lia.lia]. }
+intros n t; revert n; induction t; intros k σ Hσ Ht; cbn in *.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: f_equal; eauto.
++ destruct k; [discriminate|].
+  rewrite Hσ; [reflexivity|]; apply PeanoNat.Nat.leb_le in Ht; Lia.lia.
++ remember (erase t2) as u eqn:Hu.
+  destruct (eta_fun_intro u); cbn.
+  - erewrite IHt2, e; eauto.
+  - erewrite IHt2; eauto.
+    cbn; rewrite noccurn_shift_ignore.
+    now asimpl.
++ destruct (eta_pair_intro (erase t3) (erase t4)).
+  - erewrite IHt3, IHt4, e; eauto.
+  - erewrite IHt3, IHt4; tea.
+    cbn; destruct (term_beq_spec t t); congruence.
+Qed.
+
+Lemma erase_is_closed0_ren_id : forall t ρ, closed0 t -> erase t⟨ρ⟩ = erase t.
+Proof.
+intros; apply (erase_is_closedn_ren_id 0); tea.
+intros; Lia.lia.
+Qed.
+
+Lemma erase_is_closed0_subst_id : forall t σ, closed0 t -> erase t[σ] = erase t.
+Proof.
+intros; apply (erase_is_closedn_subst_id 0); tea.
+intros; Lia.lia.
+Qed.
+
+Lemma dnf_dne_erase : (forall t, dnf t -> dnf (erase t)) × (forall t, dne t -> dne (erase t)).
+Proof.
+apply dnf_dne_rect; intros; cbn in *.
+all: try now (constructor; eauto).
++ destruct (eta_fun_intro (erase t)).
+  - constructor; tea; constructor.
+  - inversion H0; subst; inversion H1; subst.
+    constructor; now eapply dne_ren_rev.
++ destruct (eta_pair_intro (erase a) (erase b)).
+  - constructor; tea; constructor.
+  - inversion H1; subst; inversion H3; subst.
+    now constructor.
++ constructor; tea.
+  unfold closed0; now rewrite erase_is_closedn.
+Qed.
+
+Lemma dnf_erase : forall t, dnf t -> dnf (erase t).
+Proof.
+apply dnf_dne_erase.
+Qed.
+
+Lemma dne_erase : forall t, dne t -> dne (erase t).
+Proof.
+apply dnf_dne_erase.
+Qed.
+
+Lemma quote_ren : forall t (ρ : nat -> nat), closed0 t ->
+  (qNat (quote model (erase t)))⟨ρ⟩ = qNat (quote model (erase t⟨ρ⟩)).
+Proof.
+intros.
+rewrite qNat_ren; do 2 f_equal.
+now rewrite erase_is_closed0_ren_id.
+Qed.
+
+Lemma quote_subst : forall t (σ : nat -> term), closed0 t ->
+  (qNat (quote model (erase t)))[σ] = qNat (quote model (erase t[σ])).
+Proof.
+intros.
+rewrite qNat_subst; do 2 f_equal.
+now rewrite erase_is_closed0_subst_id.
+Qed.
+
+(** Alternative characterizations of erasure *)
+
+Fixpoint unannot (t : term) := match t with
+| tRel _ | tSort _ | tNat | tZero | tEmpty => t
+| tProd A B => tProd (unannot A) (unannot B)
+| tSig A B => tSig (unannot A) (unannot B)
+| tLambda A t => tLambda U (unannot t)
+| tApp t u => tApp (unannot t) (unannot u)
+| tSucc t => tSucc (unannot t)
+| tNatElim P hz hs t => tNatElim (unannot P) (unannot hz) (unannot hs) (unannot t)
+| tEmptyElim P t => tEmptyElim (unannot P) (unannot t)
+| tPair A B a b => tPair U U (unannot a) (unannot b)
+| tFst t => tFst (unannot t)
+| tSnd t => tSnd (unannot t)
+| tId A t u => tId (unannot A) (unannot t) (unannot u)
+| tRefl A t => tRefl (unannot A) (unannot t)
+| tIdElim A x P hr y t => tIdElim (unannot A) (unannot x) (unannot P) (unannot hr) (unannot y) (unannot t)
+| tQuote t => tQuote (unannot t)
+end.
+
+Fixpoint etared (t : term) := match t with
+| tRel _ | tSort _ | tNat | tZero | tEmpty => t
+| tProd A B => tProd (etared A) (etared B)
+| tSig A B => tSig (etared A) (etared B)
+| tLambda A t =>
+  let t := etared t in
+  match get_eta_fun t with
+  | None => tLambda (etared A) t
+  | Some n => n
+  end
+| tApp t u => tApp (etared t) (etared u)
+| tSucc t => tSucc (etared t)
+| tNatElim P hz hs t => tNatElim (etared P) (etared hz) (etared hs) (etared t)
+| tEmptyElim P t => tEmptyElim (etared P) (etared t)
+| tPair A B a b =>
+  let a := etared a in
+  let b := etared b in
+  match get_eta_pair a b with
+  | None => tPair (etared A) (etared B) a b
+  | Some n => n
+  end
+| tFst t => tFst (etared t)
+| tSnd t => tSnd (etared t)
+| tId A t u => tId (etared A) (etared t) (etared u)
+| tRefl A t => tRefl (etared A) (etared t)
+| tIdElim A x P hr y t => tIdElim (etared A) (etared x) (etared P) (etared hr) (etared y) (etared t)
+| tQuote t => tQuote (etared t)
+end.
+
+Lemma erase_unannot_etared : forall t, erase t = etared (unannot t).
+Proof.
+induction t; cbn in *; try now f_equal.
++ rewrite IHt2; reflexivity.
++ rewrite IHt3, IHt4; reflexivity.
+Qed.
+
+Lemma closedn_etared : forall n t, is_closedn n (etared t) = is_closedn n t.
+Proof.
+intros n t; revert n; induction t; cbn in *; intros.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: repeat match goal with |- _ && _ = _ && _ => f_equal end; eauto.
+- remember (etared t2) as t2'.
+  destruct (eta_fun_intro t2'); cbn; eauto.
+  specialize (IHt2 (S n)); cbn in *.
+  now rewrite Bool.andb_true_r, NormalEq.closedn_shift in IHt2.
+- remember (etared t3) as t3'.
+  remember (etared t4) as t4'.
+  destruct (eta_pair_intro t3' t4'); cbn.
+  + f_equal; eauto.
+  + rewrite <- IHt3, <- IHt4; cbn.
+    now rewrite Bool.andb_diag.
+Qed.
+
+Lemma dnf_dne_etared :
+  (forall t, dnf t -> dnf (etared t)) ×
+  (forall t, dne t -> dne (etared t)).
+Proof.
+apply dnf_dne_rect; cbn in *; intros.
+all: try eauto using dnf, dne.
++ remember (etared t) as t₀.
+  destruct (eta_fun_intro t₀).
+  - constructor; eauto.
+  - inversion H0; subst; inversion H1; subst.
+    eauto using dnf_ren_rev, dne, dnf.
++ remember (etared a) as a₀.
+  remember (etared b) as b₀.
+  destruct (eta_pair_intro a₀ b₀).
+  - constructor; eauto.
+  - inversion H2; subst; inversion H3; eauto using dne, dnf.
++ constructor; eauto using dne, dnf.
+  intro Hc; unfold closed0 in Hc; rewrite closedn_etared in Hc; contradiction.
+Qed.
+
+Lemma dnf_etared : forall t, dnf t -> dnf (etared t).
+Proof.
+apply dnf_dne_etared.
+Qed.
+
+Lemma closedn_unannot : forall n t, is_closedn n (unannot t) = is_closedn n t.
+Proof.
+intros n t; revert n; induction t; cbn in *; intros.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: repeat match goal with |- _ && _ = _ && _ => f_equal end; eauto.
+Qed.
+
+Lemma dnf_dne_unannot :
+  (forall t, dnf t -> dnf (unannot t)) ×
+  (forall t, dne t -> dne (unannot t)).
+Proof.
+apply dnf_dne_rect; cbn in *; intros.
+all: try eauto using dnf, dne.
++ constructor; eauto.
+  unfold closed0; rewrite closedn_unannot; tea.
+Qed.
+
+Lemma dnf_unannot : forall t, dnf t -> dnf (unannot t).
+Proof.
+apply dnf_dne_unannot.
+Qed.
+
+Lemma dne_unannot : forall t, dne t -> dne (unannot t).
+Proof.
+apply dnf_dne_unannot.
+Qed.
+
+Lemma unannot_closedn_subst : forall n t σ,
+  (forall m, m < n -> σ m = tRel m) -> is_closedn n t ->
+  unannot t[σ] = unannot t.
+Proof.
+assert (Hup : forall k σ, (forall m : nat, m < k -> σ m = tRel m) -> (forall m : nat, m < S k -> up_term_term σ m = tRel m)).
+{ intros k σ Hσ [] ?; cbn; [reflexivity|].
+  unfold funcomp; rewrite Hσ; [reflexivity|Lia.lia]. }
+intros n t; revert n; induction t; intros k σ Hσ Ht; cbn in *.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: f_equal; eauto.
++ rewrite Hσ; [reflexivity|now apply PeanoNat.Nat.leb_le].
+Qed.
+
+Lemma unannot_closed0_subst : forall t σ, closed0 t -> unannot t[σ] = unannot t.
+Proof.
+unfold closed0; intros; eapply unannot_closedn_subst; tea.
+intros m ?; Lia.lia.
+Qed.
+
+Lemma unannot_ren : forall t ρ, ren_inj ρ -> (unannot t)⟨ρ⟩ = unannot t⟨ρ⟩.
+Proof.
+induction t; intros ρ Hρ; cbn in *.
+all: try f_equal; eauto using upRen_term_term_inj.
+Qed.
+
+Lemma unannot_subst : forall t σ, unannot (t[σ]) = (unannot t)[fun n => unannot (σ n)].
+Proof.
+assert (Hup : forall t σ,  t[fun n : nat => unannot (up_term_term σ n)] = t[up_term_term (fun n : nat => unannot (σ n))]).
+{ intros; apply ext_term; intros []; cbn; [reflexivity|].
+  unfold funcomp; rewrite unannot_ren; [reflexivity|apply shift_inj]. }
+induction t; intros σ; cbn in *.
+all: try f_equal; eauto.
+all: etransitivity; eauto.
++ apply ext_term; intros [|[]]; cbn; try reflexivity.
+  unfold funcomp; rewrite unannot_ren; [|apply shift_inj].
+  rewrite unannot_ren; [|apply shift_inj].
+  now asimpl.
+Qed.
+
+Lemma unannot_qNat : forall n, unannot (qNat n) = qNat n.
+Proof.
+induction n; cbn in *; f_equal; eauto.
+Qed.
+
+Lemma unannot_idempotent : forall t, unannot (unannot t) = unannot t.
+Proof.
+induction t; cbn in *; f_equal; eauto.
+Qed.
+
+(** Equality of normal forms *)
 
 Lemma eqnf_is_closedn : forall t u n,
   eqnf t u -> is_closedn n t = is_closedn n u.

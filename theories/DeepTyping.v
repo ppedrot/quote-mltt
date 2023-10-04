@@ -283,7 +283,7 @@ Qed.
 Lemma NfTypeDecl_wk : forall Γ Δ A A₀ (ρ : Δ ≤ Γ), [|- Δ] -> NfTypeDecl Γ A A₀ -> NfTypeDecl Δ A⟨ρ⟩ A₀⟨ρ⟩.
 Proof.
 intros * tΔ []; split.
-+ now apply gcredalg_wk.
++ apply gcredalg_wk; now eauto using wk_inj.
 + now apply dnf_ren.
 + now apply typing_wk.
 Qed.
@@ -291,7 +291,7 @@ Qed.
 Lemma NfTermDecl_wk : forall Γ Δ A t t₀ (ρ : Δ ≤ Γ), [|- Δ] -> NfTermDecl Γ A t t₀ -> NfTermDecl Δ A⟨ρ⟩ t⟨ρ⟩ t₀⟨ρ⟩.
 Proof.
 intros * tΔ []; split.
-+ now apply gcredalg_wk.
++ apply gcredalg_wk; now eauto using wk_inj.
 + now apply dnf_ren.
 + now apply typing_wk.
 Qed.
@@ -721,7 +721,7 @@ Module DeepTypingProperties.
   - do 2 constructor; [|repeat constructor]; tea.
   - apply dredalg_app; [| |tea|reflexivity].
     * now eapply whne_ren, netmdecl_whne.
-    * now eapply gcredalg_wk, netmdecl_nf.
+    * eapply gcredalg_wk, netmdecl_nf; now eauto using shift_inj.
   Qed.
 
   Lemma eqnf_exp_fun : forall Γ A B f f₀ g g₀ (nf : isNfFun Γ A B f) (ng : isNfFun Γ A B g),

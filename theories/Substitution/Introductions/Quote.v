@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms NormalEq Weakening UntypedReduction
+From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening UntypedReduction
   DeclarativeTyping GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Irrelevance Application Reduction Transitivity NormalRed.
 From LogRel.Substitution Require Import Irrelevance Properties SingleSubst.
@@ -11,6 +11,37 @@ Set Printing Primitive Projection Parameters.
 Section QuoteValid.
 
 Context `{GenericTypingProperties}.
+
+Lemma qNatRed : forall {Γ A} (n : nat) (rA : [Γ ||-Nat A]), NatProp rA (qNat n).
+Proof.
+intros Γ A n rA.
+induction n; cbn.
++ constructor.
++ constructor.
+  assert [|- Γ].
+  { destruct rA as [[]]; now eapply wfc_redty. }
+  assert ([Γ |-[ ta ] qNat n :⤳*: qNat n : tNat]).
+  { constructor; [now apply ty_qNat|].
+    now apply redtm_refl, ty_qNat. }
+  eexists (qNat n); eauto.
+  now apply convtm_qNat.
+Qed.
+
+Lemma qNatRedEq : forall {Γ A} (n : nat) (rA : [Γ ||-Nat A]), NatPropEq rA (qNat n) (qNat n).
+Proof.
+intros Γ A n rA.
+induction n; cbn.
++ constructor.
++ constructor.
+  assert [|- Γ].
+  { destruct rA as [[]]; now eapply wfc_redty. }
+  assert ([Γ |-[ ta ] qNat n :⤳*: qNat n : tNat]).
+  { constructor; [now apply ty_qNat|].
+    now apply redtm_refl, ty_qNat. }
+  eexists (qNat n) (qNat n); eauto.
+  now apply convtm_qNat.
+Qed.
+
 Context {SN : SNTypingProperties ta _ _ _ _ _}.
 
 Lemma nf_eval : forall {l Γ A t} {vA : [Γ ||-<l> A]}, [vA | Γ ||- t : A] ->
@@ -37,19 +68,21 @@ Qed.
   assert (Hc' : is_closedn 0 r₀ = b).
   { erewrite eqnf_is_closedn; [tea|now apply Symmetric_eqnf]. }
   destruct b.
-  - exists tZero tZero.
-    + constructor; [gen_typing|].
+  - pose (q := qNat (model.(quote) (erase l₀))).
+    exists q q.
+    + constructor; [now apply ty_qNat|].
       transitivity (tQuote l₀).
       * apply redtm_quote; tea.
       * apply redtm_eval; tea.
         now eapply urefl.
-    + constructor; [gen_typing|].
+    + constructor; [now apply ty_qNat|].
       transitivity (tQuote r₀).
       * apply redtm_quote; tea.
-      * apply redtm_eval; tea.
+      * unfold q; rewrite e.
+        apply redtm_eval; tea.
         now eapply urefl.
-    + gen_typing.
-    + constructor.
+    + now apply convtm_qNat.
+    + apply qNatRedEq.
   - assert [Γ |-[ ta ] tQuote l₀ ~ tQuote r₀ : tNat].
     { apply convneu_quote; tea.
       + etransitivity; [now symmetry|].
@@ -87,9 +120,10 @@ Qed.
       assert [Δ |- tQuote r : tNat ].
       { now apply ty_quote. }
       pose (c := is_closedn 0 r); assert (is_closedn 0 r = c) as Hc by reflexivity; destruct c.
-      + exists tZero; [|gen_typing|constructor].
+      + pose (q := qNat (model.(quote) (erase r))).
+        exists q; [|now apply convtm_qNat|apply qNatRed].
         constructor.
-        { now apply ty_zero. }
+        { now apply ty_qNat. }
         { transitivity (tQuote r); [tea|].
           now apply redtm_eval. }
       + assert (~ closed0 r).
@@ -111,7 +145,7 @@ Qed.
   Qed.
 
 Lemma evalValid : dnf t -> closed0 t ->
-  [Γ ||-v<l> tQuote t ≅ tZero : tNat | vΓ | vNat].
+  [Γ ||-v<l> tQuote t ≅ qNat (model.(quote) (erase t)) : tNat | vΓ | vNat].
 Proof.
 destruct SN as [sn].
 econstructor.
@@ -123,18 +157,26 @@ unshelve eassert (vte0 := vte Δ σ σ tΔ vσ vσ _).
 apply escapeEqTerm, sn in vte0 as (t₀&u₀&[]&[]&?&?&?); cbn in *.
 assert [Δ |-[ ta ] t[σ] : tProd tNat tNat].
 { eapply escapeTerm, vtt0. }
-exists tZero tZero; cbn in *.
-- constructor; [gen_typing|].
+pose (q := qNat (model.(quote) (erase t₀))).
+exists q q; cbn in *.
+- constructor; [now apply ty_qNat|].
   transitivity (tQuote t₀).
   + apply redtm_quote; tea.
   + apply redtm_eval; tea.
     * now eapply urefl.
     * eapply dredalg_closed0; [tea|].
       now eapply closed0_subst.
-- constructor; [gen_typing|].
-  apply redtm_refl; gen_typing.
-- gen_typing.
-- constructor.
+- constructor; [now apply ty_qNat|].
+  rewrite quote_subst; [|tea].
+  replace (erase t[σ]) with (erase t₀); [now apply redtm_refl, ty_qNat|].
+  rewrite !erase_unannot_etared; f_equal.
+  assert (Hrw : unannot t[σ] = unannot t) by now apply unannot_closed0_subst.
+  eapply dredalg_det; [| |apply dredalg_unannot|reflexivity].
+  + now apply dnf_unannot.
+  + rewrite Hrw; now apply dnf_unannot.
+  + tea.
+- now apply convtm_qNat.
+- now apply qNatRedEq.
 Qed.
 
 End QuoteValid.

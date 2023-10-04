@@ -1,7 +1,7 @@
 (** * LogRel.DeclarativeInstance: proof that declarative typing is an instance of generic typing. *)
 From Coq Require Import CRelationClasses.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms UntypedReduction Weakening GenericTyping DeclarativeTyping.
+From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq UntypedReduction Weakening GenericTyping DeclarativeTyping.
 
 Import DeclarativeTypingData.
 
@@ -166,6 +166,8 @@ Section TypingWk.
       + now asimpl.
       + now asimpl. 
     - intros * H IH **; cbn.
+      unfold ren1, Ren1_well_wk.
+      rewrite quote_ren; eauto using wk_inj.
       constructor; [now apply IH|now apply dnf_ren|now apply closed0_ren].
     - intros * * He IHe **; cbn.
       constructor.
@@ -422,7 +424,7 @@ Lemma redtmdecl_wk {Γ Δ t u A} (ρ : Δ ≤ Γ) :
 Proof.
   intros * ? []; split.
   - now apply typing_wk.
-  - now apply credalg_wk.
+  - apply credalg_wk; now eauto using wk_inj.
   - now apply typing_wk.
 Qed.
 
@@ -431,7 +433,7 @@ Lemma redtydecl_wk {Γ Δ A B} (ρ : Δ ≤ Γ) :
 Proof.
   intros * ? []; split.
   - now apply typing_wk.
-  - now apply credalg_wk.
+  - apply credalg_wk; now eauto using wk_inj.
   - now apply typing_wk.
 Qed.
 

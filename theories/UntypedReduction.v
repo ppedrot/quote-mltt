@@ -1,7 +1,7 @@
 (** * LogRel.UntypedReduction: untyped reduction, used to define algorithmic typing.*)
 From Coq Require Import CRelationClasses ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context Closed NormalForms Weakening.
+From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening.
 
 (** ** Reductions *)
 
@@ -47,7 +47,7 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | termEvalAlg {t} :
   dnf t ->
   closed0 t ->
-  [ tQuote t ⤳ tZero ]
+  [ tQuote t ⤳ qNat (model.(quote) (erase t)) ]
 
 (* Hereditary normal forms *)
 
@@ -397,11 +397,11 @@ Qed.
 
 (** *** Stability by weakening *)
 
-Lemma gredalg_wk {deep} (ρ : nat -> nat) (t u : term) : OneRedAlg (deep := deep) t u ->  OneRedAlg (deep := deep)  t⟨ρ⟩ u⟨ρ⟩.
+Lemma gredalg_wk {deep} (ρ : nat -> nat) (t u : term) : ren_inj ρ -> OneRedAlg (deep := deep) t u ->  OneRedAlg (deep := deep)  t⟨ρ⟩ u⟨ρ⟩.
 Proof.
-intros Hred; induction Hred in ρ |- *; cbn.
+intros Hρ Hred; induction Hred in ρ, Hρ |- *; cbn.
 all: try now (econstructor; intuition).
-all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition).
+all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition eauto using upRen_term_term_inj).
 + replace (t[a..]⟨ρ⟩) with (t⟨upRen_term_term ρ⟩)[a⟨ρ⟩..] by now bsimpl.
   now constructor.
 + constructor; [|now intuition].
@@ -414,22 +414,25 @@ all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition).
   destruct p; first [constructor|now elim notF].
 + constructor; [|now intuition].
   destruct e; first [constructor|now elim notF].
-+ constructor; [now apply dnf_ren|now apply closed0_ren].
++ rewrite quote_ren; tea.
+  constructor; [now apply dnf_ren|now apply closed0_ren].
 Qed.
 
 Lemma oredalg_wk (ρ : nat -> nat) (t u : term) :
+ren_inj ρ ->
 [t ⤳ u] ->
 [t⟨ρ⟩ ⤳ u⟨ρ⟩].
 Proof.
 apply gredalg_wk.
 Qed.
 
-Lemma gcredalg_wk {deep} (ρ : nat -> nat) (t u : term) : RedClosureAlg (deep := deep) t u -> RedClosureAlg (deep := deep)  t⟨ρ⟩ u⟨ρ⟩.
+Lemma gcredalg_wk {deep} (ρ : nat -> nat) (t u : term) : ren_inj ρ -> RedClosureAlg (deep := deep) t u -> RedClosureAlg (deep := deep)  t⟨ρ⟩ u⟨ρ⟩.
 Proof.
-induction 1; econstructor; eauto using gredalg_wk.
+induction 2; econstructor; eauto using gredalg_wk.
 Qed.
 
 Lemma credalg_wk (ρ : nat -> nat) (t u : term) :
+ren_inj ρ ->
 [t ⤳* u] ->
 [t⟨ρ⟩ ⤳* u⟨ρ⟩].
 Proof.
@@ -496,8 +499,11 @@ all: try now (constructor; eauto using dne_ren_rev, dnf_ren_rev, upRen_term_term
 + assert (forall t, isIdConstructor t -> isIdConstructor t⟨ρ⟩).
   { intros []; cbn in *; eauto. }
   constructor; eauto using contraNN.
-+ constructor; [now eapply dnf_ren_rev|].
-  now eapply closed0_ren_rev.
++ assert (closed0 t₀) by now eapply closed0_ren_rev.
+  rewrite <- quote_ren in Hu; tea.
+  apply ren_inj_inv in Hu; tea.
+  rewrite <- Hu.
+  constructor; [now eapply dnf_ren_rev|tea].
 Qed.
 
 Ltac unren t := lazymatch t with
@@ -563,22 +569,25 @@ Ltac unren t := lazymatch t with
 | _ => t
 end.
 
-Lemma dred_ren_adj : forall t u ρ, [t⟨ρ⟩ ⇶ u] -> ∑ u', u = u'⟨ρ⟩.
+Lemma dred_ren_adj : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶ u] -> ∑ u', u = u'⟨ρ⟩.
 Proof.
-intros t u ρ Hr.
+intros t u ρ Hρ Hr.
 remember t⟨ρ⟩ as t' eqn:Ht.
-revert t ρ Ht; induction Hr; intros t₀ ρ Ht.
+revert t ρ Hρ Ht; induction Hr; intros t₀ ρ Hρ Ht.
 all: repeat match goal with H : _ = ?t⟨?ρ⟩ |- _ =>
   destruct t; cbn in *; try discriminate; [idtac];
   try injection H; intros; subst
 end.
 all: repeat match goal with H : forall (t : term) (ρ : nat -> nat), _ |- _ =>
-  specialize (H _ _ eq_refl); destruct H; subst
+  let H' := fresh in
+  unshelve eassert (H' := H _ _ _ eq_refl); [eauto using upRen_term_term_inj|];
+  clear H; destruct H'; subst
 end.
 all: let t := lazymatch goal with |- ∑ n, ?t = _ => t end in
      try (let t := unren t in now eexists t).
 + assert (Hrw : forall t u, t⟨upRen_term_term ρ⟩[(u⟨ρ⟩)..] = (t[u..])⟨ρ⟩) by now asimpl.
   rewrite Hrw; now eexists.
++ rewrite <- quote_ren; eauto using closed0_ren_rev.
 + eexists (tQuote _); reflexivity.
 Qed.
 
@@ -590,7 +599,7 @@ remember u⟨ρ⟩ as u' eqn:Hu.
 revert t u ρ Ht Hu Hρ; induction Hr; intros; subst.
 + intros; subst.
   apply ren_inj_inv in Hu; now subst.
-+ unshelve eassert (H := dred_ren_adj _ _ _ _); [..|tea|].
++ unshelve eassert (H := dred_ren_adj _ _ _ _ _); [..|tea|tea|].
   destruct H; subst.
   econstructor; [|eapply IHHr]; eauto.
   now eapply dred_ren_inv.
@@ -661,6 +670,9 @@ now constructor.
 Qed.
 
 Lemma redalg_one_step {t t'} : [t ⤳ t'] -> [t ⤳* t'].
+Proof. intros; econstructor;[tea|reflexivity]. Qed.
+
+Lemma dredalg_one_step {t t'} : [t ⇶ t'] -> [t ⇶* t'].
 Proof. intros; econstructor;[tea|reflexivity]. Qed.
 
 Lemma dredalg_prod : forall A A₀ B B₀,
@@ -924,7 +936,8 @@ intros t u n Hr; revert n; induction Hr; intros k Hc; cbn in *.
 all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
 all: try now apply IHHr.
-now apply closedn_beta.
++ now apply closedn_beta.
++ apply closedn_qNat.
 Qed.
 
 Lemma dredalg_closedn : forall t u n, [t ⇶* u] -> closedn n t -> closedn n u.
@@ -935,4 +948,45 @@ Qed.
 Lemma dredalg_closed0 : forall t u, [t ⇶* u] -> closed0 t -> closed0 u.
 Proof.
 intros; now eapply dredalg_closedn.
+Qed.
+
+(** Stability of erasure *)
+
+Lemma dred_unannot : forall t u, [t ⇶ u] -> (unannot t = unannot u) + [unannot t ⇶ unannot u].
+Proof.
+remember true as deep eqn:Hdeep; symmetry in Hdeep.
+induction 1; destruct Hdeep; cbn in *.
+all: eauto.
+all: try match goal with H : true = true -> _ |- _ => destruct H as [He|]; [reflexivity|left; now rewrite He|] end.
+all: try (right; eauto 6 using @OneRedAlg, dne_unannot, dnf_unannot, dnf).
++ rewrite unannot_subst.
+  match goal with |- [ _ ⇶ ?u ] => replace u with (unannot t)[(unannot a)..] end.
+  - constructor.
+  - apply ext_term; intros []; reflexivity.
++ constructor; tea.
+  destruct t; cbn in *; eauto.
++ constructor; tea.
+  destruct n; cbn in *; eauto.
++ constructor; tea.
+  destruct p; cbn in *; eauto.
++ constructor; tea.
+  destruct p; cbn in *; eauto.
++ constructor; tea.
+  destruct e; cbn in *; eauto.
++ rewrite unannot_qNat.
+  replace (erase t) with (erase (unannot t)).
+  - constructor; [now apply dnf_unannot|].
+    unfold closed0; now rewrite closedn_unannot.
+  - repeat rewrite erase_unannot_etared.
+    now rewrite unannot_idempotent.
++ eauto 7 using @OneRedAlg, dne_unannot, dnf_unannot, dnf.
+Qed.
+
+Lemma dredalg_unannot : forall t u, [t ⇶* u] -> [unannot t ⇶* unannot u].
+Proof.
+induction 1.
++ reflexivity.
++ destruct (dred_unannot _ _ o) as [He|].
+  - now rewrite He.
+  - etransitivity; eauto using dredalg_one_step.
 Qed.

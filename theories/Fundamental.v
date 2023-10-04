@@ -1,6 +1,6 @@
 (** * LogRel.Fundamental: declarative typing implies the logical relation for any generic instance. *)
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening
+From LogRel Require Import Utils BasicAst Computation Notations Context NormalForms NormalEq Weakening
   DeclarativeTyping GenericTyping LogicalRelation Validity.
 
 From LogRel.LogicalRelation Require Import Escape Irrelevance Reflexivity Transitivity Universe Weakening Neutral Induction NormalRed.
@@ -283,13 +283,14 @@ Section Fundamental.
   Qed.
 
   Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),
-    FundTmEq Γ (arr tNat tNat) t t -> dnf t -> Closed.closed0 t -> FundTmEq Γ tNat (tQuote t) tZero.
+    FundTmEq Γ (arr tNat tNat) t t -> dnf t -> Closed.closed0 t ->
+    FundTmEq Γ tNat (tQuote t) (qNat (model.(quote) (erase t))).
   Proof.
   intros * []? ?; unshelve econstructor.
   - assumption.
   - apply natValid.
   - eapply QuoteValid; irrValid.
-  - apply zeroValid.
+  - apply qNatValid.
   - apply evalValid; [irrValid|tea|tea].
   Qed.
 

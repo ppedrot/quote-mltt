@@ -1,8 +1,7 @@
 (** * LogRel.Computation: internal definitions related to the computation model. *)
 From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-
-Set Primitive Projections.
+From LogRel Require Import Utils BasicAst.
 
 (** A bunch of helpers and notations *)
 
@@ -49,6 +48,11 @@ Fixpoint qNat (n : nat) := match n with
 end.
 
 Lemma qNat_ren : forall n ρ, (qNat n)⟨ρ⟩ = qNat n.
+Proof.
+intros n ρ; induction n; cbn in *; try f_equal; eauto.
+Qed.
+
+Lemma qNat_subst : forall n σ, (qNat n)[σ] = qNat n.
 Proof.
 intros n ρ; induction n; cbn in *; try f_equal; eauto.
 Qed.
