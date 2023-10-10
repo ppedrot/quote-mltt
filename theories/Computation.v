@@ -1,7 +1,7 @@
 (** * LogRel.Computation: internal definitions related to the computation model. *)
 From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst.
+From LogRel Require Import Utils BasicAst Closed.
 
 (** A bunch of helpers and notations *)
 
@@ -55,6 +55,11 @@ Qed.
 Lemma qNat_subst : forall n σ, (qNat n)[σ] = qNat n.
 Proof.
 intros n ρ; induction n; cbn in *; try f_equal; eauto.
+Qed.
+
+Lemma closedn_qNat : forall n k, closedn k (qNat n).
+Proof.
+unfold closedn; induction n; intros; cbn in *; eauto.
 Qed.
 
 (** Axiomatic definition of a computation model internal to MLTT *)

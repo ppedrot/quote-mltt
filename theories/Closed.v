@@ -1,6 +1,6 @@
 From Coq Require Import ssrbool Lia.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Computation Context.
+From LogRel Require Import Utils BasicAst.
 
 (** Essentially closed terms. We ignore type annotations on λ-abstractions and pairs for closedness. *)
 
@@ -138,9 +138,4 @@ Lemma closed0_subst σ (t : term) : closed0 t -> closed0 t[σ].
 Proof.
 apply closedn_subst.
 intros; exfalso; now eapply PeanoNat.Nat.nlt_0_r.
-Qed.
-
-Lemma closedn_qNat : forall n k, closedn k (qNat n).
-Proof.
-unfold closedn; induction n; intros; cbn in *; eauto.
 Qed.
