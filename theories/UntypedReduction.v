@@ -11,38 +11,32 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | BRed {A a t} :
     [ tApp (tLambda A t) a ⤳ t[a..] ]
 | appSubst {t u a} :
-    negb (isLambda t) ->
-    [ t ⤳ u ] ->
+    OneRedAlg (deep := false) t u ->
     [ tApp t a ⤳ tApp u a ]
 | natElimSubst {P hz hs n n'} :
-    negb (isNatConstructor n) ->
-    [ n ⤳ n' ] ->
+    OneRedAlg (deep := false) n n' ->
     [ tNatElim P hz hs n ⤳ tNatElim P hz hs n' ]
 | natElimZero {P hz hs} :
     [ tNatElim P hz hs tZero ⤳ hz ]
 | natElimSucc {P hz hs n} :
     [ tNatElim P hz hs (tSucc n) ⤳ tApp (tApp hs n) (tNatElim P hz hs n) ]
 | emptyElimSubst {P e e'} :
-    negb (isEmptyConstructor e) ->
-    [e ⤳ e'] ->
+    OneRedAlg (deep := false) e e' ->
     [tEmptyElim P e ⤳ tEmptyElim P e']        
 | fstSubst {p p'} :
-    negb (isPairConstructor p) ->
-    [ p ⤳ p'] ->
+    OneRedAlg (deep := false) p p' ->
     [ tFst p ⤳ tFst p']
 | fstPair {A B a b} :
     [ tFst (tPair A B a b) ⤳ a ]
 | sndSubst {p p'} :
-    negb (isPairConstructor p) ->
-    [ p ⤳ p'] ->
+    OneRedAlg (deep := false) p p' ->
     [ tSnd p ⤳ tSnd p']
 | sndPair {A B a b} :
     [ tSnd (tPair A B a b) ⤳ b ]
 | idElimRefl {A x P hr y A' z} :
   [ tIdElim A x P hr y (tRefl A' z) ⤳ hr ]
 | idElimSubst {A x P hr y e e'} :
-  negb (isIdConstructor e) ->
-  [e ⤳ e'] ->
+  OneRedAlg (deep := false) e e' ->
   [ tIdElim A x P hr y e ⤳ tIdElim A x P hr y e' ]
 | termEvalAlg {t} :
   dnf t ->
@@ -59,16 +53,22 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   [ A ⤳ A' ] -> [ tLambda A t ⤳ tLambda A' t ]
 | lamBody {A t t'} : deep ->
   dnf A -> [ t ⤳ t' ] -> [ tLambda A t ⤳ tLambda A t' ]
+| appHead {t t' u} : deep ->
+  whne t -> [ t ⤳ t' ] -> [ tApp t u ⤳ tApp t' u ]
 | appSubstNe {t u u'} : deep ->
   dne t -> [ u ⤳ u' ] -> [ tApp t u ⤳ tApp t u' ]
 | succArg {t t'} : deep ->
   [ t ⤳ t' ] -> [ tSucc t ⤳ tSucc t' ]
+| natElimHead {P hz hs n n'} : deep ->
+  whne n -> [ n ⤳ n' ] -> [ tNatElim P hz hs n ⤳ tNatElim P hz hs n' ]
 | natElimPred {P P' hz hs n} : deep ->
   dne n -> [ P ⤳ P' ] -> [ tNatElim P hz hs n ⤳ tNatElim P' hz hs n ]
 | natElimBranchZero {P hz hz' hs n} : deep ->
   dne n -> dnf P -> [ hz ⤳ hz' ] -> [ tNatElim P hz hs n ⤳ tNatElim P hz' hs n ]
 | natElimBranchSucc {P hz hs hs' n} : deep ->
   dne n -> dnf P -> dnf hz -> [ hs ⤳ hs' ] -> [ tNatElim P hz hs n ⤳ tNatElim P hz hs' n ]
+| emptyElimHead {P n n'} : deep ->
+  whne n -> [ n ⤳ n' ] -> [ tEmptyElim P n ⤳ tEmptyElim P n' ]
 | emptyElimPred {P P' n} : deep ->
   dne n -> [ P ⤳ P' ] -> [ tEmptyElim P n ⤳ tEmptyElim P' n ]
 | sigDom {A A' B} : deep ->
@@ -87,6 +87,10 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | pairSnd {A B a b b'} : deep ->
   dnf A -> dnf B -> dnf a ->
   [ b ⤳ b' ] -> [ tPair A B a b ⤳ tPair A B a b' ]
+| fstHead {n n'} : deep ->
+  whne n -> [ n ⤳ n' ] -> [ tFst n ⤳ tFst n' ]
+| sndHead {n n'} : deep ->
+  whne n -> [ n ⤳ n' ] -> [ tSnd n ⤳ tSnd n' ]
 | idDom {A A' t u} : deep ->
   [ A ⤳ A' ] -> [ tId A t u ⤳ tId A' t u ]
 | idLHS {A t t' u} : deep ->
@@ -97,6 +101,9 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   [ A ⤳ A' ] -> [ tRefl A t ⤳ tRefl A' t ]
 | reflArg {A t t'} : deep ->
   dnf A -> [ t ⤳ t' ] -> [ tRefl A t ⤳ tRefl A t' ]
+| idElimHead {A x P hr y e e'} : deep ->
+  whne e -> [ e ⤳ e' ] ->
+  [ tIdElim A x P hr y e ⤳ tIdElim A x P hr y e' ]
 | idElimDom {A A' x P hr y e} : deep ->
   dne e ->
   [ A ⤳ A' ] -> [ tIdElim A x P hr y e ⤳ tIdElim A' x P hr y e ]
@@ -180,7 +187,7 @@ Proof.
 apply dnf_dne_rect; intros.
 all: match goal with
 | H : [_ ⇶ _] |- _ => inversion H; subst
-end; try now intuition.
+end; try now eauto using dred_ored.
 all: match goal with H : dne _ |- _ => solve [inversion H] end.
 Qed.
 
@@ -233,8 +240,7 @@ Proof.
     eapply IHred; [|trivial].
     now constructor.
   - inversion H; subst.
-    eapply IHred; [|trivial].
-    now constructor.
+    eauto using whne, whnf.
   - inversion H; subst.
     inversion H1; subst.
   - inversion H; subst.
@@ -265,9 +271,12 @@ all: match goal with
 | _ => reflexivity
 | H : is_true false |- _ => elim notF; exact H
 | H : dne _ |- _ => now inversion H
+| H : whne _ |- _ => now inversion H
 | H : dne _ |- _ => now eapply dnf_dne_nogred in H
 | H : dnf _ |- _ => now eapply dnf_dne_nogred in H
+| H : whne _ |- _ => now eapply whne_nored in H
 | H : [ ?t ⇶ ?u ] |- _ => now inversion H
+| H : [ ?t ⤳ ?u ] |- _ => inversion H; discriminate
 | _ => now f_equal
 | _ => idtac
 end.
@@ -298,7 +307,7 @@ Qed.
 Lemma dred_whne : forall t u, [t ⇶ u] -> whne t -> whne u.
 Proof.
 intros t u Hr Ht; revert u Hr.
-induction Ht; intros u Hr; inversion Hr; subst; first [constructor; now eauto|now inv_whne|idtac].
+induction Ht; intros u Hr; inversion Hr; subst; first [constructor; now eauto using dred_ored|now inv_whne|idtac].
 + contradiction.
 + now eelim dnf_nored.
 Qed.
@@ -381,18 +390,14 @@ Qed.
 Lemma oredalg_appSubst t t' u :
   [ t ⤳ t' ] -> [ tApp t u ⤳ tApp t' u ].
 Proof.
-intros; constructor; [|eassumption].
-assert (Hw : ~ whnf t) by (intro; now eelim whnf_nored).
-destruct t; first [now (elim Hw; constructor)|constructor].
+intros; now constructor.
 Qed.
 
 Lemma oredalg_natElimSubst {P hz hs n n'} :
   [ n ⤳ n' ] ->
   [ tNatElim P hz hs n ⤳ tNatElim P hz hs n' ].
 Proof.
-intros; constructor; [|eassumption].
-assert (Hw : ~ whnf n) by (intro; now eelim whnf_nored).
-destruct n; first [now (elim Hw; constructor)|constructor].
+intros; now constructor.
 Qed.
 
 (** *** Stability by weakening *)
@@ -404,16 +409,6 @@ all: try now (econstructor; intuition).
 all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition eauto using upRen_term_term_inj).
 + replace (t[a..]⟨ρ⟩) with (t⟨upRen_term_term ρ⟩)[a⟨ρ⟩..] by now bsimpl.
   now constructor.
-+ constructor; [|now intuition].
-  destruct t; first [constructor|now elim notF].
-+ constructor; [|now intuition].
-  destruct n; first [constructor|now elim notF].
-+ constructor; [|now intuition].
-  destruct p; first [constructor|now elim notF].
-+ constructor; [|now intuition].
-  destruct p; first [constructor|now elim notF].
-+ constructor; [|now intuition].
-  destruct e; first [constructor|now elim notF].
 + rewrite quote_ren; tea.
   constructor; [now apply dnf_ren|now apply closed0_ren].
 Qed.
@@ -449,7 +444,8 @@ remember (tApp n' t') as a' eqn:Ha'.
 revert n n' t t' Ha Ha' Hn.
 induction Hr; intros; subst.
 + injection Ha'; intros; subst; reflexivity.
-+ inversion o; subst; [inversion Hn| |].
++ inversion o; subst; [inversion Hn| | |].
+  - now eelim whne_nored.
   - econstructor; [tea|eapply IHHr]; try reflexivity.
     eapply dredalg_whne; tea.
     econstructor; [tea|reflexivity].
@@ -465,10 +461,11 @@ revert n n' Ha Ha' Hn.
 induction Hr; intros; subst.
 + injection Ha'; intros; subst; reflexivity.
 + inversion o; subst.
+  - now eelim whne_nored.
+  - inv_whne.
   - econstructor; [tea|eapply IHHr]; try reflexivity.
     eapply dredalg_whne; tea.
     econstructor; [tea|reflexivity].
-  - inv_whne.
 Qed.
 
 Lemma dred_ren_inv : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶ u⟨ρ⟩] -> [t ⇶ u].
@@ -484,21 +481,10 @@ end.
 all: repeat (match goal with H : ?t⟨?ρ⟩ = ?u⟨?ρ⟩ |- _ =>
   apply ren_inj_inv in H; [|eauto using upRen_term_term_inj]; []; subst; clear H
 end).
-all: try now (constructor; eauto using dne_ren_rev, dnf_ren_rev, upRen_term_term_inj).
+all: try now (constructor; eauto using @OneRedAlg, whne_ren_rev, dne_ren_rev, dnf_ren_rev, upRen_term_term_inj).
 + assert (Hrw : forall t u, t⟨upRen_term_term ρ⟩[(u⟨ρ⟩)..] = (t[u..])⟨ρ⟩) by now asimpl.
   rewrite Hrw in Hu; apply ren_inj_inv in Hu; tea.
   subst; constructor.
-+ assert (forall t, isLambda t -> isLambda t⟨ρ⟩) by now intros [].
-  constructor; eauto using contraNN.
-+ assert (forall t, isNatConstructor t -> isNatConstructor t⟨ρ⟩) by now intros [].
-  constructor; eauto using contraNN.
-+ assert (forall t, isPairConstructor t -> isPairConstructor t⟨ρ⟩) by now intros [].
-  constructor; eauto using contraNN.
-+ assert (forall t, isPairConstructor t -> isPairConstructor t⟨ρ⟩) by now intros [].
-  constructor; eauto using contraNN.
-+ assert (forall t, isIdConstructor t -> isIdConstructor t⟨ρ⟩).
-  { intros []; cbn in *; eauto. }
-  constructor; eauto using contraNN.
 + assert (closed0 t₀) by now eapply closed0_ren_rev.
   rewrite <- quote_ren in Hu; tea.
   apply ren_inj_inv in Hu; tea.
@@ -612,9 +598,7 @@ Proof.
 induction 1.
 + reflexivity.
 + econstructor; [|eassumption].
-  econstructor; [|eassumption].
-  destruct t; try constructor.
-  all: eelim whnf_nored; [eapply whnf_tLambda|eassumption].
+  now econstructor.
 Qed.
 
 Lemma redalg_natElim {P hs hz t t'} : [t ⤳* t'] -> [tNatElim P hs hz t ⤳* tNatElim P hs hz t'].
@@ -622,10 +606,7 @@ Proof.
 induction 1.
 + reflexivity.
 + econstructor; [|eassumption].
-  econstructor; [|eassumption].
-  destruct t; try constructor.
-  - eelim whnf_nored; [eapply whnf_tZero|eassumption].
-  - eelim whnf_nored; [eapply whnf_tSucc|eassumption].
+  now econstructor.
 Qed.
 
 Lemma redalg_natEmpty {P t t'} : [t ⤳* t'] -> [tEmptyElim P t ⤳* tEmptyElim P t'].
@@ -641,8 +622,6 @@ Proof.
   induction 1; [reflexivity|].
   econstructor; tea.
   constructor; tea.
-  destruct t; try constructor.
-  eelim whnf_nored; [eapply whnf_tPair|eassumption].
 Qed.
 
 Lemma redalg_snd {t t'} : [t ⤳* t'] -> [tSnd t ⤳* tSnd t'].
@@ -650,16 +629,12 @@ Proof.
   induction 1; [reflexivity|].
   econstructor; tea.
   constructor; tea.
-  destruct t; try constructor.
-  eelim whnf_nored; [eapply whnf_tPair|eassumption].
 Qed.
 
 Lemma redalg_idElim {A x P hr y t t'} : [t ⤳* t'] -> [tIdElim A x P hr y t ⤳* tIdElim A x P hr y t'].
 Proof.
   induction 1; [reflexivity|].
-  econstructor; tea; constructor; [|tea].
-  destruct t; try constructor.
-  eelim whnf_nored; [eapply whnf_tRefl|eassumption].
+  econstructor; tea; now constructor.
 Qed.
 
 Lemma redalg_quote {t t'} : [t ⇶* t'] -> [tQuote t ⤳* tQuote t'].
@@ -718,8 +693,7 @@ transitivity (tApp t₀ u).
   + assert (whne t') by now eapply dred_whne.
     etransitivity; [|now apply IHHRt].
     econstructor; [|reflexivity].
-    constructor; [|tea].
-    inversion Ht; subst; eauto.
+    now constructor.
 - clear - Htnf Hru; induction Hru.
   + constructor.
   + econstructor; [|tea].
@@ -778,8 +752,7 @@ induction HRt.
 - constructor.
 - assert (whne t') by now eapply dred_whne.
   econstructor; [|now eauto].
-  constructor; [|tea].
-  inversion Ht; subst; eauto.
+  now constructor.
 Qed.
 
 Lemma dredalg_snd : forall t t₀,
@@ -791,8 +764,7 @@ induction HRt.
 - constructor.
 - assert (whne t') by now eapply dred_whne.
   econstructor; [|now eauto].
-  constructor; [|tea].
-  inversion Ht; subst; eauto.
+  now constructor.
 Qed.
 
 Lemma dredalg_succ : forall n n₀, [n ⇶* n₀] -> [tSucc n ⇶* tSucc n₀].
@@ -816,8 +788,7 @@ transitivity (tNatElim P hz hs t₀);
   + constructor.
   + assert (whne t') by now eapply dred_whne.
     econstructor; [|now eauto].
-    constructor; [|tea].
-    inversion Ht; subst; eauto.
+    now constructor.
 - clear - HRP HP Hne; induction HRP.
   + constructor.
   + econstructor; [|now eauto].
@@ -843,8 +814,7 @@ transitivity (tEmptyElim P t₀).
   + constructor.
   + assert (whne t') by now eapply dred_whne.
     econstructor; [|now eauto].
-    constructor; [|tea].
-    inversion Ht; subst; eauto.
+    now constructor.
 - clear - HRP HP Hne; induction HRP.
   + constructor.
   + econstructor; [|now eauto].
@@ -903,8 +873,7 @@ transitivity (tIdElim A x P hr y t₀);
   + constructor.
   + assert (whne t') by now eapply dred_whne.
     econstructor; [|now eauto].
-    constructor; [|tea].
-    inversion Ht; subst; eauto.
+    now constructor.
 - clear - HRA HA Hne; induction HRA.
   + constructor.
   + econstructor; [|now eauto].
@@ -952,34 +921,27 @@ Qed.
 
 (** Stability of erasure *)
 
-Lemma dred_unannot : forall t u, [t ⇶ u] -> (unannot t = unannot u) + [unannot t ⇶ unannot u].
+Lemma gred_unannot : forall deep t u, @OneRedAlg deep t u -> (unannot t = unannot u) + @OneRedAlg deep (unannot t) (unannot u).
 Proof.
-remember true as deep eqn:Hdeep; symmetry in Hdeep.
-induction 1; destruct Hdeep; cbn in *.
+induction 1; cbn in *.
 all: eauto.
-all: try match goal with H : true = true -> _ |- _ => destruct H as [He|]; [reflexivity|left; now rewrite He|] end.
-all: try (right; eauto 6 using @OneRedAlg, dne_unannot, dnf_unannot, dnf).
-+ rewrite unannot_subst.
-  match goal with |- [ _ ⇶ ?u ] => replace u with (unannot t)[(unannot a)..] end.
+all: try match goal with H : sum _ _ |- _ => let He := fresh in destruct H as [He|]; [left; now rewrite He|] end.
+all: try now (right; eauto 7 using @OneRedAlg, whne_unannot, dne_unannot, dnf_unannot, dnf).
++ right; rewrite unannot_subst.
+  match goal with |- OneRedAlg _ ?u => replace u with (unannot t)[(unannot a)..] end.
   - constructor.
   - apply ext_term; intros []; reflexivity.
-+ constructor; tea.
-  destruct t; cbn in *; eauto.
-+ constructor; tea.
-  destruct n; cbn in *; eauto.
-+ constructor; tea.
-  destruct p; cbn in *; eauto.
-+ constructor; tea.
-  destruct p; cbn in *; eauto.
-+ constructor; tea.
-  destruct e; cbn in *; eauto.
-+ rewrite unannot_qNat.
++ right; rewrite unannot_qNat.
   replace (erase t) with (erase (unannot t)).
   - constructor; [now apply dnf_unannot|].
     unfold closed0; now rewrite closedn_unannot.
   - repeat rewrite erase_unannot_etared.
     now rewrite unannot_idempotent.
-+ eauto 7 using @OneRedAlg, dne_unannot, dnf_unannot, dnf.
+Qed.
+
+Lemma dred_unannot : forall t u, [t ⇶ u] -> (unannot t = unannot u) + [unannot t ⇶ unannot u].
+Proof.
+intros; now apply gred_unannot.
 Qed.
 
 Lemma dredalg_unannot : forall t u, [t ⇶* u] -> [unannot t ⇶* unannot u].

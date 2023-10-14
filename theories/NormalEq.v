@@ -550,6 +550,13 @@ Proof.
 apply dnf_dne_unannot.
 Qed.
 
+Lemma whne_unannot : forall t, whne t -> whne (unannot t).
+Proof.
+induction 1; cbn; eauto using whne.
++ constructor; [|now apply dnf_unannot].
+  unfold closed0; rewrite closedn_unannot; tea.
+Qed.
+
 Lemma unannot_closedn_subst : forall n t σ,
   (forall m, m < n -> σ m = tRel m) -> is_closedn n t ->
   unannot t[σ] = unannot t.
