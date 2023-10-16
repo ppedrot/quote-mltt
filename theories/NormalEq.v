@@ -41,6 +41,7 @@ match t with
 | tRefl A t => noccurn n A && noccurn n t
 | tIdElim A x P hr y t => noccurn n A && noccurn n x && noccurn (S (S n)) P && noccurn n hr && noccurn n y && noccurn n t
 | tQuote t => noccurn n t
+| tReflect t u => noccurn n t && noccurn n u
 end.
 
 Lemma noccurn_ren_id : forall n t ρ, (forall m, m <> n -> ρ m = m) -> noccurn n t -> t⟨ρ⟩ = t.
@@ -154,6 +155,7 @@ Fixpoint erase (t : term) := match t with
 | tRefl A t => tRefl (erase A) (erase t)
 | tIdElim A x P hr y t => tIdElim (erase A) (erase x) (erase P) (erase hr) (erase y) (erase t)
 | tQuote t => tQuote (erase t)
+| tReflect t u => tReflect (erase t) (erase u)
 end.
 
 Definition eqnf t u := erase t = erase u.
@@ -443,6 +445,7 @@ Fixpoint unannot (t : term) := match t with
 | tRefl A t => tRefl (unannot A) (unannot t)
 | tIdElim A x P hr y t => tIdElim (unannot A) (unannot x) (unannot P) (unannot hr) (unannot y) (unannot t)
 | tQuote t => tQuote (unannot t)
+| tReflect t u => tReflect (unannot t) (unannot u)
 end.
 
 Fixpoint etared (t : term) := match t with
@@ -472,6 +475,7 @@ Fixpoint etared (t : term) := match t with
 | tRefl A t => tRefl (etared A) (etared t)
 | tIdElim A x P hr y t => tIdElim (etared A) (etared x) (etared P) (etared hr) (etared y) (etared t)
 | tQuote t => tQuote (etared t)
+| tReflect t u => tReflect (etared t) (etared u)
 end.
 
 Lemma erase_unannot_etared : forall t, erase t = etared (unannot t).

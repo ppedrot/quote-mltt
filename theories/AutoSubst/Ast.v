@@ -24,7 +24,8 @@ Inductive term : Type :=
   | tId : term -> term -> term -> term
   | tRefl : term -> term -> term
   | tIdElim : term -> term -> term -> term -> term -> term -> term
-  | tQuote : term -> term.
+  | tQuote : term -> term
+  | tReflect : term -> term -> term.
 
 Lemma congr_tSort {s0 : sort} {t0 : sort} (H0 : s0 = t0) :
   tSort s0 = tSort t0.
@@ -166,6 +167,13 @@ Proof.
 exact (eq_trans eq_refl (ap (fun x => tQuote x) H0)).
 Qed.
 
+Lemma congr_tReflect {s0 : term} {s1 : term} {t0 : term} {t1 : term}
+  (H0 : s0 = t0) (H1 : s1 = t1) : tReflect s0 s1 = tReflect t0 t1.
+Proof.
+exact (eq_trans (eq_trans eq_refl (ap (fun x => tReflect x s1) H0))
+         (ap (fun x => tReflect t0 x) H1)).
+Qed.
+
 Lemma upRen_term_term (xi : nat -> nat) : nat -> nat.
 Proof.
 exact (up_ren xi).
@@ -205,6 +213,7 @@ Fixpoint ren_term (xi_term : nat -> nat) (s : term) {struct s} : term :=
         (ren_term (upRen_term_term (upRen_term_term xi_term)) s2)
         (ren_term xi_term s3) (ren_term xi_term s4) (ren_term xi_term s5)
   | tQuote s0 => tQuote (ren_term xi_term s0)
+  | tReflect s0 s1 => tReflect (ren_term xi_term s0) (ren_term xi_term s1)
   end.
 
 Lemma up_term_term (sigma : nat -> term) : nat -> term.
@@ -255,6 +264,7 @@ term :=
         (subst_term sigma_term s3) (subst_term sigma_term s4)
         (subst_term sigma_term s5)
   | tQuote s0 => tQuote (subst_term sigma_term s0)
+  | tReflect s0 s1 => tReflect (subst_term sigma_term s0) (subst_term sigma_term s1)
   end.
 
 Lemma upId_term_term (sigma : nat -> term) (Eq : forall x, sigma x = tRel x)
@@ -322,6 +332,9 @@ subst_term sigma_term s = s :=
         (idSubst_term sigma_term Eq_term s4)
         (idSubst_term sigma_term Eq_term s5)
   | tQuote s0 => congr_tQuote (idSubst_term sigma_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect (idSubst_term sigma_term Eq_term s0)
+        (idSubst_term sigma_term Eq_term s1)
   end.
 
 Lemma upExtRen_term_term (xi : nat -> nat) (zeta : nat -> nat)
@@ -396,6 +409,9 @@ ren_term xi_term s = ren_term zeta_term s :=
         (extRen_term xi_term zeta_term Eq_term s4)
         (extRen_term xi_term zeta_term Eq_term s5)
   | tQuote s0 => congr_tQuote (extRen_term xi_term zeta_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect (extRen_term xi_term zeta_term Eq_term s0)
+        (extRen_term xi_term zeta_term Eq_term s1)
   end.
 
 Lemma upExt_term_term (sigma : nat -> term) (tau : nat -> term)
@@ -471,6 +487,9 @@ subst_term sigma_term s = subst_term tau_term s :=
         (ext_term sigma_term tau_term Eq_term s4)
         (ext_term sigma_term tau_term Eq_term s5)
   | tQuote s0 => congr_tQuote (ext_term sigma_term tau_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect (ext_term sigma_term tau_term Eq_term s0)
+        (ext_term sigma_term tau_term Eq_term s1)
   end.
 
 Lemma up_ren_ren_term_term (xi : nat -> nat) (zeta : nat -> nat)
@@ -556,6 +575,9 @@ Fixpoint compRenRen_term (xi_term : nat -> nat) (zeta_term : nat -> nat)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s5)
   | tQuote s0 =>
       congr_tQuote (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
+        (compRenRen_term xi_term zeta_term rho_term Eq_term s1)
   end.
 
 Lemma up_ren_subst_term_term (xi : nat -> nat) (tau : nat -> term)
@@ -645,6 +667,9 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
         (compRenSubst_term xi_term tau_term theta_term Eq_term s5)
   | tQuote s0 =>
       congr_tQuote (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
   end.
 
 Lemma up_subst_ren_term_term (sigma : nat -> term) (zeta_term : nat -> nat)
@@ -756,6 +781,10 @@ ren_term zeta_term (subst_term sigma_term s) = subst_term theta_term s :=
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s5)
   | tQuote s0 =>
       congr_tQuote (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s1)
   end.
 
 Lemma up_subst_subst_term_term (sigma : nat -> term) (tau_term : nat -> term)
@@ -870,6 +899,10 @@ subst_term tau_term (subst_term sigma_term s) = subst_term theta_term s :=
   | tQuote s0 =>
       congr_tQuote
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s1)
   end.
 
 Lemma renRen_term (xi_term : nat -> nat) (zeta_term : nat -> nat) (s : term)
@@ -1013,6 +1046,9 @@ Fixpoint rinst_inst_term (xi_term : nat -> nat) (sigma_term : nat -> term)
         (rinst_inst_term xi_term sigma_term Eq_term s5)
   | tQuote s0 =>
       congr_tQuote (rinst_inst_term xi_term sigma_term Eq_term s0)
+  | tReflect s0 s1 =>
+      congr_tReflect (rinst_inst_term xi_term sigma_term Eq_term s0)
+        (rinst_inst_term xi_term sigma_term Eq_term s1)
   end.
 
 Lemma rinstInst'_term (xi_term : nat -> nat) (s : term) :
@@ -1250,6 +1286,8 @@ Fixpoint allfv_term (p_term : nat -> Prop) (s : term) {struct s} : Prop :=
                     (and (allfv_term p_term s5) True)))))
   | tQuote s0 =>
       allfv_term p_term s0
+  | tReflect s0 s1 =>
+      and (allfv_term p_term s0) (and (allfv_term p_term s1) True)
   end.
 
 Lemma upAllfvTriv_term_term {p : nat -> Prop} (H : forall x, p x) :
@@ -1327,6 +1365,9 @@ Fixpoint allfvTriv_term (p_term : nat -> Prop) (H_term : forall x, p_term x)
                     (conj (allfvTriv_term p_term H_term s5) I)))))
   | tQuote s0 =>
       allfvTriv_term p_term H_term s0
+  | tReflect s0 s1 =>
+      conj (allfvTriv_term p_term H_term s0)
+        (conj (allfvTriv_term p_term H_term s1) I)
   end.
 
 Lemma upAllfvImpl_term_term {p : nat -> Prop} {q : nat -> Prop}
@@ -1639,6 +1680,20 @@ allfv_term p_term s -> allfv_term q_term s :=
   | tQuote s0 =>
       fun HP =>
       (allfvImpl_term p_term q_term H_term s0 HP)
+  | tReflect s0 s1 =>
+      fun HP =>
+      conj
+        (allfvImpl_term p_term q_term H_term s0
+           match HP with
+           | conj HP _ => HP
+           end)
+        (conj
+           (allfvImpl_term p_term q_term H_term s1
+              match HP with
+              | conj _ HP => match HP with
+                             | conj HP _ => HP
+                             end
+              end) I)
   end.
 
 Lemma upAllfvRenL_term_term (p : nat -> Prop) (xi : nat -> nat) :
@@ -1956,6 +2011,19 @@ allfv_term (funcomp p_term xi_term) s :=
   | tQuote s0 =>
       fun H =>
         (allfvRenL_term p_term xi_term s0 H)
+  | tReflect s0 s1 =>
+      fun H =>
+      conj
+        (allfvRenL_term p_term xi_term s0 match H with
+                                          | conj H _ => H
+                                          end)
+        (conj
+           (allfvRenL_term p_term xi_term s1
+              match H with
+              | conj _ H => match H with
+                            | conj H _ => H
+                            end
+              end) I)
   end.
 
 Lemma upAllfvRenR_term_term (p : nat -> Prop) (xi : nat -> nat) :
@@ -2279,6 +2347,19 @@ allfv_term p_term (ren_term xi_term s)
   | tQuote s0 =>
       fun H =>
         (allfvRenR_term p_term xi_term s0 H)
+  | tReflect s0 s1 =>
+      fun H =>
+      conj
+        (allfvRenR_term p_term xi_term s0 match H with
+                                          | conj H _ => H
+                                          end)
+        (conj
+           (allfvRenR_term p_term xi_term s1
+              match H with
+              | conj _ H => match H with
+                            | conj H _ => H
+                            end
+              end) I)
   end.
 
 End Allfv.

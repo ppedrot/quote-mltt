@@ -360,6 +360,7 @@ Fixpoint is_nf ne t {struct t} := match t with
 | tIdElim A x P hr y e =>
   is_nf false A && is_nf false x && is_nf false P && is_nf false hr && is_nf false y && is_nf true e
 | tQuote t => is_nf false t && negb (is_closedn 0 t)
+| tReflect _ _ => false
 end.
 
 Definition is_dnf t := is_nf false t.
@@ -382,6 +383,7 @@ Fixpoint is_wnf ne t {struct t} := match t with
 | tSnd t => is_wnf true t
 | tIdElim A x P hr y e => is_wnf true e
 | tQuote t => is_dnf t && negb (is_closedn 0 t)
+| tReflect _ _ => false
 end.
 
 Definition is_whnf t := is_wnf false t.

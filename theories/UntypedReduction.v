@@ -145,6 +145,8 @@ Definition eval_body (eval : bool -> term -> option term) (deep : bool) (t : ter
     if is_closedn 0 t then
       Some (qNat (model.(quote) (erase t)))
     else Some (tQuote t)
+  | tReflect t u =>
+    None
   end.
 
 Fixpoint eval (deep : bool) (t : term) (k : nat) {struct k} : option term :=
@@ -443,10 +445,12 @@ all: try now (
   - injection Heq; intros; subst; apply dnf_qNat.
   - injection Heq; intros; subst.
     do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
++ discriminate.
 + expandopt; casenf; cbn in *; try discriminate.
   - injection Heq; intros; subst; apply dnf_whnf, dnf_qNat.
   - injection Heq; intros; subst.
     do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
++ discriminate.
 + inversion 1; subst.
   repeat expandopt; caseval.
   - apply IHkn in Hrw; [inv_whne|tea].
@@ -1797,6 +1801,7 @@ all: destruct k; [discriminate|].
   - etransitivity; [|apply gredalg_one_step, termEvalAlg; eauto using eval_dnf].
     apply gred_red, redalg_quote; now eauto.
   - apply gred_red, redalg_quote; now eauto.
++ discriminate.
 Qed.
 
 (** Stability of erasure *)
