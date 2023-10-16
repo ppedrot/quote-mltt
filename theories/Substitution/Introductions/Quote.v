@@ -171,10 +171,8 @@ exists q q; cbn in *.
   replace (erase t[σ]) with (erase t₀); [now apply redtm_refl, ty_qNat|].
   rewrite !erase_unannot_etared; f_equal.
   assert (Hrw : unannot t[σ] = unannot t) by now apply unannot_closed0_subst.
-  eapply dredalg_det; [| |apply dredalg_unannot|reflexivity].
-  + now apply dnf_unannot.
-  + rewrite Hrw; now apply dnf_unannot.
-  + tea.
+  symmetry; eapply gredalg_unannot_dnf_id; [|tea].
+  rewrite Hrw; now apply dnf_unannot.
 - now apply convtm_qNat.
 - now apply qNatRedEq.
 Qed.

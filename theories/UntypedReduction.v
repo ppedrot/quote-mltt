@@ -18,7 +18,58 @@ end.
 #[local]
 Notation "'let*' x ':=' t 'in' u" := (bindopt t (fun x => u)) (at level 50, x binder).
 
-Definition eval_body (eval : bool -> term -> option term) (deep : bool) (t : term) (k : nat) : option term :=
+(* Compute the smallest n s.t. a function returns Some *)
+
+Section Murec.
+
+Context {A : Type}.
+Variable f : nat -> option A.
+
+Fixpoint muval (k : nat) {struct k} : list (option A) :=
+match k with
+| 0 => nil
+| S k => cons (f k) (muval k)
+end.
+
+Fixpoint muget (n : nat) (l : list (option A)) : option (nat × A) :=
+match l with
+| nil => None
+| cons None l => muget (S n) l
+| cons (Some x) _ => Some (n, x)
+end.
+
+Definition murec (k : nat) := muget 0 (List.rev (muval k)).
+
+Lemma murec_S : forall k r, murec k = Some r -> murec (S k) = Some r.
+Proof.
+intros k r; cbn; unfold murec.
+generalize 0 as n; generalize (List.rev (muval k)) as l.
+induction l as [|x l]; intros; cbn in *.
++ discriminate.
++ destruct x; eauto.
+Qed.
+
+Lemma murec_mon : forall k k' r, k <= k' -> murec k = Some r -> murec k' = Some r.
+Proof.
+induction 1; eauto using murec_S.
+Qed.
+
+Lemma murec_det : forall k k' r r', murec k = Some r -> murec k' = Some r' -> r = r'.
+Proof.
+intros k k' r r' Hk Hk'.
+assert (murec (max k k') = Some r).
+{ apply (murec_mon k); [Lia.lia|eauto]. }
+assert (murec (max k k') = Some r').
+{ apply (murec_mon k'); [Lia.lia|eauto]. }
+now congruence.
+Qed.
+
+End Murec.
+
+Arguments murec : simpl never.
+
+Definition eval_body (eval : bool -> term -> option term) (murec : term -> option (nat × term))
+  (deep : bool) (t : term) (k : nat) : option term :=
   match t with
   | tRel _ | tSort _ | tNat | tEmpty | tZero => Some t
   | tApp t u =>
@@ -146,19 +197,29 @@ Definition eval_body (eval : bool -> term -> option term) (deep : bool) (t : ter
       Some (qNat (model.(quote) (erase t)))
     else Some (tQuote t)
   | tReflect t u =>
-    None
+    let* t := eval true t in
+    let* u := eval true u in
+    if is_closedn 0 t && is_closedn 0 u then
+      let* u := uNat u in
+      let* ans := murec (tApp (erase t) (qNat u)) in
+      let (step, v) := ans in
+      let* v := uNat v in
+      Some (qEvalTm step v)
+    else Some (tReflect t u)
   end.
 
 Fixpoint eval (deep : bool) (t : term) (k : nat) {struct k} : option term :=
+  let murec t := murec (fun k => eval true t k) k in
   let eval deep t := match k with 0 => None | S k => eval deep t k end in
-  eval_body eval deep t k.
+  eval_body eval murec deep t k.
 
 #[local]
 Lemma eval_unfold : forall deep t k,
   eval deep t k = ltac:(
     let T := constr:(
+      let murec t := murec (fun k => eval true t k) k in
       let eval deep t := match k with 0 => None | S k => eval deep t k end in
-      eval_body eval deep t k
+      eval_body eval murec deep t k
     ) in
     let T := eval unfold eval_body in T in
     exact T
@@ -285,6 +346,12 @@ all: try now (
     destruct deep; [|congruence].
     repeat expandopt.
     repeat (erewrite IHk; [|Lia.lia|tea]); cbn; congruence.
++ repeat expandopt.
+  erewrite IHk; [|Lia.lia|tea]; cbn [bindopt].
+  erewrite IHk; [|Lia.lia|tea]; cbn [bindopt].
+  destruct is_closedn; cbn in *; destruct is_closedn; cbn in *; try congruence.
+  repeat expandopt; cbn.
+  erewrite murec_mon; [..|tea]; [tea|Lia.lia].
 Qed.
 
 Lemma eval_mon : forall k k' t r deep, k <= k' -> eval deep t k = Some r -> eval deep t k' = Some r.
@@ -307,6 +374,16 @@ end.
 Lemma dnf_qNat : forall n, dnf (qNat n).
 Proof.
 induction n; constructor; eauto.
+Qed.
+
+Lemma dnf_qEvalTy : forall n v, dnf (qEvalTy n v).
+Proof.
+induction n; intros; cbn in *; unfold tAnd; eauto using dnf, dnf_qNat, dnf_ren.
+Qed.
+
+Lemma dnf_qEvalTm : forall n v, dnf (qEvalTm n v).
+Proof.
+induction n; intros; cbn in *; eauto using dnf, dnf_qNat, dnf_qEvalTy.
 Qed.
 
 Lemma dnf_dne_eval : (forall t, dnf t -> forall deep, ∑ k, eval deep t k = Some t) × (forall t, dne t -> forall deep, ∑ k, eval deep t k = Some t).
@@ -343,6 +420,12 @@ try now (
 + destruct (H true) as [k].
   exists (S k); rewrite eval_unfold; rweval.
   apply Bool.not_true_is_false in n; now rewrite n.
++ destruct (H true) as [k].
+  destruct (H0 true) as [k'].
+  exists (S (max k k')); rewrite eval_unfold; repeat rweval.
+  destruct s as [s|s]; apply Bool.not_true_is_false in s; rewrite s.
+  - reflexivity.
+  - now rewrite Bool.andb_false_r.
 Qed.
 
 Lemma dnf_eval : forall t deep, dnf t -> ∑ k, eval deep t k = Some t.
@@ -365,6 +448,12 @@ all: try match goal with
 + edestruct dnf_eval with (deep := true) as [k Hk]; [tea|].
   exists (S k); cbn; rewrite Hk; cbn.
   unfold closed0 in *; destruct is_closedn; congruence.
++ edestruct (dnf_eval t) with (deep := true) as [k Hk]; [tea|].
+  edestruct (dnf_eval u) with (deep := true) as [k' Hk']; [tea|].
+  exists (S (max k k')); cbn; repeat rweval.
+  destruct s as [s|s]; apply Bool.not_true_is_false in s; rewrite s.
+  - reflexivity.
+  - now rewrite Bool.andb_false_r.
 Qed.
 
 Lemma whnf_eval : forall t, whnf t -> ∑ k, eval false t k = Some t.
@@ -445,12 +534,42 @@ all: try now (
   - injection Heq; intros; subst; apply dnf_qNat.
   - injection Heq; intros; subst.
     do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
-+ discriminate.
++ repeat expandopt.
+  let T := type of Heq in match T with (if ?a && ?b then _ else _) = _ =>
+    remember a as b1 eqn:Hb1; symmetry in Hb1;
+    remember b as b2 eqn:Hb2; symmetry in Hb2
+  end.
+  destruct b1; cbn in *; [destruct b2; cbn in *|].
+  - repeat expandopt.
+    destruct projT3; repeat expandopt.
+    injection Heq; intros; subst.
+    apply dnf_qEvalTm.
+  - injection Heq; intros; subst.
+    do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
+    right; intro; congruence.
+  - injection Heq; intros; subst.
+    do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
+    left; intro; congruence.
 + expandopt; casenf; cbn in *; try discriminate.
   - injection Heq; intros; subst; apply dnf_whnf, dnf_qNat.
   - injection Heq; intros; subst.
     do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
-+ discriminate.
++ repeat expandopt.
+  let T := type of Heq in match T with (if ?a && ?b then _ else _) = _ =>
+    remember a as b1 eqn:Hb1; symmetry in Hb1;
+    remember b as b2 eqn:Hb2; symmetry in Hb2
+  end.
+  destruct b1; cbn in *; [destruct b2; cbn in *|].
+  - repeat expandopt.
+    destruct projT3; repeat expandopt.
+    injection Heq; intros; subst.
+    apply dnf_whnf, dnf_qEvalTm.
+  - injection Heq; intros; subst.
+    do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
+    right; intro; congruence.
+  - injection Heq; intros; subst.
+    do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
+    left; intro; congruence.
 + inversion 1; subst.
   repeat expandopt; caseval.
   - apply IHkn in Hrw; [inv_whne|tea].
@@ -474,6 +593,30 @@ all: try now (
   casenf.
   - exfalso; congruence.
   - injection Heq; intros; subst; eauto using whne.
++ inversion 1; subst.
+  repeat expandopt.
+  match goal with H : dnf t1, H' : eval true t1 _ = Some ?r |- _ =>
+    let H'' := fresh "H" in
+    assert (H'' := dnf_eval _ true H); destruct H'' as [k'];
+    assert (t1 = r) by (now eapply eval_det); subst
+  end.
+  match goal with H : dnf t2, H' : eval true t2 _ = Some ?r |- _ =>
+    let H'' := fresh "H" in
+    assert (H'' := dnf_eval _ true H); destruct H'' as [k''];
+    assert (t2 = r) by (now eapply eval_det); subst
+  end.
+  let T := type of Heq in match T with (if ?a && ?b then _ else _) = _ =>
+    remember a as b1 eqn:Hb1; symmetry in Hb1;
+    remember b as b2 eqn:Hb2; symmetry in Hb2
+  end.
+  destruct b1; cbn in *; [destruct b2; cbn in *|].
+  - destruct H2 as [H2|H2]; elim H2; eauto.
+  - injection Heq; intros; subst.
+    constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
+    right; intro; congruence.
+  - injection Heq; intros; subst.
+    constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
+    left; intro; congruence.
 Qed.
 
 Lemma eval_dnf : forall k t r, eval true t k = Some r -> dnf r.
@@ -532,6 +675,11 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   dnf t ->
   closed0 t ->
   [ tQuote t ⤳ qNat (model.(quote) (erase t)) ]
+| termReflectAlg {t u n k k'} :
+  dnf t ->
+  closed0 t ->
+  murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
+  [ tReflect t (qNat u) ⤳ qEvalTm k' n ]
 
 (* Hereditary normal forms *)
 
@@ -612,6 +760,13 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | quoteSubst {t t'} :
   @OneRedAlg true t t' ->
   [ tQuote t ⤳ tQuote t' ]
+| reflectHead {t t' u} :
+  @OneRedAlg true t t' ->
+  [ tReflect t u ⤳ tReflect t' u ]
+| reflectFun {t u u'} :
+  dnf t ->
+  @OneRedAlg true u u' ->
+  [ tReflect t u ⤳ tReflect t u' ]
 
 where "[ t ⤳ t' ]" := (OneRedAlg t t') : typing_scope.
 
@@ -680,7 +835,8 @@ apply dnf_dne_rect; intros.
 all: match goal with
 | H : OneRedAlg _ _ |- _ => inversion H; subst
 end; try now intuition.
-all: match goal with H : dne _ |- _ => solve [inversion H] end.
+all: try match goal with H : dne _ |- _ => solve [inversion H] end.
++ destruct s as [|s]; [congruence|elim s; apply closedn_qNat].
 Qed.
 
 Lemma dnf_dne_nored :
@@ -690,7 +846,8 @@ apply dnf_dne_rect; intros.
 all: match goal with
 | H : [_ ⇶ _] |- _ => inversion H; subst
 end; try now eauto using dred_ored.
-all: match goal with H : dne _ |- _ => solve [inversion H] end.
+all: try match goal with H : dne _ |- _ => solve [inversion H] end.
++ destruct s as [|s]; [congruence|elim s; apply closedn_qNat].
 Qed.
 
 Lemma dnf_nored : forall t u, dnf t -> [t ⇶ u] -> False.
@@ -716,7 +873,10 @@ Proof.
   revert Hd; induction red; intros Hd.
   all: inversion ne ; subst ; clear ne; auto.
   all: try inv_whne.
+  - destruct H1 as [|s]; [contradiction|elim s; apply closedn_qNat].
   - now eelim dnf_nored.
+  - eelim dnf_nored; [|tea]; tea.
+  - eelim dnf_nored; [|tea]; tea.
 Qed.
 
 Lemma whnf_nored n u :
@@ -758,7 +918,13 @@ Proof.
   - inversion H ; subst.
     contradiction.
   - inversion H; subst.
+    destruct H2 as [|s]; [contradiction|elim s; apply closedn_qNat].
+  - inversion H; subst.
     now eelim dnf_nored.
+  - inversion H; subst.
+    eelim dnf_nored; [|tea]; tea.
+  - inversion H; subst.
+    eelim dnf_nored; [|tea]; tea.
 Qed.
 
 (** *** Determinism of reduction *)
@@ -782,6 +948,16 @@ all: match goal with
 | _ => now f_equal
 | _ => idtac
 end.
++ match goal with
+  | H : qNat ?t = qNat ?u |- _ =>
+    assert (t = u) by (now eapply qNat_inj); subst
+  end.
+  match goal with
+  | H : (murec _ _ = Some ?r), H' : (murec _ _ = Some ?r') |- _ =>
+    assert (r = r') by (now eapply murec_det); f_equal; [congruence|apply qNat_inj; congruence]
+  end.
++ eelim dnf_nored; [apply dnf_qNat|tea].
++ eelim dnf_nored; [apply dnf_qNat|tea].
 Qed.
 
 Lemma dred_det {t u v} :
@@ -809,9 +985,12 @@ Qed.
 Lemma dred_whne : forall t u, [t ⇶ u] -> whne t -> whne u.
 Proof.
 intros t u Hr Ht; revert u Hr.
-induction Ht; intros u Hr; inversion Hr; subst; first [constructor; now eauto using dred_ored|now inv_whne|idtac].
+induction Ht; intros ? Hr; inversion Hr; subst; first [constructor; now eauto using dred_ored|now inv_whne|idtac].
 + contradiction.
 + now eelim dnf_nored.
++ destruct s as [|s]; [contradiction|elim s; apply closedn_qNat].
++ eelim dnf_nored; [|tea]; tea.
++ eelim dnf_nored; [|tea]; tea.
 Qed.
 
 Lemma dredalg_whne : forall t u, [t ⇶* u] -> whne t -> whne u.
@@ -913,6 +1092,9 @@ all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition eaut
   now constructor.
 + rewrite quote_ren; tea.
   constructor; [now apply dnf_ren|now apply closed0_ren].
++ rewrite qEvalTm_ren, qNat_ren.
+  econstructor; eauto using dnf_ren, closed0_ren.
+  rewrite erase_is_closed0_ren_id; tea.
 Qed.
 
 Lemma oredalg_wk (ρ : nat -> nat) (t u : term) :
@@ -992,6 +1174,11 @@ all: try now (constructor; eauto using @OneRedAlg, whne_ren_rev, dne_ren_rev, dn
   apply ren_inj_inv in Hu; tea.
   rewrite <- Hu.
   constructor; [now eapply dnf_ren_rev|tea].
++ rewrite <- (qEvalTm_ren _ _ ρ) in Hu; apply ren_inj_inv in Hu; tea.
+  rewrite <- (qNat_ren _ ρ) in H; apply ren_inj_inv in H; tea.
+  rewrite <- Hu, <- H.
+  eapply termReflectAlg; eauto using dnf_ren_rev, closed0_ren_rev.
+  rewrite <- (erase_is_closed0_ren_id _ ρ); eauto using closed0_ren_rev.
 Qed.
 
 Ltac unren t := lazymatch t with
@@ -1076,7 +1263,10 @@ all: let t := lazymatch goal with |- ∑ n, ?t = _ => t end in
 + assert (Hrw : forall t u, t⟨upRen_term_term ρ⟩[(u⟨ρ⟩)..] = (t[u..])⟨ρ⟩) by now asimpl.
   rewrite Hrw; now eexists.
 + rewrite <- quote_ren; eauto using closed0_ren_rev.
++ eexists (qEvalTm _ _); symmetry; apply qEvalTm_ren.
 + eexists (tQuote _); reflexivity.
++ eexists (tReflect _ _); reflexivity.
++ eexists (tReflect _ _); reflexivity.
 Qed.
 
 Lemma redalg_ren_inv : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶* u⟨ρ⟩] -> [t ⇶* u].
@@ -1144,6 +1334,18 @@ Proof.
 induction 1; [reflexivity|].
 econstructor; [|tea].
 now constructor.
+Qed.
+
+Lemma redalg_reflect {t t' u u'} : [t ⇶* t'] -> dnf t' -> [u ⇶* u'] -> [tReflect t u ⤳* tReflect t' u'].
+Proof.
+intros; transitivity (tReflect t' u).
++ induction H; [reflexivity|].
+  econstructor; [|eauto].
+  now constructor.
++ clear - H0 H1.
+ induction H1; [reflexivity|].
+  econstructor; [|tea].
+  now constructor.
 Qed.
 
 Lemma redalg_one_step {t t'} : [t ⤳ t'] -> [t ⤳* t'].
@@ -1406,12 +1608,13 @@ Qed.
 Lemma dred_closedn : forall t u n, [t ⇶ u] -> closedn n t -> closedn n u.
 Proof.
 unfold closedn.
-intros t u n Hr; revert n; induction Hr; intros k Hc; cbn in *.
+intros t u n Hr; revert n; induction Hr; intros ? Hc; cbn in *.
 all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
 all: try now apply IHHr.
 + now apply closedn_beta.
 + apply closedn_qNat.
++ apply closedn_qEvalTm.
 Qed.
 
 Lemma dredalg_closedn : forall t u n, [t ⇶* u] -> closedn n t -> closedn n u.
@@ -1430,7 +1633,7 @@ Qed.
   match goal with H : (bindopt ?x ?f) = Some ?y |- _ =>
     let Hrw := fresh "Hrw" in
     destruct (let_opt_some x y f H) as [? Hrw];
-    rewrite Hrw in *; cbn in H
+    rewrite Hrw in *; cbn [bindopt] in H
   end.
 
 #[local] Ltac caseconstr f t :=
@@ -1493,7 +1696,7 @@ Lemma dred_eval : forall deep t u r k, OneRedAlg (deep := deep) t u ->
   eval deep u k = Some r -> ∑ k', k <= k' × eval deep t k' = Some r.
 Proof.
 intros deep t u r k Hr; revert r k.
-induction Hr; intros r k Heval; cbn.
+induction Hr; try intros r k Heval; cbn.
 all: try now (
   rewrite eval_unfold in Heval;
   destruct k; [discriminate|];
@@ -1532,6 +1735,18 @@ all: try now (
   assert (Hq : dnf (qNat (quote model (erase t)))) by apply dnf_qNat.
   apply (dnf_eval _ deep) in Hq; destruct Hq as [k''].
   f_equal; eapply eval_det; [|tea]; tea.
++ intros r k0 Heval.
+  assert (Ht : dnf t) by eauto.
+  assert (Hu : dnf (qNat u)) by now eapply dnf_qNat.
+  apply (dnf_eval _ true) in Ht; destruct Ht as [k''].
+  apply (dnf_eval _ true) in Hu; destruct Hu as [k'''].
+  exists (S (max k (max k' (max k'' (max k''' k0))))); split; [Lia.lia|].
+  rewrite eval_unfold; simpl.
+  repeat rweval.
+  rewrite c; simpl; rewrite closedn_qNat, uNat_qNat; simpl.
+  erewrite murec_mon; [| |tea]; [|Lia.lia].
+  cbn; rewrite uNat_qNat; cbn.
+  apply eval_dnf_det in Heval; [congruence|apply dnf_qEvalTm].
 + rewrite eval_unfold in Heval.
   destruct k; [discriminate|].
   destruct deep; [|discriminate].
@@ -1709,6 +1924,48 @@ all: try now (
     exists (S k'); split; [Lia.lia|].
     cbn; repeat rweval; caseval; [congruence|].
     rewrite whne_is_whne; tea.
++ rewrite eval_unfold in Heval.
+  destruct k; [discriminate|].
+  repeat expandopt. casenf; simpl in *; casenf; simpl in *.
+  - repeat expandopt; destruct projT3; repeat expandopt.
+    edestruct IHHr as (k'&?&Hk'); [tea|].
+    exists (S k'); split; [Lia.lia|].
+    simpl; repeat rweval. rewrite Hb, Hb0; simpl in *.
+    match goal with H : uNat _ = Some _ |- _ => rewrite H end; simpl.
+    erewrite murec_mon; [..|tea]; [|Lia.lia]; simpl.
+    match goal with H : uNat _ = Some _ |- _ => rewrite H end; simpl.
+    congruence.
+  - edestruct IHHr as (k'&?&Hk'); [tea|].
+    exists (S k'); split; [Lia.lia|].
+    cbn; repeat rweval; rewrite Hb; cbn.
+    destruct (is_closedn 0 projT0); congruence.
+  - congruence.
+  - edestruct IHHr as (k'&?&Hk'); [tea|].
+    exists (S k'); split; [Lia.lia|].
+    simpl; repeat rweval.
+    destruct (is_closedn 0 projT1); try congruence; cbn.
+    congruence.
++ rewrite eval_unfold in Heval.
+  destruct k; [discriminate|].
+  repeat expandopt. casenf; simpl in *; casenf; simpl in *.
+  - repeat expandopt; destruct projT3; repeat expandopt.
+    edestruct IHHr as (k'&?&Hk'); [tea|].
+    exists (S k'); split; [Lia.lia|].
+    simpl; repeat rweval. rewrite Hb, Hb0; simpl in *.
+    match goal with H : uNat _ = Some _ |- _ => rewrite H end; simpl.
+    erewrite murec_mon; [..|tea]; [|Lia.lia]; simpl.
+    match goal with H : uNat _ = Some _ |- _ => rewrite H end; simpl.
+    congruence.
+  - edestruct IHHr as (k'&?&Hk'); [tea|].
+    exists (S k'); split; [Lia.lia|].
+    cbn; repeat rweval; rewrite Hb; cbn.
+    destruct (is_closedn 0 projT0); congruence.
+  - congruence.
+  - edestruct IHHr as (k'&?&Hk'); [tea|].
+    exists (S k'); split; [Lia.lia|].
+    simpl; repeat rweval.
+    destruct (is_closedn 0 projT1); try congruence; cbn.
+    congruence.
 Qed.
 
 Lemma dredalg_eval : forall deep t r, RedClosureAlg (deep := deep) t r -> dnf r ->
@@ -1801,39 +2058,43 @@ all: destruct k; [discriminate|].
   - etransitivity; [|apply gredalg_one_step, termEvalAlg; eauto using eval_dnf].
     apply gred_red, redalg_quote; now eauto.
   - apply gred_red, redalg_quote; now eauto.
-+ discriminate.
++ repeat expandopt; casenf; simpl; casenf; simpl in *.
+  - repeat expandopt.
+    destruct projT3; cbn; repeat expandopt.
+    injection Heq; intros; subst.
+    etransitivity; [eapply gred_red, redalg_reflect; eauto using eval_dnf|].
+    repeat match goal with H : uNat ?t = Some ?r |- _ => assert (t = qNat r) by (now apply qNat_uNat); clear H; subst end.
+    eapply gredalg_one_step, termReflectAlg; eauto using eval_dnf.
+  - injection Heq; intros; subst.
+    apply gred_red, redalg_reflect; eauto using eval_dnf.
+  - injection Heq; intros; subst.
+    apply gred_red, redalg_reflect; eauto using eval_dnf.
+  - injection Heq; intros; subst.
+    apply gred_red, redalg_reflect; eauto using eval_dnf.
 Qed.
 
 (** Stability of erasure *)
 
-Lemma gred_unannot : forall deep t u, @OneRedAlg deep t u -> (unannot t = unannot u) + @OneRedAlg deep (unannot t) (unannot u).
+Lemma gred_unannot_dnf_id : forall deep t u,
+  dnf (unannot t) -> @OneRedAlg deep t u -> unannot t = unannot u.
 Proof.
-induction 1; cbn in *.
-all: eauto.
-all: try match goal with H : sum _ _ |- _ => let He := fresh in destruct H as [He|]; [left; now rewrite He|] end.
-all: try now (right; eauto 7 using @OneRedAlg, whne_unannot, dne_unannot, dnf_unannot, dnf).
-+ right; rewrite unannot_subst.
-  match goal with |- OneRedAlg _ ?u => replace u with (unannot t)[(unannot a)..] end.
-  - constructor.
-  - apply ext_term; intros []; reflexivity.
-+ right; rewrite unannot_qNat.
-  replace (erase t) with (erase (unannot t)).
-  - constructor; [now apply dnf_unannot|].
-    unfold closed0; now rewrite closedn_unannot.
-  - repeat rewrite erase_unannot_etared.
-    now rewrite unannot_idempotent.
+intros deep t u Ht Hr; induction Hr; cbn in *.
+all: try (inversion Ht; []; subst).
+all: try (inversion Ht; [|match goal with H : dne _ |- _ => now inversion H end]; subst).
+all: try match goal with H : dne _ |- _ => inversion H; subst end.
+all: try rewrite IHHr; eauto using dnf.
+all: try match goal with H : dne _ |- _ => now inversion H end.
++ elim H1; unfold closed0; rewrite closedn_unannot; tea.
++ destruct H2 as [H2|H2].
+  - elim H2; rewrite closedn_unannot; tea.
+  - elim H2; rewrite unannot_qNat; apply closedn_qNat.
 Qed.
 
-Lemma dred_unannot : forall t u, [t ⇶ u] -> (unannot t = unannot u) + [unannot t ⇶ unannot u].
+Lemma gredalg_unannot_dnf_id : forall deep t u,
+  dnf (unannot t) -> @RedClosureAlg deep t u -> unannot t = unannot u.
 Proof.
-intros; now apply gred_unannot.
-Qed.
-
-Lemma dredalg_unannot : forall t u, [t ⇶* u] -> [unannot t ⇶* unannot u].
-Proof.
-induction 1.
+induction 2.
 + reflexivity.
-+ destruct (dred_unannot _ _ o) as [He|].
-  - now rewrite He.
-  - etransitivity; eauto using dredalg_one_step.
++ apply gred_unannot_dnf_id in o; [|tea].
+  etransitivity; [tea|apply IHRedClosureAlg; congruence].
 Qed.

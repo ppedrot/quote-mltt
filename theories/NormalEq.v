@@ -399,6 +399,8 @@ all: try now (constructor; eauto).
     now constructor.
 + constructor; tea.
   unfold closed0; now rewrite erase_is_closedn.
++ constructor; tea.
+  unfold closed0; now rewrite !erase_is_closedn.
 Qed.
 
 Lemma dnf_erase : forall t, dnf t -> dnf (erase t).
@@ -520,6 +522,9 @@ all: try eauto using dnf, dne.
   - inversion H2; subst; inversion H3; eauto using dne, dnf.
 + constructor; eauto using dne, dnf.
   intro Hc; unfold closed0 in Hc; rewrite closedn_etared in Hc; contradiction.
++ constructor; eauto using dne, dnf.
+  destruct s; [left|right];
+  intro Hc; unfold closed0 in Hc; rewrite closedn_etared in Hc; contradiction.
 Qed.
 
 Lemma dnf_etared : forall t, dnf t -> dnf (etared t).
@@ -542,6 +547,9 @@ apply dnf_dne_rect; cbn in *; intros.
 all: try eauto using dnf, dne.
 + constructor; eauto.
   unfold closed0; rewrite closedn_unannot; tea.
++ constructor; eauto.
+  destruct s; [left|right];
+  unfold closed0; rewrite closedn_unannot; tea.
 Qed.
 
 Lemma dnf_unannot : forall t, dnf t -> dnf (unannot t).
@@ -558,6 +566,9 @@ Lemma whne_unannot : forall t, whne t -> whne (unannot t).
 Proof.
 induction 1; cbn; eauto using whne.
 + constructor; [|now apply dnf_unannot].
+  unfold closed0; rewrite closedn_unannot; tea.
++ constructor; try now apply dnf_unannot.
+  destruct s; [left|right];
   unfold closed0; rewrite closedn_unannot; tea.
 Qed.
 
