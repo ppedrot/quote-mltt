@@ -320,6 +320,51 @@ Proof.
   destruct l; tea; now eapply (embValidTy Oi).
 Defined.
 
+Lemma embValidTm@{u i j k l} {Γ l l' A t}
+    {VΓ : [VR@{i j k l}| ||-v Γ]} (h : l << l')
+    (VA : typeValidity@{u i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*))
+    (Vt : [Γ ||-v<l> t : A | VΓ | VA]) :
+    [Γ ||-v<l'> t : A | VΓ | embValidTy@{u i j k l} h VA].
+Proof.
+  unshelve econstructor.
+  - intros; cbn in *.
+    destruct VA as [VATy VAEq]; cbn in *.
+    apply Vt.
+  - intros.
+    destruct VA as [VATy VAEq]; cbn in *.
+    apply Vt; tea.
+Qed.
+
+Lemma embValidTmOne@{u i j k l} {Γ l A t}
+    {VΓ : [VR@{i j k l}| ||-v Γ]}
+    (VA : typeValidity@{u i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*))
+    (Vt : [Γ ||-v<l> t : A | VΓ | VA]) :
+    [Γ ||-v<one> t : A | VΓ | embValidTyOne@{u i j k l} VA].
+Proof.
+destruct l; tea; now eapply embValidTm.
+Qed.
+
+Lemma embValidTmEq@{u i j k l} {Γ l l' A t u}
+    {VΓ : [VR@{i j k l}| ||-v Γ]} (h : l << l')
+    (VA : typeValidity@{u i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*))
+    (Vt : [Γ ||-v<l> t ≅ u : A | VΓ | VA]) :
+    [Γ ||-v<l'> t ≅ u : A | VΓ | embValidTy@{u i j k l} h VA].
+Proof.
+  unshelve econstructor.
+  - intros; cbn in *.
+    destruct VA as [VATy VAEq]; cbn in *.
+    apply Vt.
+Qed.
+
+Lemma embValidTmEqOne@{u i j k l} {Γ l A t u}
+    {VΓ : [VR@{i j k l}| ||-v Γ]}
+    (VA : typeValidity@{u i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*))
+    (Vt : [Γ ||-v<l> t ≅ u : A | VΓ | VA]) :
+    [Γ ||-v<one> t ≅ u : A | VΓ | embValidTyOne@{u i j k l} VA].
+Proof.
+destruct l; tea; now eapply embValidTmEq.
+Qed.
+
 Lemma soundCtxId {Γ} (VΓ : [||-v Γ]) :
   ∑ wfΓ : [|- Γ], [Γ ||-v tRel : Γ | VΓ | wfΓ].
 Proof.

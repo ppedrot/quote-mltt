@@ -5,7 +5,7 @@ From LogRel Require Import Utils BasicAst Computation Notations Context NormalFo
 
 From LogRel.LogicalRelation Require Import Escape Irrelevance Reflexivity Transitivity Universe Weakening Neutral Induction NormalRed.
 From LogRel.Substitution Require Import Irrelevance Properties Conversion Reflexivity SingleSubst Escape.
-From LogRel.Substitution.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id Quote.
+From LogRel.Substitution.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id Quote Reflect.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -216,6 +216,17 @@ Section Fundamental.
     + eapply QuoteValid; irrValid.
   Qed.
 
+  Lemma FundTmReflect : forall (Γ : context) (t u : term),
+    FundTmEq Γ (arr tNat tNat) t t -> FundTmEq Γ tNat u u ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (tTotal t u) (tReflect t u).
+  Proof.
+    intros * [] [] []; unshelve econstructor.
+    + assumption.
+    + apply (totalValid (l := one)); irrValid.
+    + eapply ReflectValid; irrValid.
+  Qed.
+
   Lemma FundTmConv : forall (Γ : context) (t A B : term),
     FundTm Γ A t ->
     FundTyEq Γ A B -> FundTm Γ B t.
@@ -291,7 +302,7 @@ Section Fundamental.
   - apply natValid.
   - eapply QuoteValid; irrValid.
   - apply qNatValid.
-  - apply evalValid; [irrValid|tea|tea].
+  - apply evalQuoteValid; [irrValid|tea|tea].
   Qed.
 
   Lemma FundTmEqQuoteCong : forall (Γ : context) (t t' : term),
@@ -303,6 +314,39 @@ Section Fundamental.
   - eapply QuoteValid; irrValid.
   - eapply QuoteValid; irrValid.
   - apply QuoteCongValid; irrValid.
+  Qed.
+
+  Lemma FundTmEqReflectEval : forall Γ t u k v,
+    FundTmEq Γ (arr tNat tNat) t t ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    dnf t -> Closed.closed0 t ->
+    (forall k' : nat, k' < k -> FundTyEq Γ (qRun t u k') tZero) ->
+    FundTyEq Γ (qRun t u k) (tSucc (qNat v)) ->
+    FundTmEq Γ (tTotal t (qNat u)) (tReflect t (qNat u)) (qTotal (model.(quote) (erase t)) u k v).
+  Proof.
+  intros * [] [] ?? Hnil []; unshelve econstructor.
+  - assumption.
+(*   - apply (totalValid (l := one)); irrValid. *)
+(*   - apply ReflectValid; irrValid. *)
+(*   - admit. *)
+(*   - unshelve eapply irrelevanceTmEq, ReflectEvalValid; tea. *)
+(*     shelve. *)
+(*     all: irrValid. *)
+  Admitted.
+
+  Lemma FundTmEqReflectCong : forall Γ t t' u u',
+    FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat u u' ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTmEq Γ (tTotal t u) (tReflect t u) (tReflect t' u').
+  Proof.
+  intros * [] [] [] **; unshelve econstructor.
+  - assumption.
+  - apply (totalValid (l := one)); irrValid.
+  - apply ReflectValid; irrValid.
+  - eapply conv; [eapply symValidTyEq, totalCongValid; irrValid|].
+    apply (ReflectValid (l := one)); irrValid.
+    Unshelve. all: irrValid.
+  - apply ReflectCongValid; irrValid.
   Qed.
 
   Lemma FundTmEqPiCong : forall (Γ : context) (A B C D : term),
@@ -1218,6 +1262,7 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
   + intros; now apply FundTmQuote.
+  + intros; now apply FundTmReflect.
   + intros; now eapply FundTmConv.
   + intros; now apply FundTyEqPiCong.
   + intros; now apply FundTyEqSigCong.
@@ -1229,6 +1274,8 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTmEqBRed.
   + intros; now apply FundTmEqQuoteEval.
   + intros; now apply FundTmEqQuoteCong.
+  + intros; now apply FundTmEqReflectEval.
+  + intros; now apply FundTmEqReflectCong.
   + intros; now apply FundTmEqPiCong.
   + intros; now eapply FundTmEqAppCong.
   + intros; now apply FundTmEqLambdaCong.

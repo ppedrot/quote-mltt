@@ -136,6 +136,13 @@ Proof.
   inversion 1.
 Qed.
 
+Lemma closed0_whne : forall t, closed0 t -> whne t -> False.
+Proof.
+unfold closed0; intros t Hc Ht; induction Ht; cbn in *; eauto.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end; eauto.
+destruct s; congruence.
+Qed.
+
 Section RenDnf.
 
 Lemma dnf_dne_ren : (forall t, dnf t -> forall ρ, dnf t⟨ρ⟩) × (forall t, dne t -> forall ρ, dne t⟨ρ⟩).

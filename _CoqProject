@@ -60,4 +60,5 @@ theories/Substitution/Introductions/Empty.v
 theories/Substitution/Introductions/Sigma.v
 theories/Substitution/Introductions/Id.v
 theories/Substitution/Introductions/Quote.v
+theories/Substitution/Introductions/Reflect.v
 theories/Fundamental.v

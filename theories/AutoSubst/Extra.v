@@ -90,6 +90,44 @@ Proof. now asimpl. Qed.
 Definition elimSuccHypTy P :=
   tProd tNat (arr P P[tSucc (tRel 0)]⇑).
 
+(*
+Lemma ren_subst_varn_id : forall (t : term) (n : nat),
+  (forall ρ, (forall m, m < n -> ρ m = m) -> t⟨ρ⟩ = t) -> forall σ, (forall m, m < n -> σ m = tRel m) -> t[σ] = t.
+Proof.
+assert (Hupσ : forall n σ, (forall m : nat, m < n -> σ m = tRel m) -> (forall m : nat, m < S n -> up_term_term σ m = tRel m)).
+{ intros m σ Hσ []; cbn; [reflexivity|].
+  intros; unfold funcomp; rewrite Hσ; [reflexivity|now apply Arith_prebase.lt_S_n]. }
+intros t n Ht σ; revert n σ Ht.
+induction t; intros m σ Ht Hσ; cbn in *.
+all: try (f_equal; (match goal with
+| H : forall n : nat, _ |- _[up_term_term (up_term_term _)] = _ => apply (H (S (S m)))
+| H : forall n : nat, _ |- _[up_term_term _] = _ => apply (H (S m))
+| H : forall n : nat, _ |- _ => apply (H m)
+end; [|eauto]; try (intros ρ Hρ; specialize (Ht ρ Hρ)))); try congruence.
++ apply Hσ.
+  admit.
++ intros ρ Hρ.
+specialize (Ht (S >> ρ)).
+unfold funcomp in *.
+cbn in *.
+Search upRen_term_term.
+
+etransitivity; [eapply (extRen_term ρ (upRen_term_term (S >> ρ)))|].
+{ intros []; cbn.
+  apply Hρ, PeanoNat.Nat.lt_0_succ.
+compute.
+
+cbn.
+  admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
+Admitted.
+*)
+
 Definition ren_inj (ρ : nat -> nat) := forall m n, ρ m = ρ n -> m = n.
 
 Lemma shift_inj : ren_inj ↑.

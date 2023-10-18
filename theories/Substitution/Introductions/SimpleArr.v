@@ -58,6 +58,19 @@ Section SimpleArrValidity.
   Unshelve. all: tea.
   Qed.
 
+  Lemma simple_lambdaValid {Γ t F G l}
+    (VΓ : [||-v Γ])
+    {VF : [Γ ||-v<l> F | VΓ]}
+    (VG : [Γ ||-v<l> G | VΓ])
+    (VΠ : [Γ ||-v<l> arr F G | VΓ])
+    (Vt : [Γ,, F ||-v<l> t : G⟨@wk1 Γ F⟩ | validSnoc VΓ VF | wk1ValidTy _ VG ]) :
+    [Γ ||-v<l> tLambda F t : arr F G | _ | VΠ].
+  Proof.
+    eapply irrelevanceTm'.
+    2: eapply lamValid; tea.
+    now bsimpl.
+  Qed.
+
   Lemma simple_idValid {Γ A l}
     (VΓ : [||-v Γ])
     {VF : [Γ ||-v<l> A | VΓ]}

@@ -73,13 +73,13 @@ Qed.
     + constructor; [now apply ty_qNat|].
       transitivity (tQuote l₀).
       * apply redtm_quote; tea.
-      * apply redtm_eval; tea.
+      * apply redtm_evalquote; tea.
         now eapply urefl.
     + constructor; [now apply ty_qNat|].
       transitivity (tQuote r₀).
       * apply redtm_quote; tea.
       * unfold q; rewrite e.
-        apply redtm_eval; tea.
+        apply redtm_evalquote; tea.
         now eapply urefl.
     + now apply convtm_qNat.
     + apply qNatRedEq.
@@ -125,7 +125,7 @@ Qed.
         constructor.
         { now apply ty_qNat. }
         { transitivity (tQuote r); [tea|].
-          now apply redtm_eval. }
+          now apply redtm_evalquote. }
       + assert (~ closed0 r).
         { unfold closed0; intros; destruct is_closedn; congruence. }
         exists (tQuote r).
@@ -144,7 +144,7 @@ Qed.
     reflexivity.
   Qed.
 
-Lemma evalValid : dnf t -> closed0 t ->
+Lemma evalQuoteValid : dnf t -> closed0 t ->
   [Γ ||-v<l> tQuote t ≅ qNat (model.(quote) (erase t)) : tNat | vΓ | vNat].
 Proof.
 destruct SN as [sn].
@@ -162,7 +162,7 @@ exists q q; cbn in *.
 - constructor; [now apply ty_qNat|].
   transitivity (tQuote t₀).
   + apply redtm_quote; tea.
-  + apply redtm_eval; tea.
+  + apply redtm_evalquote; tea.
     * now eapply urefl.
     * eapply dredalg_closed0; [tea|].
       now eapply closed0_subst.

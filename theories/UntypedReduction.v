@@ -204,7 +204,7 @@ Definition eval_body (eval : bool -> term -> option term) (murec : term -> optio
       let* ans := murec (tApp (erase t) (qNat u)) in
       let (step, v) := ans in
       let* v := uNat v in
-      Some (qEvalTm step v)
+      Some (qTotal (model.(quote) (erase t)) u step v)
     else Some (tReflect t u)
   end.
 
@@ -386,6 +386,17 @@ Proof.
 induction n; intros; cbn in *; eauto using dnf, dnf_qNat, dnf_qEvalTy.
 Qed.
 
+Lemma dnf_qTotal : forall t u k v, dnf (qTotal t u k v).
+Proof.
+intros; constructor; eauto using dnf, dnf_qEvalTm, dnf_qNat.
+do 2 constructor.
+- constructor; try now repeat constructor.
+  constructor; [repeat constructor|].
+  constructor; try now repeat constructor.
+  constructor; apply dnf_ren, dnf_qNat.
+- admit.
+Admitted.
+
 Lemma dnf_dne_eval : (forall t, dnf t -> forall deep, ∑ k, eval deep t k = Some t) × (forall t, dne t -> forall deep, ∑ k, eval deep t k = Some t).
 Proof.
 apply dnf_dne_rect; cbn; intros.
@@ -543,7 +554,7 @@ all: try now (
   - repeat expandopt.
     destruct projT3; repeat expandopt.
     injection Heq; intros; subst.
-    apply dnf_qEvalTm.
+    apply dnf_qTotal.
   - injection Heq; intros; subst.
     do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
     right; intro; congruence.
@@ -563,7 +574,7 @@ all: try now (
   - repeat expandopt.
     destruct projT3; repeat expandopt.
     injection Heq; intros; subst.
-    apply dnf_whnf, dnf_qEvalTm.
+    apply dnf_whnf, dnf_qTotal.
   - injection Heq; intros; subst.
     do 2 constructor; eauto using whne, whnf, dnf, dne, dne_dnf_whne.
     right; intro; congruence.
@@ -679,7 +690,7 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   dnf t ->
   closed0 t ->
   murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
-  [ tReflect t (qNat u) ⤳ qEvalTm k' n ]
+  [ tReflect t (qNat u) ⤳ qTotal (model.(quote) (erase t)) u k' n ]
 
 (* Hereditary normal forms *)
 
@@ -1085,14 +1096,15 @@ Qed.
 
 Lemma gredalg_wk {deep} (ρ : nat -> nat) (t u : term) : ren_inj ρ -> OneRedAlg (deep := deep) t u ->  OneRedAlg (deep := deep)  t⟨ρ⟩ u⟨ρ⟩.
 Proof.
-intros Hρ Hred; induction Hred in ρ, Hρ |- *; cbn.
+intros Hρ Hred; induction Hred in ρ, Hρ |- *; cbn - [qTotal].
 all: try now (econstructor; intuition).
 all: try now (econstructor; try apply dnf_ren; try apply dne_ren; intuition eauto using upRen_term_term_inj).
 + replace (t[a..]⟨ρ⟩) with (t⟨upRen_term_term ρ⟩)[a⟨ρ⟩..] by now bsimpl.
   now constructor.
 + rewrite quote_ren; tea.
   constructor; [now apply dnf_ren|now apply closed0_ren].
-+ rewrite qEvalTm_ren, qNat_ren.
++ rewrite qTotal_ren, qNat_ren.
+  rewrite <- erase_is_closed0_ren_id with (ρ := ρ); [|tea].
   econstructor; eauto using dnf_ren, closed0_ren.
   rewrite erase_is_closed0_ren_id; tea.
 Qed.
@@ -1152,13 +1164,25 @@ induction Hr; intros; subst.
     econstructor; [tea|reflexivity].
 Qed.
 
+Lemma redalg_succ_inv : forall t u, [tSucc t ⇶* tSucc u] -> [t ⇶* u].
+Proof.
+intros t u Hr.
+remember (tSucc t) as t₀ eqn:Ht;
+remember (tSucc u) as u₀ eqn:Hu;
+revert t u Ht Hu; induction Hr.
++ intros; subst; injection Hu; intros; subst; reflexivity.
++ intros; subst; inversion o; subst.
+  econstructor; [tea|eauto].
+Qed.
+
 Lemma dred_ren_inv : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶ u⟨ρ⟩] -> [t ⇶ u].
 Proof.
 intros t u ρ Hρ Hr.
 remember t⟨ρ⟩ as t' eqn:Ht.
 remember u⟨ρ⟩ as u' eqn:Hu.
 revert t u ρ Ht Hu Hρ; induction Hr; intros t₀ u₀ ρ Ht Hu Hρ.
-all: repeat match goal with H : _ = ?t⟨?ρ⟩ |- _ =>
+all: repeat match goal with H : ?l = ?t⟨?ρ⟩ |- _ =>
+  lazymatch l with qTotal _ _ _ _ => fail | _ => idtac end;
   destruct t; cbn in *; try discriminate; [idtac];
   try injection H; intros; subst
 end.
@@ -1174,9 +1198,10 @@ all: try now (constructor; eauto using @OneRedAlg, whne_ren_rev, dne_ren_rev, dn
   apply ren_inj_inv in Hu; tea.
   rewrite <- Hu.
   constructor; [now eapply dnf_ren_rev|tea].
-+ rewrite <- (qEvalTm_ren _ _ ρ) in Hu; apply ren_inj_inv in Hu; tea.
++ rewrite <- (qTotal_ren _ _ _ _ ρ) in Hu; apply ren_inj_inv in Hu; tea.
   rewrite <- (qNat_ren _ ρ) in H; apply ren_inj_inv in H; tea.
   rewrite <- Hu, <- H.
+  rewrite (erase_is_closed0_ren_id _ ρ); [|eauto using closed0_ren_rev].
   eapply termReflectAlg; eauto using dnf_ren_rev, closed0_ren_rev.
   rewrite <- (erase_is_closed0_ren_id _ ρ); eauto using closed0_ren_rev.
 Qed.
@@ -1263,7 +1288,7 @@ all: let t := lazymatch goal with |- ∑ n, ?t = _ => t end in
 + assert (Hrw : forall t u, t⟨upRen_term_term ρ⟩[(u⟨ρ⟩)..] = (t[u..])⟨ρ⟩) by now asimpl.
   rewrite Hrw; now eexists.
 + rewrite <- quote_ren; eauto using closed0_ren_rev.
-+ eexists (qEvalTm _ _); symmetry; apply qEvalTm_ren.
++ eexists (qTotal _ _ _ _); symmetry; apply qTotal_ren.
 + eexists (tQuote _); reflexivity.
 + eexists (tReflect _ _); reflexivity.
 + eexists (tReflect _ _); reflexivity.
@@ -1281,6 +1306,15 @@ revert t u ρ Ht Hu Hρ; induction Hr; intros; subst.
   destruct H; subst.
   econstructor; [|eapply IHHr]; eauto.
   now eapply dred_ren_inv.
+Qed.
+
+Lemma redalg_succ_adj : forall t u, [tSucc t ⇶* u] -> ∑ u₀, u = tSucc u₀.
+Proof.
+intros t u Hr.
+remember (tSucc t) as t₀ eqn:Ht; revert t Ht; induction Hr.
++ intros; subst; now eexists.
++ intros; subst; inversion o; subst.
+  eapply IHHr; reflexivity.
 Qed.
 
 (** Derived rules *)
@@ -1614,6 +1648,7 @@ all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
 all: try now apply IHHr.
 + now apply closedn_beta.
 + apply closedn_qNat.
++ apply closedn_qNat.
 + apply closedn_qEvalTm.
 Qed.
 
@@ -1746,7 +1781,7 @@ all: try now (
   rewrite c; simpl; rewrite closedn_qNat, uNat_qNat; simpl.
   erewrite murec_mon; [| |tea]; [|Lia.lia].
   cbn; rewrite uNat_qNat; cbn.
-  apply eval_dnf_det in Heval; [congruence|apply dnf_qEvalTm].
+  apply eval_dnf_det in Heval; [congruence|apply dnf_qTotal].
 + rewrite eval_unfold in Heval.
   destruct k; [discriminate|].
   destruct deep; [|discriminate].
@@ -2098,3 +2133,141 @@ induction 2.
 + apply gred_unannot_dnf_id in o; [|tea].
   etransitivity; [tea|apply IHRedClosureAlg; congruence].
 Qed.
+
+Lemma eval_succ_deep_inv : forall k t r, eval true t k = Some (tSucc r) ->
+  ∑ r', eval false t k = Some (tSucc r') × eval true r' k = Some r.
+Proof.
+intros k; induction (Wf_nat.lt_wf k) as [k Hk IHk].
+intros t n Heval.
+assert (IHkt : match k with 0 => unit | S k =>
+  forall t r, eval true t k = Some (tSucc r) ->
+  ∑ r', eval false t k = Some (tSucc r') × eval true r' k = Some r
+end).
+{ destruct k; [constructor|now eapply IHk]. }
+rewrite eval_unfold in Heval; destruct t.
+all: try now discriminate Heval.
+all: try now (
+  destruct k; [discriminate|];
+  repeat expandopt; discriminate
+).
++ destruct k; [discriminate|].
+  repeat expandopt; caseval.
+  - destruct (IHkt _ _ Heval) as (r'&?&?).
+    exists r'; split; [|eapply eval_mon; now tea].
+    cbn; rweval; cbn; tea.
+  - casenf; [|discriminate]; repeat expandopt; discriminate.
++ destruct k; [discriminate|].
+  repeat expandopt.
+  injection Heval; intros [=]; subst.
+  exists t; split; [reflexivity|].
+  eapply eval_mon; now tea.
++ destruct k; [discriminate|].
+  repeat expandopt; caseval.
+  - destruct (IHkt _ _ Heval) as (r'&?&?).
+    exists r'; split; [|eapply eval_mon; now tea].
+    cbn; rweval; cbn; tea.
+  - destruct (IHkt _ _ Heval) as (r'&?&?).
+    exists r'; split; [|eapply eval_mon; now tea].
+    cbn; rweval; cbn; tea.
+  - casenf; [|discriminate]; repeat expandopt; discriminate.
++ destruct k; [discriminate|].
+  repeat expandopt.
+  casenf; [|discriminate]; repeat expandopt; discriminate.
++ destruct k; [discriminate|].
+  repeat expandopt; caseval.
+  - destruct (IHkt _ _ Heval) as (r'&?&?).
+    exists r'; split; [|eapply eval_mon; now tea].
+    cbn; rweval; cbn; tea.
+  - casenf; [|discriminate]; repeat expandopt; discriminate.
++ destruct k; [discriminate|].
+  repeat expandopt; caseval.
+  - destruct (IHkt _ _ Heval) as (r'&?&?).
+    exists r'; split; [|eapply eval_mon; now tea].
+    cbn; rweval; cbn; tea.
+  - casenf; [|discriminate]; repeat expandopt; discriminate.
++ destruct k; [discriminate|].
+  repeat expandopt; caseval.
+  - destruct (IHkt _ _ Heval) as (r'&?&?).
+    exists r'; split; [|eapply eval_mon; now tea].
+    cbn; rweval; cbn; tea.
+  - casenf; [|discriminate]; repeat expandopt; discriminate.
++ destruct k; [discriminate|].
+  repeat expandopt; casenf.
+  - exists n; split.
+    * cbn; repeat rweval; rewrite Hb; tea.
+    *
+Abort.
+
+
+(*
+Lemma eval_erase : forall k deep t r, eval deep t k = Some r -> ∑ r', (eval deep (erase t) k = Some r') × (eqnf r r').
+Proof.
+intros k; induction (Wf_nat.lt_wf k) as [k Hk IHk].
+intros deep t n Heval.
+assert (IHkt : match k with 0 => unit | S k =>
+      forall (deep : bool) (t r : term),
+      eval deep t k = Some r ->
+      ∑ r' : term, eval deep (erase t) k = Some r' × eqnf r r'
+end).
+{ destruct k; [constructor|]; apply IHk; eauto. }
+rewrite eval_unfold in Heval.
+destruct t; cbn in *.
+all: try now (
+  rewrite eval_unfold; eexists; split; [reflexivity|cbn];
+  injection Heval; intros; subst; now cbn
+).
++ rewrite eval_unfold; destruct deep.
+  - destruct k; [discriminate|]; repeat expandopt.
+    injection Heval; intros; subst; cbn.
+    apply IHkt in Hrw, Hrw0; destruct Hrw as (r&?&?), Hrw0 as (r'&?&?).
+    exists (tProd r r'); repeat rweval; split; [reflexivity|].
+    unfold eqnf; cbn; congruence.
+  - injection Heval; intros; subst; cbn.
+    eexists; split; [reflexivity|].
+    unfold eqnf; cbn; now rewrite !erase_idempotent.
++ destruct deep.
+  - destruct k; [discriminate|]; repeat expandopt.
+    injection Heval; intros; subst.
+    assert (IHA := IHkt _ _ _ Hrw); destruct IHA as (A₀&?&?).
+    assert (IHt := IHkt _ _ _ Hrw0); destruct IHt as (t₀&?&?).
+    remember (erase t2) as t2' eqn:Ht2; symmetry in Ht2.
+    destruct (eta_fun_intro t2'); cbn.
+    * subst; exists (tLambda U t₀); split.
+      { rewrite eval_unfold; cbn; now rweval. }
+      { unfold eqnf; cbn; now rewrite e2. }
+    * rewrite eval_unfold in e1; cbn in e1.
+      destruct k; [discriminate|]; repeat expandopt.
+Admitted.
+*)
+
+Lemma eval_erase_qNat : forall k t n, eval false t k = Some (qNat n) -> eval false (erase t) k = Some (qNat n).
+Proof.
+(*
+intros k; induction (Wf_nat.lt_wf k) as [k Hk IHk].
+intros t n Heval.
+rewrite eval_unfold in Heval |- *.
+destruct t; cbn in *.
+all: try congruence.
++ exfalso; destruct n; cbn in Heval; congruence.
+(*   destruct k; [discriminate|]; repeat expandopt. *)
+(*   exfalso; destruct n; cbn in Heval; congruence. *)
++ exfalso; destruct n; cbn in Heval; congruence.
++ destruct k; [discriminate|]; repeat expandopt.
+  caseval.
+  - admit.
+  - exfalso; destruct is_whne in Heval; repeat expandopt; destruct n; cbn in Heval; congruence.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
++ admit.
+*)
+Admitted.
+

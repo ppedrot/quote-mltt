@@ -429,6 +429,18 @@ rewrite qNat_subst; do 2 f_equal.
 now rewrite erase_is_closed0_subst_id.
 Qed.
 
+(** FIXME: move me somewhere else *)
+Definition qRun (t : term) (u k : nat) : term :=
+  tApp (tApp (tApp model.(run) (qNat (model.(quote) (erase t)))) (qNat u)) (qNat k).
+
+Lemma qRun_ren : forall t u k ρ, closed0 t -> (qRun t u k)⟨ρ⟩ = qRun t⟨ρ⟩ u k.
+Proof.
+unfold qRun.
+intros; cbn.
+rewrite !qNat_ren, run_ren.
+now rewrite erase_is_closed0_ren_id.
+Qed.
+
 (** Alternative characterizations of erasure *)
 
 Fixpoint unannot (t : term) := match t with
@@ -776,6 +788,12 @@ Lemma eqnf_tQuote {t t'} :
   eqnf t t' -> eqnf (tQuote t) (tQuote t').
 Proof.
 unfold eqnf; cbn; now intros ->.
+Qed.
+
+Lemma eqnf_tReflect {t t' u u'} :
+  eqnf t t' -> eqnf u u' -> eqnf (tReflect t u) (tReflect t' u').
+Proof.
+unfold eqnf; cbn; now intros -> ->.
 Qed.
 
 (*

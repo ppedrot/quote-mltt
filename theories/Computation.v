@@ -27,20 +27,58 @@ Definition tShift (α : term) := tLambda tNat (tApp α⟨↑⟩ (tSucc (tRel 0))
 
 (* tEval n k v ~ n evaluates to v in k steps *)
 Definition tEval (n k v : term) :=
-  tNatElim (arr tPNat U)
+  tApp (tNatElim (arr tPNat U)
     (tLambda tPNat (tIsVal (tApp (tRel 0) tZero) v⟨↑⟩))
     (tLambda tNat (tLambda (arr tPNat U) (tLambda tPNat
       (tAnd
-        (tIsNil (tApp (tRel 0) (tSucc (tRel 2))))
+        (tIsNil (tApp (tRel 0) (tRel 2)))
         (tApp (tRel 1) (tShift (tRel 0)))))))
-    k.
+    k) n.
 
 (*
 Fixpoint eval (k : nat) (v : nat) : (nat -> nat) -> Set :=
 | 0 => fun n => n 0 = S v
-| S k => fun n => n (S k) = 0 /\ eval k v (fun c => n (S c))
+| S k => fun n => n k = 0 /\ eval k v (fun c => n (S c))
 end
 *)
+
+Lemma tAnd_subst : forall A B σ, (tAnd A B)[σ] = tAnd A[σ] B[σ].
+Proof.
+intros; cbn; unfold tAnd.
+f_equal; now asimpl.
+Qed.
+
+Lemma tIsNil_subst : forall t σ, (tIsNil t)[σ] = tIsNil t[σ].
+Proof.
+reflexivity.
+Qed.
+
+Lemma tIsVal_subst : forall t v σ, (tIsVal t v)[σ] = tIsVal t[σ] v[σ].
+Proof.
+reflexivity.
+Qed.
+
+Lemma tShift_subst : forall t σ, (tShift t)[σ] = tShift t[σ].
+Proof.
+intros; unfold tShift; cbn.
+do 2 f_equal; now asimpl.
+Qed.
+
+Lemma tEval_ren : forall n k v ρ,
+  (tEval n k v)⟨ρ⟩ = tEval n⟨ρ⟩ k⟨ρ⟩ v⟨ρ⟩.
+Proof.
+intros; unfold tEval; cbn; repeat f_equal.
+unfold tIsVal; do 2 f_equal.
+now asimpl.
+Qed.
+
+Lemma tEval_subst : forall n k v σ,
+  (tEval n k v)[σ] = tEval n[σ] k[σ] v[σ].
+Proof.
+intros; unfold tEval; cbn; repeat f_equal.
+unfold tIsVal; do 2 f_equal.
+now asimpl.
+Qed.
 
 Fixpoint qNat (n : nat) := match n with
 | 0 => tZero
@@ -154,6 +192,55 @@ Qed.
 
 Record Model := {
   quote : term -> nat;
+  run : term;
+  run_ren : forall ρ, run⟨ρ⟩ = run;
 }.
 
 Axiom model : Model.
+
+Axiom run_subst : forall (σ : nat -> term), (run model)[σ] = run model.
+
+(** Derived notions from the model *)
+
+Definition tTotal t u :=
+  tSig tNat (tEval (tApp (tApp model.(run) (tQuote t⟨↑⟩)) u⟨↑⟩) (tRel 0) (tApp t u)⟨↑⟩).
+(** ∑ k : nat, eval (run (quote t) u) k (t u) *)
+
+Lemma tTotal_ren : forall t u ρ,
+  (tTotal t u)⟨ρ⟩ = tTotal t⟨ρ⟩ u⟨ρ⟩.
+Proof.
+intros; unfold tTotal; cbn - [tEval].
+f_equal; rewrite tEval_ren; cbn; do 2 f_equal; try now asimpl.
+f_equal; [|now asimpl].
+now rewrite run_ren.
+Qed.
+
+Lemma tTotal_subst : forall t u σ,
+  (tTotal t u)[σ] = tTotal t[σ] u[σ].
+Proof.
+intros; unfold tTotal; cbn - [tEval].
+f_equal; rewrite tEval_subst; cbn; do 2 f_equal; try now asimpl.
+f_equal; [|now asimpl]; apply run_subst.
+Qed.
+
+Definition qTotal (t u k v : nat) :=
+  tPair tNat (tEval (tApp (tApp model.(run) (qNat t)) (qNat u)) (tRel 0) (qNat v))
+    (qNat k) (qEvalTm k v).
+
+Lemma qTotal_ren : forall (t u k v : nat) (ρ : nat -> nat), (qTotal t u k v)⟨ρ⟩ = qTotal t u k v.
+Proof.
+intros; unfold qTotal; cbn - [tEval]; f_equal.
++ rewrite tEval_ren; f_equal; [|apply qNat_ren].
+  cbn; f_equal; [|apply qNat_ren].
+  cbn; f_equal; [|apply qNat_ren].
+  apply run_ren.
++ apply qNat_ren.
++ apply qEvalTm_ren.
+Qed.
+
+Lemma closedn_qTotal : forall t u k v n, closedn n (qTotal t u k v).
+Proof.
+intros; unfold closedn, qTotal; cbn - [qEvalTm].
+apply andb_true_intro; split; [apply closedn_qNat|].
+apply closedn_qEvalTm.
+Qed.

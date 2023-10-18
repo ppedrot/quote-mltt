@@ -310,6 +310,11 @@ Section GenericTyping.
     ty_quote {Γ} {t} :
       [ Γ |- t ≅ t : arr tNat tNat ] ->
       [ Γ |- tQuote t : tNat ];
+    ty_reflect {Γ} {t u} :
+      [ Γ |- t ≅ t : arr tNat tNat ] ->
+      [ Γ |- u ≅ u : tNat ] ->
+      [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+      [ Γ |- tReflect t u : tTotal t u ];
     ty_exp {Γ t A A'} : [Γ |- t : A'] -> [Γ |- A ⤳* A'] -> [Γ |- t : A] ;
     ty_conv {Γ t A A'} : [Γ |- t : A'] -> [Γ |- A' ≅ A] -> [Γ |- t : A] ;
   }.
@@ -361,6 +366,11 @@ Section GenericTyping.
       [Γ |- A : U] ->
       [Γ |- A ≅ A' : U] -> [Γ,, A |- B ≅ B' : U] ->
       [Γ |- tSig A B ≅ tSig A' B' : U] ;
+    convtm_lam {Γ A B t t'} :
+      [Γ |- A] ->
+      [Γ |- A ≅ A] ->
+      [Γ,, A |- t ≅ t' : B] ->
+      [Γ |- tLambda A t ≅ tLambda A t' : tProd A B];
     convtm_eta {Γ f g A B} :
       [ Γ |- A ] ->
       [ Γ,, A |- B ] ->
@@ -446,6 +456,15 @@ Section GenericTyping.
         dnf n -> dnf n' ->
         ~ closed0 n -> ~ closed0 n' ->
         [Γ |- tQuote n ~ tQuote n' : tNat];
+    convneu_reflect {Γ t t' t₀ u u' u₀} :
+      [Γ |- t ≅ t' : arr tNat tNat] ->
+      [Γ |- u ≅ u' : tNat] ->
+      [Γ |- t ≅ t₀ : arr tNat tNat] ->
+      [Γ |- u ≅ u₀ : tNat] ->
+      [Γ |- model.(run) : arr tNat (arr tNat tPNat)] ->
+      dnf t -> dnf t' -> dnf u -> dnf u' ->
+      (~ is_closedn 0 t) + (~ is_closedn 0 u) -> (~ is_closedn 0 t') + (~ is_closedn 0 u') ->
+      [Γ |- tReflect t u ~ tReflect t' u' : tTotal t₀ u₀];
   }.
 
   Class RedTypeProperties :=
@@ -537,7 +556,7 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e ⤳* e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ⤳* tIdElim A x P hr y e' : P[e .: y..]];
-    redtm_eval {Γ t} :
+    redtm_evalquote {Γ t} :
       [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t ->
       [Γ |- tQuote t ⤳* qNat (model.(quote) (erase t)) : tNat];
     redtm_quote {Γ t t'} :
@@ -545,6 +564,25 @@ Section GenericTyping.
       [Γ |- t ≅ t' : arr tNat tNat] ->
       [ t ⇶* t' ] ->
       [Γ |- tQuote t ⤳* tQuote t' : tNat ];
+    redtm_evalreflect {Γ t t₀ u u₀ k k' n} :
+      [Γ |- t : arr tNat tNat] ->
+      [Γ |- t ≅ t : arr tNat tNat] ->
+      [Γ |- t ≅ t₀ : arr tNat tNat] ->
+      [Γ |- qNat u ≅ u₀ : tNat] ->
+      [Γ |- run model : arr tNat (arr tNat tPNat)] ->
+      murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
+      dnf t -> closed0 t ->
+      [Γ |- tReflect t (qNat u) ⤳* qTotal (model.(quote) (erase t)) u k' n : tTotal t₀ u₀ ];
+    redtm_reflect {Γ t t' u u'} :
+      [Γ |- t : arr tNat tNat] ->
+      [Γ |- t ≅ t' : arr tNat tNat] ->
+      [Γ |- u : tNat] ->
+      [Γ |- u ≅ u' : tNat] ->
+      [Γ |- run model : arr tNat (arr tNat tPNat)] ->
+      [ t ⇶* t' ] ->
+      [ u ⇶* u' ] ->
+      dnf t' -> dnf u' ->
+      [Γ |- tReflect t u ⤳* tReflect t' u' : tTotal t u ];
     redtm_conv {Γ t u A A'} : 
       [Γ |- t ⤳* u : A] ->
       [Γ |- A ≅ A'] ->
@@ -1247,6 +1285,16 @@ Section GenericConsequences.
       now bsimpl.
   Qed.
 
+  Lemma simple_lambda_cong {Γ A B t t'} :
+    [Γ |- A] ->
+    [Γ |- A ≅ A] ->
+    [Γ,, A |- t ≅ t' : B⟨↑⟩] ->
+    [Γ |- tLambda A t ≅ tLambda A t' : arr A B].
+  Proof.
+  intros.
+  eapply convtm_lam; tea.
+  Qed.
+
   (** Typing rules for the computation built-ins *)
 
   Lemma ty_qNat {Γ n} : [|- Γ] -> [Γ |- qNat n : tNat].
@@ -1357,3 +1405,550 @@ End GenericConsequences.
 #[export] Hint Resolve tyr_wf_l tmr_wf_l well_typed_well_formed : gen_typing.
 #[export] Hint Resolve redtywf_wk redtywf_term redtywf_red redtywf_refl redtmwf_wk redtmwf_app redtmwf_refl redtm_beta redtmwf_red redtmwf_natElimZero | 2 : gen_typing.
 #[export] Hint Resolve  redtmwf_conv | 6 : gen_typing.
+
+Section EvalConsequences.
+
+Context `{GenericTypingProperties}.
+
+Lemma ty_isVal : forall Γ t u, [Γ |- t : tNat] -> [Γ |- u : tNat] -> [Γ |- tIsVal t u : U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+eapply ty_Id; [now apply ty_nat|tea|now apply ty_succ].
+Qed.
+
+Lemma ty_isNil : forall Γ t, [Γ |- t : tNat] -> [Γ |- tIsNil t : U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+eapply ty_Id; [now apply ty_nat|tea|now apply ty_zero].
+Qed.
+
+Lemma wft_nat {Γ} : [|- Γ] -> [Γ |- tNat].
+Proof.
+intros; gen_typing.
+Qed.
+
+Lemma wft_pNat {Γ} : [|- Γ] -> [Γ |- tPNat].
+Proof.
+intros.
+assert [Γ |- tNat] by gen_typing.
+now apply wft_simple_arr.
+Qed.
+
+Lemma convty_pNat {Γ} : [|- Γ] -> [Γ |- tPNat ≅ tPNat].
+Proof.
+intros.
+assert [Γ |- tNat ≅ tNat].
+{ now apply convty_term, convtm_nat. }
+apply convty_simple_arr; tea.
+now apply wft_nat.
+Qed.
+
+Lemma ty_and : forall Γ A B,
+  [Γ |- A : U] -> [Γ |- B : U] -> [Γ |- tAnd A B : U].
+Proof.
+intros.
+apply ty_sig; [tea|].
+rewrite <- (@wk1_ren_on Γ A).
+change U with U⟨@wk1 Γ A⟩.
+apply ty_wk; gen_typing.
+Qed.
+
+Lemma ty_shift : forall Γ t, [Γ |- t : tPNat] -> [Γ |- tShift t : tPNat].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tNat] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ,, tNat |- tNat] by now eapply wft_term, ty_nat.
+apply ty_lam; [tea|].
+cbn; eapply (ty_simple_app (A := tNat)); tea.
++ rewrite <- (@wk1_ren_on Γ tNat t).
+  change (arr tNat tNat) with tPNat⟨@wk1 Γ tNat⟩.
+  now apply ty_wk.
++ apply ty_succ.
+  change tNat with tNat⟨↑⟩ at 2.
+  now apply ty_var0.
+Qed.
+
+Definition tEvalBranchZero v := tLambda tPNat (tIsVal (tApp (tRel 0) tZero) v⟨↑⟩).
+
+Definition tEvalBranchSucc :=
+  tLambda tNat
+    (tLambda (arr tPNat U)
+       (tLambda tPNat
+          (tAnd (tIsNil (tApp (tRel 0) (tRel 2))) (tApp (tRel 1) (tShift (tRel 0)))))).
+
+Lemma ty_evalBranchZeroBody : forall Γ v,
+  [Γ |- v : tNat] ->
+  [Γ,, tPNat |- tIsVal (tApp (tRel 0) tZero) v⟨↑⟩ : U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tPNat] by now apply wft_pNat.
+assert [|- Γ,, tPNat] by now apply wfc_cons.
+assert [Γ,, tPNat |- tNat] by now apply wft_nat.
+assert [Γ,, tPNat |- v⟨↑⟩ : tNat].
+{ rewrite <- (@wk1_ren_on Γ tPNat).
+  change tNat with tNat⟨@wk1 Γ tPNat⟩.
+  now apply ty_wk. }
+apply ty_isVal; tea.
+apply (ty_simple_app (A := tNat)); tea; [|now apply ty_zero].
+change (arr tNat tNat) with tPNat⟨↑⟩.
+now apply ty_var0.
+Qed.
+
+Lemma ty_evalBranchZero : forall Γ v,
+  [Γ |- v : tNat] ->
+  [Γ |- tEvalBranchZero v : arr tPNat U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tPNat] by now eapply wft_pNat.
+apply ty_lam; [tea|].
+now apply ty_evalBranchZeroBody.
+Qed.
+
+Lemma ty_evalBranchSuccBody : forall Γ t r k,
+  [Γ |- t : tPNat] -> [Γ |- k : tNat] -> [Γ |- r : arr tPNat U] ->
+  [Γ |- tAnd (tIsNil (tApp t k)) (tApp r (tShift t)) : U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tNat] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ,, tNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ |- tPNat] by now eapply wft_simple_arr.
+apply ty_and; [apply ty_isNil|].
++ eapply (ty_simple_app (A := tNat)); tea.
++ eapply (ty_simple_app (A := tPNat)); tea.
+  - gen_typing.
+  - now apply ty_shift.
+Qed.
+
+Lemma ty_evalBranchSucc : forall Γ,
+  [|- Γ] -> [Γ |- tEvalBranchSucc : elimSuccHypTy (arr tPNat U)].
+Proof.
+intros. unfold tEvalBranchSucc.
+assert [Γ |- tNat] by gen_typing.
+assert [Γ |- tPNat] by now eapply wft_simple_arr.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ,, tNat |- tPNat].
+{ eapply wft_simple_arr; now eapply wft_term, ty_nat. }
+assert [Γ,, tNat |- U] by now apply wft_U.
+assert [Γ,, tNat |- arr tPNat U] by now eapply wft_simple_arr.
+assert [|- Γ,, tNat,, arr tPNat U] by now eapply wfc_cons.
+assert [Γ,, tNat,, arr tPNat U |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, tNat,, arr tPNat U |- tPNat] by now eapply wft_simple_arr.
+assert [|- Γ,, tNat,, arr tPNat U,, tPNat] by now eapply wfc_cons.
+apply ty_lam; [now tea|].
+apply ty_lam; [now tea|].
+match goal with |- [_ |- _ : ?T ] => change T with (arr tPNat U) end.
+apply ty_lam; [now tea|].
+assert [Γ,, tNat,, arr tPNat U,, tPNat |- tRel 0 : tPNat].
+{ change tPNat with tPNat⟨↑⟩; now apply ty_var0. }
+apply ty_evalBranchSuccBody.
++ eapply ty_var; [tea|].
+  change tPNat with tPNat⟨↑⟩; constructor.
++ eapply ty_var; [tea|].
+  change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 2.
+  do 3 constructor.
++ eapply ty_var; [tea|].
+ change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩ at 2.
+ do 2 constructor.
+Qed.
+
+Lemma ty_eval {Γ t k v} :
+  [Γ |- t : tPNat] -> [Γ |- k : tNat] -> [Γ |- v : tNat] ->
+  [Γ |- tEval t k v : U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- U] by gen_typing.
+assert [Γ |- tNat] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ |- tPNat] by now eapply wft_simple_arr.
+assert [Γ,, tNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, tNat |- tPNat] by now eapply wft_simple_arr.
+eapply (ty_simple_app (A := tPNat)); tea.
+change (arr tPNat U) with (arr tPNat U)[k..].
+apply ty_natElim.
++ apply wft_simple_arr; tea.
+  now eapply wft_U.
++ now apply ty_evalBranchZero.
++ now apply ty_evalBranchSucc.
++ tea.
+Qed.
+
+Lemma redtm_simple_app : forall Γ A B f f' t,
+  [Γ |- f ⤳* f' : arr A B] ->
+  [Γ |- t : A] -> [Γ |- tApp f t ⤳* tApp f' t : B].
+Proof.
+intros.
+replace B with B⟨↑⟩[t..] by now bsimpl.
+eapply redtm_app; tea.
+Qed.
+
+Lemma redtm_simple_beta : forall Γ A B t u,
+  [Γ |- A] ->
+  [Γ,, A |- t : B⟨↑⟩] ->
+  [Γ |- u : A] -> [Γ |- tApp (tLambda A t) u ⤳* t[u..] : B].
+Proof.
+intros.
+replace B with B⟨↑⟩[u..] by now bsimpl.
+apply redtm_beta; tea.
+Qed.
+
+Lemma redtm_evalBranchZero : forall Γ t v,
+  [Γ |- t : tPNat] ->
+  [Γ |- v : tNat] ->
+  [Γ |- tEval t tZero v ⤳* tIsVal (tApp t tZero) v : U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tNat] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ,, tNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ |- tPNat] by now eapply wft_pNat.
+assert [|- Γ,, tPNat] by gen_typing.
+assert [Γ,, tPNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, tNat |- U] by now eapply wft_U.
+etransitivity.
++ eapply redtm_simple_app; [|tea].
+  change (arr tPNat U) with (arr tPNat U)[tZero..] at 1.
+  apply redtm_natElimZero.
+  - apply wft_simple_arr; [apply wft_simple_arr|]; tea.
+  - now apply ty_evalBranchZero.
+  - now apply ty_evalBranchSucc.
++ change U with U[t..].
+  match goal with |- [ _ |- tApp (tLambda _ ?t) ?u ⤳* ?r : _ ] =>
+    replace r with (t[u..])
+  end.
+  2:{ unfold tIsVal; cbn; now bsimpl. }
+  apply redtm_beta; tea.
+  apply ty_isVal.
+  - apply (ty_simple_app (A := tNat)); tea.
+    * change (arr tNat tNat) with tPNat⟨↑⟩.
+      now apply ty_var0.
+    * now apply ty_zero.
+  - rewrite <- (@wk1_ren_on Γ tPNat).
+    change tNat with tNat⟨@wk1 Γ tPNat⟩.
+    now apply ty_wk.
+Qed.
+
+Lemma redtm_evalBranchSucc : forall Γ t k v,
+  [Γ |- t : tPNat] ->
+  [Γ |- k : tNat] ->
+  [Γ |- v : tNat] ->
+  [Γ |- tEval t (tSucc k) v ⤳* tAnd (tIsNil (tApp t k)) (tEval (tShift t) k v) : U].
+Proof.
+intros.
+unfold tEval at 2.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tNat] by gen_typing.
+assert [Γ |- U] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ,, tNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ |- tPNat] by now eapply wft_pNat.
+assert [|- Γ,, tPNat] by now eapply wfc_cons.
+assert [Γ,, tNat |- tPNat] by now eapply wft_pNat.
+assert [Γ |- arr tPNat U] by now eapply wft_simple_arr.
+assert [|- Γ,, arr tPNat U] by gen_typing.
+assert [Γ,, tNat |- U] by now eapply wft_U.
+assert [Γ,, tNat |- arr tPNat U] by now eapply wft_simple_arr.
+assert [Γ,, tNat |- arr tPNat U] by now eapply wft_simple_arr.
+assert [|- Γ,, tNat,, arr tPNat U] by now apply wfc_cons.
+assert [Γ,, tNat,, arr tPNat U |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, tNat,, arr tPNat U |- tPNat] by now eapply wft_simple_arr.
+assert [|- Γ,, tNat,, arr tPNat U,, tPNat] by now eapply wfc_cons.
+assert [Γ,, tNat,, arr tPNat U,, tPNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, arr tPNat U |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, arr tPNat U |- tPNat] by now eapply wft_simple_arr.
+assert [|- Γ,, arr tPNat U,, tPNat] by now apply wfc_cons.
+assert [Γ,, tPNat |-  tNat] by now eapply wft_term, ty_nat.
+assert [|- Γ,, tPNat,, tNat] by now apply wfc_cons.
+assert [Γ,, tPNat,, tNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, tPNat,, tNat |- tPNat] by now eapply wft_simple_arr.
+assert [Γ,, tPNat,, tNat |- U] by now eapply wft_U.
+assert [Γ,, tPNat,, tNat |- arr tPNat U] by now apply wft_simple_arr.
+etransitivity; [|etransitivity; [etransitivity; [etransitivity|]|]].
++ eapply redtm_simple_app; [|tea].
+  change (arr tPNat U) with (arr tPNat U)[(tSucc k)..] at 1.
+  apply redtm_natElimSucc; tea.
+  - now apply ty_evalBranchZero.
+  - now apply ty_evalBranchSucc.
++ eapply redtm_simple_app; [|tea].
+  eapply redtm_simple_app; [|tea].
+  eapply redtm_simple_beta; tea.
+  2:{ eapply ty_natElim; tea; [now apply ty_evalBranchZero|now apply ty_evalBranchSucc]. }
+  cbn - [tAnd tIsNil tIsVal tShift]; apply ty_lam; [tea|].
+  cbn - [tAnd tIsNil tIsVal tShift]; apply ty_lam; [tea|].
+  apply ty_evalBranchSuccBody.
+  - apply ty_var; tea.
+    change tPNat with tPNat⟨↑⟩; constructor.
+  - apply ty_var; tea.
+    change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 6; do 3 constructor.
+  - apply ty_var; tea.
+    change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩; do 2 constructor.
++ eapply redtm_simple_app; [|tea].
+  cbn - [tAnd tIsNil tIsVal tShift].
+  eapply redtm_simple_beta; tea.
+  cbn - [tAnd tIsNil tIsVal tShift].
+  apply ty_lam; [tea|].
+  rewrite !tAnd_subst, !tIsNil_subst.
+  apply ty_evalBranchSuccBody.
+  - apply ty_var; tea.
+    change tPNat with tPNat⟨↑⟩.
+    constructor.
+  - match goal with |- [_ |- ?t : _ ] => replace t with k⟨@wk1 Γ (arr tPNat U)⟩⟨@wk1 (Γ,, arr tPNat U) tPNat⟩ end.
+    2:{ cbn; now bsimpl. }
+    change tNat with tNat⟨@wk1 Γ (arr tPNat U)⟩⟨@wk1 (Γ,, arr tPNat U) tPNat⟩ at 5.
+    apply ty_wk; tea.
+    apply ty_wk; tea.
+  - apply ty_var; tea.
+    change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩.
+    do 2 constructor.
+  - change (tProd (tProd tNat tNat) U) with (arr tPNat U)[k..].
+    eapply ty_natElim; tea; [now apply ty_evalBranchZero|now apply ty_evalBranchSucc].
++ cbn - [tIsNil tIsVal tAnd].
+  eapply redtm_simple_beta; tea.
+  rewrite !tAnd_subst, !tIsNil_subst; cbn.
+  apply ty_evalBranchSuccBody.
+  - apply ty_var; tea.
+    change tPNat with tPNat⟨↑⟩; constructor.
+  - match goal with |- [_ |- ?t : _] => replace t with k⟨↑⟩ end.
+    2:{ bsimpl; apply rinstInst'_term. }
+    rewrite <- (@wk1_ren_on Γ tPNat).
+    change tNat with tNat⟨@wk1 Γ tPNat⟩.
+    now apply ty_wk.
+  - change (arr tPNat U) with (arr tPNat U)[k⟨↑⟩..].
+    assert [Γ,, tPNat |- k⟨↑⟩ : tNat].
+    { rewrite <- (@wk1_ren_on Γ tPNat).
+      change tNat with tNat⟨@wk1 Γ tPNat⟩.
+      now apply ty_wk. }
+    apply ty_natElim; tea; [|now apply ty_evalBranchSucc].
+    match goal with |- context[tSucc ?t0] => set (r := (tSucc t0)) end.
+    replace r with (tSucc v⟨↑⟩)⟨↑⟩.
+    2:{ unfold r; cbn; now bsimpl. }
+    apply ty_evalBranchZero.
+    rewrite <- (@wk1_ren_on Γ tPNat).
+    change tNat with tNat⟨@wk1 Γ tPNat⟩.
+    now apply ty_wk.
++ rewrite !tAnd_subst, !tIsNil_subst; cbn - [tAnd tIsNil tIsVal tShift].
+  rewrite !tShift_subst; cbn - [tAnd tIsNil tIsVal tShift].
+  match goal with |- [ _ |- ?t ⤳* ?u : _ ] => assert (Hrw : t = u) end.
+  { f_equal; f_equal; f_equal.
+    + now bsimpl.
+    + cbn; unfold tEvalBranchZero, tIsVal.
+      f_equal; f_equal; f_equal; bsimpl; symmetry; apply rinstInst'_term.
+    + now bsimpl. }
+  rewrite Hrw; clear Hrw; apply redtm_refl.
+  apply ty_evalBranchSuccBody; tea.
+  change (arr tPNat U) with (arr tPNat U)[k..].
+  eapply ty_natElim; tea.
+  - now apply ty_evalBranchZero.
+  - now apply ty_evalBranchSucc.
+Qed.
+
+Lemma redtm_evalArg : forall Γ t k k' v,
+  [Γ |- t : tPNat] ->
+  [Γ |- k ⤳* k' : tNat] ->
+  [Γ |- v : tNat] ->
+  [Γ |- tEval t k v ⤳* tEval t k' v : U].
+Proof.
+intros; unfold tEval.
+assert [|- Γ] by gen_typing.
+eapply redtm_simple_app; [|tea].
+change (arr tPNat U) with (arr tPNat U)[k..] at 1.
+eapply redtm_natelim.
++ assert [Γ |- tNat] by gen_typing.
+  assert [|- Γ,, tNat] by gen_typing.
+  apply wft_simple_arr.
+  - apply wft_simple_arr; now apply wft_term, ty_nat.
+  - now apply wft_U.
++ now apply ty_evalBranchZero.
++ now apply ty_evalBranchSucc.
++ tea.
+Qed.
+
+Lemma tIsVal_cong {Γ t t' u u'} :
+  [Γ |- t ≅ t' : tNat] ->
+  [Γ |- u ≅ u' : tNat] ->
+  [Γ |- tIsVal t u ≅ tIsVal t' u' : U].
+Proof.
+  intros; unfold tIsVal.
+  assert [|- Γ] by gen_typing.
+  apply convtm_Id; tea.
+  + now apply convtm_nat.
+  + apply convtm_succ; tea.
+Qed.
+
+Lemma tIsNil_cong {Γ t t'} :
+  [Γ |- t ≅ t' : tNat] ->
+  [Γ |- tIsNil t ≅ tIsNil t' : U].
+Proof.
+intros; unfold tIsNil.
+assert [|- Γ] by gen_typing.
+apply convtm_Id; tea.
++ now apply convtm_nat.
++ now apply convtm_zero.
+Qed.
+
+Lemma convtm_and {Γ A A' B B'} :
+  [Γ |- A : U] ->
+  [Γ |- A ≅ A' : U] -> [Γ |- B ≅ B' : U] -> [Γ |- tAnd A B ≅ tAnd A' B' : U].
+Proof.
+intros.
+apply convtm_sig; tea.
+rewrite <- !(@wk1_ren_on Γ A).
+change U with U⟨@wk1 Γ A⟩.
+apply convtm_wk; gen_typing.
+Qed.
+
+Lemma convtm_shift {Γ t t'} :
+  [Γ |- t ~ t' : tPNat] -> [Γ |- tShift t ≅ tShift t' : tPNat].
+Proof.
+intros.
+assert [|- Γ] by now eapply wfc_convtm, convtm_convneu.
+assert [Γ |- tNat] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ |- tNat ≅ tNat] by gen_typing.
+apply convtm_lam; tea.
+apply convtm_convneu, (convneu_simple_app (A := tNat)).
++ rewrite <- !(@wk1_ren_on Γ tNat).
+  match goal with |- [_ |- _ ~ _ : ?A] => change A with (arr tNat tNat)⟨@wk1 Γ tNat⟩ end.
+  now apply convneu_wk.
++ apply convtm_succ.
+  apply convtm_convneu, convneu_var, ty_var; tea.
+  constructor.
+Qed.
+
+Lemma convtm_evalBranchZero : forall Γ v v',
+  [Γ |- v ≅ v' : tNat] ->
+  [Γ |- tEvalBranchZero v ≅ tEvalBranchZero v' : arr tPNat U].
+Proof.
+intros.
+assert [|- Γ] by gen_typing.
+assert [Γ |- tPNat] by now apply wft_pNat.
+assert [ |- Γ,, tPNat] by now apply wfc_cons.
+assert [Γ,, tPNat |- U] by now eapply wft_U.
+eapply simple_lambda_cong; tea.
++ now apply convty_pNat.
++ apply tIsVal_cong.
+  - apply convtm_convneu, (convneu_simple_app (A := tNat)); [|now apply convtm_zero].
+    apply convneu_var, ty_var; tea.
+    constructor.
+  - rewrite <- !(@wk1_ren_on Γ tPNat).
+    change tNat with tNat⟨@wk1 Γ tPNat⟩.
+    now apply convtm_wk.
+Qed.
+
+Lemma convtm_evalBranchSucc : forall Γ,
+  [|- Γ] ->
+  [Γ |- tEvalBranchSucc ≅ tEvalBranchSucc : arr tNat (arr (arr tPNat U) (arr tPNat U))].
+Proof.
+intros.
+assert [Γ |- tNat] by gen_typing.
+assert [|- Γ,, tNat] by gen_typing.
+assert [Γ |- tNat ≅ tNat] by now apply convty_term, convtm_nat.
+assert [Γ,, tNat |- tNat] by now eapply wft_term, ty_nat.
+assert [Γ,, tNat |- tPNat] by now eapply wft_simple_arr.
+assert [Γ,, tNat |- tPNat ≅ tPNat] by now eapply convty_pNat.
+assert [Γ,, tNat |- U] by now eapply wft_U.
+assert [Γ,, tNat |- U ≅ U] by now eapply convty_uni.
+assert [Γ,, tNat |- arr tPNat U] by now eapply wft_simple_arr.
+assert [Γ,, tNat |- arr (arr tPNat U) (arr tPNat U)] by now eapply wft_simple_arr.
+assert [Γ,, tNat |- arr tPNat U ≅ arr tPNat U] by now apply convty_simple_arr.
+assert [|- Γ,, tNat,, arr tPNat U] by now eapply wfc_cons.
+assert [Γ,, tNat,, arr tPNat U |- tPNat] by now eapply wft_pNat.
+assert [Γ,, tNat,, arr tPNat U |- tPNat ≅ tPNat] by now eapply convty_pNat.
+assert [|- Γ,, tNat,, arr tPNat U,, tPNat] by now eapply wfc_cons.
+assert [Γ,, tNat,, arr tPNat U,, tPNat |- tNat] by now eapply wft_nat.
+eapply simple_lambda_cong; tea.
+change (arr (arr tPNat U) (arr tPNat U))⟨↑⟩ with (arr (arr tPNat U) (arr tPNat U)).
+eapply simple_lambda_cong; tea.
+change (arr tPNat U)⟨↑⟩ with (arr tPNat U).
+eapply simple_lambda_cong; tea.
+apply convtm_and.
++ apply ty_isNil.
+  eapply (ty_simple_app (A := tNat)); tea; apply ty_var; tea.
+  - constructor.
+  - change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 2; do 3 constructor.
++ apply tIsNil_cong.
+  apply convtm_convneu, (convneu_simple_app (A := tNat)).
+  - apply convneu_var, ty_var; tea.
+    constructor.
+  - apply convtm_convneu, convneu_var, ty_var; tea.
+    change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 2; do 3 constructor.
++ apply convtm_convneu, (convneu_simple_app (A := tPNat)).
+  - apply convneu_var, ty_var; tea.
+    change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩ at 2.
+    do 2 constructor.
+  - apply convtm_shift.
+    apply convneu_var, ty_var; tea.
+    constructor.
+Qed.
+
+Lemma tEval_cong {Γ t t' k k' r r'} :
+  [Γ |- t ≅ t' : arr tNat tNat] ->
+  [Γ |- k ~ k' : tNat] ->
+  [Γ |- r ≅ r' : tNat] ->
+  [Γ |- tEval t k r ~ tEval t' k' r' : U].
+Proof.
+  intros; unfold tEval, tPNat.
+  change U with (U[t..]).
+  eapply convneu_app; [|tea].
+  change (tProd (arr tNat tNat) U) with (tProd (arr tNat tNat) U)[k..].
+  assert [|- Γ] by gen_typing.
+  assert [Γ |- tNat] by gen_typing.
+  assert [|- Γ,, tNat] by gen_typing.
+  assert [Γ,, tNat |- tNat : U].
+  { eapply ty_nat; tea. }
+  assert [Γ |- arr tNat tNat] by (apply wft_simple_arr; gen_typing).
+  assert [|- Γ,, arr tNat tNat] by gen_typing.
+  assert [Γ |- arr tNat tNat ≅ arr tNat tNat].
+  { eapply convty_simple_arr; gen_typing. }
+  assert ([Γ |-[ ta ] arr (arr tNat tNat) U ≅ arr (arr tNat tNat) U]).
+  { apply convty_simple_arr; tea; gen_typing. }
+  assert ([Γ,, tNat |-[ ta ] arr (arr tNat tNat) U ≅ arr (arr tNat tNat) U]).
+  { change (([Γ,, tNat |-[ ta ] (arr (arr tNat tNat) U)⟨@wk1 Γ tNat⟩ ≅ (arr (arr tNat tNat) U)⟨@wk1 Γ tNat⟩])).
+    now apply convty_wk. }
+  eapply convneu_natElim; tea.
+  + apply convtm_evalBranchZero; tea.
+  + now apply convtm_evalBranchSucc.
+Qed.
+
+Lemma tTotal_cong {Γ t t' u u'} :
+  [Γ |- tApp (tApp (run model) (tQuote t)) u ≅ tApp (tApp (run model) (tQuote t')) u' : arr tNat tNat] ->
+  [Γ |- tApp t u ≅ tApp t' u' : tNat] ->
+  [Γ |- tTotal t u ≅ tTotal t' u' : U].
+Proof.
+  intros * Hrun Hev; unfold tTotal.
+  assert ([|- Γ,, tNat]).
+  { apply wfc_cons; gen_typing. }
+  apply convtm_sig; [gen_typing|gen_typing|].
+  apply convtm_convneu, tEval_cong.
+  + apply (convtm_wk (@wk1 Γ tNat)) in Hrun; [|tea].
+    rewrite !wk1_ren_on in Hrun; cbn in Hrun.
+    rewrite !run_ren in Hrun; tea.
+  + change tNat with tNat⟨↑⟩ at 2.
+    apply convneu_var, ty_var0; gen_typing.
+  + apply (convtm_wk (@wk1 Γ tNat)) in Hev; [|tea].
+    rewrite !wk1_ren_on in Hev; tea.
+Qed.
+
+Lemma ty_qEvalTy {Γ} n v : [|- Γ] -> [Γ |- qEvalTy n v : U].
+Proof.
+intros; induction n; cbn.
++ assert [Γ |- tSucc (qNat v) : tNat].
+  { now apply ty_succ, ty_qNat. }
+  gen_typing.
++ apply ty_sig.
+  - gen_typing.
+  - change U with U⟨↑⟩.
+    rewrite <- !(wk1_ren_on Γ (tId tNat tZero tZero)).
+    apply ty_wk; [apply wfc_cons; gen_typing|tea].
+Qed.
+
+End EvalConsequences.

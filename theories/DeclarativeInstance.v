@@ -125,6 +125,10 @@ Section TypingWk.
     - intros * _ IH **; cbn.
       econstructor.
       now apply IH.
+    - intros * **.
+      unfold ren1, Ren1_well_wk; rewrite tTotal_ren.
+      cbn in *; constructor; eauto.
+      rewrite <- (run_ren _ ρ); eauto.
     - intros * _ IHt _ IHAB ? ρ ?.
       econstructor.
       1: now eapply IHt.
@@ -172,6 +176,29 @@ Section TypingWk.
     - intros * * He IHe **; cbn.
       constructor.
       now apply IHe.
+    - intros * ? IHt ? IHrun ?? ? IHnil ? IHval **.
+      cbn - [qTotal tTotal].
+      unfold ren1, Ren1_well_wk.
+      rewrite tTotal_ren, qTotal_ren, !qNat_ren.
+      rewrite <- erase_is_closed0_ren_id with (ρ := ρ); [|tea].
+      apply TermReflectRed.
+      + now apply IHt.
+      + now rewrite <- (run_ren _ ρ); apply IHrun.
+      + now apply dnf_ren.
+      + now apply closed0_ren.
+      + intros k' Hk.
+        unshelve eassert (Hnil := IHnil k' Hk Δ ρ _); [tea|].
+        rewrite <- qRun_ren; [|tea].
+        apply Hnil.
+      + cbn - [qRun] in IHval.
+        unshelve eassert (Hval := IHval Δ ρ _); [tea|].
+        rewrite <- qRun_ren; [|tea].
+        rewrite !qNat_ren in Hval.
+        apply Hval.
+    - intros.
+      unfold ren1, Ren1_well_wk.
+      rewrite tTotal_ren; cbn in *; constructor; eauto using dnf_ren, closed0_ren.
+      rewrite <- (run_ren _ ρ); eauto.
     - intros Γ A A' B B' _ IHA _ IHAA' _ IHBB' ? ρ ?.
       cbn.
       econstructor.
@@ -417,6 +444,140 @@ Proof.
 apply @RedConvC with (K := istype).
 Qed.
 
+(** Some derived rules *)
+
+Lemma simple_TermApp : forall Γ A B t u,
+  [Γ |- t : arr A B] -> [Γ |- u : A] -> [Γ |- tApp t u : B].
+Proof.
+intros.
+replace B with B⟨↑⟩[u..] by now bsimpl.
+eapply wfTermApp; tea.
+Qed.
+
+Lemma simple_TermAppCong : forall Γ A B t t' u u',
+  [Γ |- t ≅ t' : arr A B] -> [Γ |- u ≅ u' : A] -> [Γ |- tApp t u ≅ tApp t' u' : B].
+Proof.
+intros.
+replace B with B⟨↑⟩[u..] by now bsimpl.
+eapply TermAppCong; tea.
+Qed.
+
+Lemma simple_TermLambdaCong : forall Γ A B t t',
+  [Γ |- A] ->
+  [Γ,, A |- t ≅ t' : B⟨↑⟩] -> [Γ |- tLambda A t ≅ tLambda A t' : arr A B].
+Proof.
+intros; eapply TermLambdaCong; tea; now apply TypeRefl.
+Qed.
+
+Lemma wfTermAnd : forall Γ A B,
+  [Γ |- A : U] -> [Γ |- B : U] -> [Γ |- tAnd A B : U].
+Proof.
+intros.
+apply wfTermSig; [tea|].
+rewrite <- (@wk1_ren_on Γ A).
+change U with U⟨@wk1 Γ A⟩.
+apply typing_wk; [tea|].
+constructor; [|now constructor].
+now eapply boundary_tm_ctx.
+Qed.
+
+#[local] Ltac auto_type :=
+  try match goal with
+  | |- [|-[de] _] => do 2 red
+  | |- [_ |-[de] _] => do 2 red
+  | |- [_ |-[de] _ : _] => do 2 red
+  end; eauto using WfContextDecl, TypingDecl, WfTypeDecl.
+
+Lemma tEval_decl_cong : forall Γ t t' k k' v v',
+  [Γ |- t ≅ t' : arr tNat tNat] ->
+  [Γ |- k ≅ k' : tNat] ->
+  [Γ |- v ≅ v' : tNat] ->
+  [Γ |- tEval t k v ≅ tEval t' k' v' : U].
+Proof.
+intros.
+assert [|- Γ] by now eapply boundary_tm_conv_ctx.
+assert [|- Γ,, tNat] by (constructor; [tea|now constructor]).
+assert [Γ,, tNat |- tNat] by now constructor.
+assert [Γ |- arr tNat tNat].
+{ apply wfTypeProd; tea. now constructor. }
+eapply simple_TermAppCong; tea.
+change (arr (arr tNat tNat) U) with (arr (arr tNat tNat) U)[k..].
+eapply TermNatElimCong.
++ eapply TypeRefl.
+  apply wfTypeProd; [apply wfTypeProd|]; tea.
+  - do 2 constructor; [tea|now constructor].
+  - do 2 constructor; [tea|apply wfTypeProd]; cbn; auto_type.
++ change (arr (arr tNat tNat) U)[tZero..] with (arr (arr tNat tNat) U).
+  apply simple_TermLambdaCong; tea.
+  apply TermIdCong.
+  - apply TermRefl; auto_type.
+  - apply TermRefl.
+    change tNat with tNat[tZero..].
+    eapply wfTermApp; [|auto_type].
+    apply wfVar; [|constructor].
+    auto_type.
+  - apply TermSuccCong.
+    repeat rewrite <- (@wk1_ren_on Γ tPNat).
+    change tNat with tNat⟨@wk1 Γ tPNat⟩.
+    eapply typing_wk; [tea|].
+    auto_type.
++ apply TermRefl.
+  change (elimSuccHypTy (arr (arr tNat tNat) U)) with (arr tNat (arr (arr (arr tNat tNat) U) (arr (arr tNat tNat) U))).
+  apply wfTermLam; [auto_type|cbn].
+  apply wfTermLam; [eauto 10 using WfContextDecl, TypingDecl, WfTypeDecl|].
+  apply wfTermLam; [repeat constructor; tea|].
+  match goal with |- TypingDecl ?Γ _ _ => assert [|- Γ] end.
+  { repeat constructor; tea. }
+  apply wfTermAnd.
+  - apply wfTermId; auto_type.
+    eapply simple_TermApp with tNat; apply wfVar; tea.
+    * constructor.
+    * change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 6.
+      repeat constructor.
+  - change U with U[(tShift (tRel 0))..]; eapply (wfTermApp (A := tPNat)).
+    * apply wfVar; [auto_type|].
+      change (tProd tPNat U) with (tProd tPNat U)⟨↑⟩⟨↑⟩ at 1.
+      do 2 constructor.
+    * apply wfTermLam; [auto_type|].
+      match goal with |- TypingDecl ?Γ _ _ => assert [|- Γ] by auto_type end.
+      apply simple_TermApp with tNat; [|constructor]; apply wfVar; tea.
+      { change (arr tNat tNat⟨↑⟩) with (arr tNat tNat)⟨↑⟩⟨↑⟩; do 2 constructor. }
+      { change tNat with tNat⟨↑⟩ at 7; constructor. }
++ tea.
+Qed.
+
+Lemma tTotal_decl_cong : forall Γ t t' u u',
+  [Γ |- run model : arr tNat (arr tNat (arr tNat tNat))] ->
+  [Γ |- t ≅ t' : arr tNat tNat] ->
+  [Γ |- u ≅ u' : tNat] ->
+  [Γ |- tTotal t u ≅ tTotal t' u' : U].
+Proof.
+intros.
+assert [|- Γ] by now eapply boundary_tm_conv_ctx.
+assert [|- Γ,, tNat] by (constructor; [tea|now constructor]).
+apply TermSigCong.
++ now constructor.
++ apply TermRefl; now constructor.
++ assert [Γ,, tNat |- t⟨↑⟩ ≅ t'⟨↑⟩ : arr tNat tNat].
+  { rewrite <- (@wk1_ren_on Γ tNat t), <- (@wk1_ren_on Γ tNat t').
+    replace (arr tNat tNat) with (arr tNat tNat)⟨@wk1 Γ tNat⟩ by now (cbn; bsimpl).
+    now apply typing_wk. }
+  assert [Γ,, tNat |- u⟨↑⟩ ≅ u'⟨↑⟩ : tNat].
+  { rewrite <- !(@wk1_ren_on Γ tNat).
+    change tNat with tNat⟨@wk1 Γ tNat⟩.
+    apply typing_wk; tea. }
+  apply tEval_decl_cong.
+  - eapply simple_TermAppCong with tNat; tea.
+    eapply simple_TermAppCong with tNat.
+    * apply TermRefl.
+      change (arr tNat (arr tNat (arr tNat tNat))) with (arr tNat (arr tNat (arr tNat tNat)))⟨@wk1 Γ tNat⟩.
+      replace (run model) with (run model)⟨@wk1 Γ tNat⟩ by apply run_ren.
+      now apply typing_wk.
+    * now apply TermQuoteCong.
+  - apply TermRefl, wfVar; [tea|constructor].
+  - cbn; now eapply simple_TermAppCong with tNat.
+Qed.
+
 (** ** Weakenings of reduction *)
 
 Lemma redtmdecl_wk {Γ Δ t u A} (ρ : Δ ≤ Γ) :
@@ -555,6 +716,8 @@ Module DeclarativeTypingProperties.
   - intros.
     now econstructor.
   - intros.
+    constructor; tea; now eapply TypeRefl.
+  - intros.
     eapply TermTrans; [|now eapply TermFunEta].
     eapply TermTrans; [now eapply TermSym, TermFunEta|].
     constructor; tea.
@@ -590,6 +753,10 @@ Module DeclarativeTypingProperties.
   - intros ????? []; split; now econstructor.
   - intros * ??????? []; split; now econstructor.
   - intros; econstructor; now econstructor.
+  - intros; econstructor; eauto using whne.
+    eapply TermConv; [now constructor|].
+    assert [|- Γ] by gen_typing.
+    eapply convUniv, tTotal_decl_cong; [tea|tea|now symmetry].
   Qed.
 
   #[export, refine] Instance RedTermDeclProperties : RedTermProperties (ta := de) := {}.
@@ -660,12 +827,26 @@ Module DeclarativeTypingProperties.
     + constructor; now apply TermRefl.
     + now apply redalg_quote.
     + now constructor.
+  - intros.
+    assert [|- Γ] by gen_typing.
+    split.
+    + eapply wfTermConv; [constructor; eauto using convtm_qNat|].
+      now eapply convUniv, tTotal_decl_cong.
+    + apply redalg_one_step; now econstructor.
+    + eapply TermConv; [|now apply convUniv, tTotal_decl_cong].
+      apply TermReflectRed; tea.
+      * admit.
+      * admit.
+  - intros; split.
+    + constructor; [now eapply TermRefl|now eapply TermRefl|tea].
+    + apply redalg_reflect; tea.
+    + constructor; tea.
   - intros; now eapply redtmdecl_conv.
   - intros; split.
     + assumption.
     + reflexivity.
     + now econstructor.
-  Qed.
+  Admitted.
 
   #[export, refine] Instance RedTypeDeclProperties : RedTypeProperties (ta := de) := {}.
   Proof.
