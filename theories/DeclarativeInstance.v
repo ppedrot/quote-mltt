@@ -680,6 +680,11 @@ Module DeclarativeTypingProperties.
     - intros.
       now eapply typing_wk.
     - intros.
+      eapply wfTermConv; [constructor; tea|].
+      + eapply TermTrans; [|eapply TermSym]; tea.
+      + eapply TermTrans; [|eapply TermSym]; tea.
+      + now apply convUniv, tTotal_decl_cong.
+    - intros.
       econstructor ; tea.
       now apply TypeSym, RedConvTyC.
   Qed.
@@ -837,33 +842,40 @@ Module DeclarativeTypingProperties.
       now constructor.
     + now constructor.
   - intros; split.
-    + constructor; now apply TermRefl.
+    + econstructor; now eapply lrefl.
     + now apply redalg_quote.
     + now constructor.
   - intros.
     assert [|- Γ] by gen_typing.
     split.
     + constructor; eauto using convtm_qNat.
-    + apply redalg_one_step; now econstructor.
-    + eapply TermStepRed; tea.
-      * admit.
-      * admit.
+    + apply redalg_one_step.
+      match goal with H : EvalStep _ _ _ _ _ |- _ => destruct H as [[]] end.
+      econstructor; tea.
+    + match goal with H : EvalStep _ _ _ _ _ |- _ => destruct H end.
+      eapply TermStepRed; tea.
   - intros; split.
-    + constructor; [now eapply TermRefl|now eapply TermRefl|tea].
+    + constructor; [now eapply lrefl|now eapply lrefl|tea].
     + apply redalg_step; tea.
     + constructor; tea.
   - intros.
     assert [|- Γ] by gen_typing.
-    split.
-    + eapply wfTermConv; [constructor; eauto using convtm_qNat|].
-      now eapply convUniv, tTotal_decl_cong.
-    + apply redalg_one_step; now econstructor.
-    + eapply TermConv; [|now apply convUniv, tTotal_decl_cong].
-      apply TermReflectRed; tea.
-      * admit.
-      * admit.
+    assert [Γ |- tTotal t (qNat u) ≅ tTotal t₀ (qNat u)].
+    { eapply convUniv, tTotal_decl_cong; tea.
+      now apply convtm_qNat. }
+    split. 
+    + eapply wfTermConv; [apply wfTermReflect|now eapply TypeSym]; eauto.
+      * eapply TermTrans; [eapply TermSym|]; tea.
+      * now apply convtm_qNat.
+    + apply redalg_one_step.
+      match goal with H : EvalStep _ _ _ _ _ |- _ => destruct H as [[]] end.
+      econstructor; tea.
+    + match goal with H : EvalStep _ _ _ _ _ |- _ => destruct H end.
+      eapply TermConv; [eapply TermReflectRed; tea|].
+      * eapply TermTrans; [eapply TermSym|]; tea.
+      * now apply TypeSym.
   - intros; split.
-    + constructor; [now eapply TermRefl|now eapply TermRefl|tea].
+    + constructor; [now eapply lrefl|now eapply lrefl|tea].
     + apply redalg_reflect; tea.
     + constructor; tea.
   - intros; now eapply redtmdecl_conv.
@@ -871,7 +883,7 @@ Module DeclarativeTypingProperties.
     + assumption.
     + reflexivity.
     + now econstructor.
-  Admitted.
+  Qed.
 
   #[export, refine] Instance RedTypeDeclProperties : RedTypeProperties (ta := de) := {}.
   Proof.

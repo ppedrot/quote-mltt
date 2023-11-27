@@ -147,6 +147,12 @@ Section RedDefinitions.
       isWfPair Γ A B (tPair A' B' a b)
   | NeWfPair : forall n : term, [Γ |- n ~ n : tSig A B] -> isWfPair Γ A B n.
 
+  Record EvalStep Γ t u k v := {
+    evstep_eval : ∑ k', murec (eval true (tApp (erase t) (qNat u))) k' = Some (k, qNat v);
+    evstep_nil : (forall k', k' < k -> [ Γ |- qRun t u k' ≅ tZero : tNat ]);
+    evstep_val : [ Γ |- qRun t u k ≅ tSucc (qNat v) : tNat ];
+  }.
+
 End RedDefinitions.
 
 Notation "[ Γ |- A ↘ B ]" := (TypeRedWhnf Γ A B) (only parsing) : typing_scope.
@@ -315,11 +321,11 @@ Section GenericTyping.
       [ Γ |- u ≅ u : tNat ] ->
       [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
       [ Γ |- tStep t u : tNat ];
-    ty_reflect {Γ} {t u} :
-      [ Γ |- t ≅ t : arr tNat tNat ] ->
-      [ Γ |- u ≅ u : tNat ] ->
+    ty_reflect {Γ} {t t' u u'} :
+      [ Γ |- t ≅ t' : arr tNat tNat ] ->
+      [ Γ |- u ≅ u' : tNat ] ->
       [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
-      [ Γ |- tReflect t u : tTotal t u ];
+      [ Γ |- tReflect t u : tTotal t' u' ];
     ty_exp {Γ t A A'} : [Γ |- t : A'] -> [Γ |- A ⤳* A'] -> [Γ |- t : A] ;
     ty_conv {Γ t A A'} : [Γ |- t : A'] -> [Γ |- A' ≅ A] -> [Γ |- t : A] ;
   }.
@@ -574,42 +580,31 @@ Section GenericTyping.
       [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t ->
       [Γ |- tQuote t ⤳* qNat (model.(quote) (erase t)) : tNat];
     redtm_quote {Γ t t'} :
-      [Γ |- t : arr tNat tNat] ->
       [Γ |- t ≅ t' : arr tNat tNat] ->
       [ t ⇶* t' ] ->
       [Γ |- tQuote t ⤳* tQuote t' : tNat ];
-    redtm_evalstep {Γ t t₀ u u₀ k k' n} :
-      [Γ |- t : arr tNat tNat] ->
+    redtm_evalstep {Γ t u k n} :
       [Γ |- t ≅ t : arr tNat tNat] ->
-      [Γ |- t ≅ t₀ : arr tNat tNat] ->
-      [Γ |- qNat u ≅ u₀ : tNat] ->
       [Γ |- run model : arr tNat (arr tNat tPNat)] ->
-      murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
       dnf t -> closed0 t ->
-      [Γ |- tStep t (qNat u) ⤳* qNat k' : tNat ];
+      EvalStep Γ t u k n ->
+      [Γ |- tStep t (qNat u) ⤳* qNat k : tNat ];
     redtm_step {Γ t t' u u'} :
-      [Γ |- t : arr tNat tNat] ->
       [Γ |- t ≅ t' : arr tNat tNat] ->
-      [Γ |- u : tNat] ->
       [Γ |- u ≅ u' : tNat] ->
       [Γ |- run model : arr tNat (arr tNat tPNat)] ->
       [ t ⇶* t' ] ->
       [ u ⇶* u' ] ->
       dnf t' -> dnf u' ->
       [Γ |- tStep t u ⤳* tStep t' u' : tNat ];
-    redtm_evalreflect {Γ t t₀ u u₀ k k' n} :
-      [Γ |- t : arr tNat tNat] ->
-      [Γ |- t ≅ t : arr tNat tNat] ->
+    redtm_evalreflect {Γ t t₀ u k n} :
       [Γ |- t ≅ t₀ : arr tNat tNat] ->
-      [Γ |- qNat u ≅ u₀ : tNat] ->
       [Γ |- run model : arr tNat (arr tNat tPNat)] ->
-      murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
-      dnf t -> closed0 t ->
-      [Γ |- tReflect t (qNat u) ⤳* qEvalTm k' n : tTotal t₀ u₀ ];
+      dnf t₀ -> closed0 t₀ ->
+      EvalStep Γ t₀ u k n ->
+      [Γ |- tReflect t₀ (qNat u) ⤳* qEvalTm k n : tTotal t (qNat u) ];
     redtm_reflect {Γ t t' u u'} :
-      [Γ |- t : arr tNat tNat] ->
       [Γ |- t ≅ t' : arr tNat tNat] ->
-      [Γ |- u : tNat] ->
       [Γ |- u ≅ u' : tNat] ->
       [Γ |- run model : arr tNat (arr tNat tPNat)] ->
       [ t ⇶* t' ] ->

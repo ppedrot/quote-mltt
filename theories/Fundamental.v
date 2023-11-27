@@ -234,7 +234,7 @@ Section Fundamental.
   Proof.
     intros * [] [] []; unshelve econstructor.
     + assumption.
-    + apply (totalValid (l := one)); irrValid.
+    + apply TyCumValid, (totalValid (l := one)); irrValid.
     + eapply ReflectValid; irrValid.
   Qed.
 
@@ -331,8 +331,8 @@ Section Fundamental.
     FundTmEq Γ (arr tNat tNat) t t ->
     FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
     dnf t -> Closed.closed0 t ->
-    (forall k' : nat, k' < k -> FundTyEq Γ (qRun t u k') tZero) ->
-    FundTyEq Γ (qRun t u k) (tSucc (qNat v)) ->
+    (forall k' : nat, k' < k -> FundTmEq Γ tNat (qRun t u k') tZero) ->
+    FundTmEq Γ tNat (qRun t u k) (tSucc (qNat v)) ->
     FundTmEq Γ tNat (tStep t (qNat u)) (qNat k).
   Proof.
   intros * [] [] ?? Hnil []; unshelve econstructor.
@@ -341,8 +341,9 @@ Section Fundamental.
   - apply StepValid; try irrValid.
     apply qNatValid.
   - apply qNatValid.
-  - admit.
-  Admitted.
+  - eapply StepEvalValid; try irrValid; tea.
+    intros k' Hk'; specialize (Hnil k' Hk') as []; now irrValid.
+  Qed.
 
   Lemma FundTmEqStepCong : forall Γ t t' u u',
     FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat u u' ->
@@ -361,18 +362,20 @@ Section Fundamental.
     FundTmEq Γ (arr tNat tNat) t t ->
     FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
     dnf t -> Closed.closed0 t ->
-    (forall k' : nat, k' < k -> FundTyEq Γ (qRun t u k') tZero) ->
-    FundTyEq Γ (qRun t u k) (tSucc (qNat v)) ->
+    (forall k' : nat, k' < k -> FundTmEq Γ tNat (qRun t u k') tZero) ->
+    FundTmEq Γ tNat (qRun t u k) (tSucc (qNat v)) ->
     FundTmEq Γ (tTotal t (qNat u)) (tReflect t (qNat u)) (qEvalTm k v).
   Proof.
   intros * [] [] ?? Hnil []; unshelve econstructor.
   - assumption.
-  - apply (totalValid (l := one)); try irrValid.
+  - apply TyCumValid, (totalValid (l := one)); try irrValid.
     apply qNatValid.
   - apply ReflectValid.
-  - admit.
-  - admit.
-  Admitted.
+  - eapply qTmEvalValid; try irrValid; tea.
+    intros k' Hk'; specialize (Hnil k' Hk') as []; now irrValid.
+  - eapply ReflectEvalValid; try irrValid; tea.
+    intros k' Hk'; specialize (Hnil k' Hk') as []; now irrValid.
+  Qed.
 
   Lemma FundTmEqReflectCong : forall Γ t t' u u',
     FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat u u' ->
@@ -381,7 +384,7 @@ Section Fundamental.
   Proof.
   intros * [] [] [] **; unshelve econstructor.
   - assumption.
-  - apply (totalValid (l := one)); irrValid.
+  - apply TyCumValid, (totalValid (l := one)); irrValid.
   - apply ReflectValid; irrValid.
   - eapply conv; [eapply symValidTyEq, totalCongValid; irrValid|].
     apply (ReflectValid (l := one)); irrValid.

@@ -630,6 +630,14 @@ Module DeepTypingProperties.
   | H : [_ |-[nf] _ ~ _ : _] |- _ => destruct H
   end.
 
+  Lemma EvalStep_compat : forall Γ t u k v,
+    EvalStep (ta := nf) Γ t u k v -> EvalStep (ta := de) Γ t u k v.
+  Proof.
+  intros * []; split; invnf; tea.
+  intros k' Hk **; invnf.
+  specialize (evstep_nil k' Hk); now invnf.
+  Qed.
+
   #[export, refine] Instance WfCtxDeclProperties : WfContextProperties (ta := nf) := {}.
   Proof.
     1-2: now constructor.
@@ -1010,7 +1018,8 @@ Module DeepTypingProperties.
   all: try apply DeclarativeTypingProperties.TypingDeclProperties.
   + intros * []; now constructor.
   + intros * [] []; now econstructor.
-  + intros * [] []; now econstructor.
+  + intros * [] [] ?.
+    now eapply DeclarativeTypingProperties.TypingDeclProperties.
   + intros * ? []; now econstructor.
   Qed.
 
@@ -1137,12 +1146,15 @@ Module DeepTypingProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf.
+    match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end.
+    now eapply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now eapply DeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf.
+    match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end.
+    now eapply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now eapply DeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf; now eapply DeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf; change (@red_tm nf) with (@red_tm de).
-    now eapply redtm_conv.
   Qed.
 
   #[export] Instance DeclarativeTypingProperties : GenericTypingProperties nf _ _ _ _ _ _ _ _ _ _ := {}.
