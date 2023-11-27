@@ -310,6 +310,11 @@ Section GenericTyping.
     ty_quote {Γ} {t} :
       [ Γ |- t ≅ t : arr tNat tNat ] ->
       [ Γ |- tQuote t : tNat ];
+    ty_step {Γ} {t u} :
+      [ Γ |- t ≅ t : arr tNat tNat ] ->
+      [ Γ |- u ≅ u : tNat ] ->
+      [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+      [ Γ |- tStep t u : tNat ];
     ty_reflect {Γ} {t u} :
       [ Γ |- t ≅ t : arr tNat tNat ] ->
       [ Γ |- u ≅ u : tNat ] ->
@@ -456,6 +461,15 @@ Section GenericTyping.
         dnf n -> dnf n' ->
         ~ closed0 n -> ~ closed0 n' ->
         [Γ |- tQuote n ~ tQuote n' : tNat];
+    convneu_step {Γ t t' t₀ u u' u₀} :
+      [Γ |- t ≅ t' : arr tNat tNat] ->
+      [Γ |- u ≅ u' : tNat] ->
+      [Γ |- t ≅ t₀ : arr tNat tNat] ->
+      [Γ |- u ≅ u₀ : tNat] ->
+      [Γ |- model.(run) : arr tNat (arr tNat tPNat)] ->
+      dnf t -> dnf t' -> dnf u -> dnf u' ->
+      (~ is_closedn 0 t) + (~ is_closedn 0 u) -> (~ is_closedn 0 t') + (~ is_closedn 0 u') ->
+      [Γ |- tStep t u ~ tStep t' u' : tNat];
     convneu_reflect {Γ t t' t₀ u u' u₀} :
       [Γ |- t ≅ t' : arr tNat tNat] ->
       [Γ |- u ≅ u' : tNat] ->
@@ -564,6 +578,25 @@ Section GenericTyping.
       [Γ |- t ≅ t' : arr tNat tNat] ->
       [ t ⇶* t' ] ->
       [Γ |- tQuote t ⤳* tQuote t' : tNat ];
+    redtm_evalstep {Γ t t₀ u u₀ k k' n} :
+      [Γ |- t : arr tNat tNat] ->
+      [Γ |- t ≅ t : arr tNat tNat] ->
+      [Γ |- t ≅ t₀ : arr tNat tNat] ->
+      [Γ |- qNat u ≅ u₀ : tNat] ->
+      [Γ |- run model : arr tNat (arr tNat tPNat)] ->
+      murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
+      dnf t -> closed0 t ->
+      [Γ |- tStep t (qNat u) ⤳* qNat k' : tNat ];
+    redtm_step {Γ t t' u u'} :
+      [Γ |- t : arr tNat tNat] ->
+      [Γ |- t ≅ t' : arr tNat tNat] ->
+      [Γ |- u : tNat] ->
+      [Γ |- u ≅ u' : tNat] ->
+      [Γ |- run model : arr tNat (arr tNat tPNat)] ->
+      [ t ⇶* t' ] ->
+      [ u ⇶* u' ] ->
+      dnf t' -> dnf u' ->
+      [Γ |- tStep t u ⤳* tStep t' u' : tNat ];
     redtm_evalreflect {Γ t t₀ u u₀ k k' n} :
       [Γ |- t : arr tNat tNat] ->
       [Γ |- t ≅ t : arr tNat tNat] ->
@@ -572,7 +605,7 @@ Section GenericTyping.
       [Γ |- run model : arr tNat (arr tNat tPNat)] ->
       murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
       dnf t -> closed0 t ->
-      [Γ |- tReflect t (qNat u) ⤳* qTotal (model.(quote) (erase t)) u k' n : tTotal t₀ u₀ ];
+      [Γ |- tReflect t (qNat u) ⤳* qEvalTm k' n : tTotal t₀ u₀ ];
     redtm_reflect {Γ t t' u u'} :
       [Γ |- t : arr tNat tNat] ->
       [Γ |- t ≅ t' : arr tNat tNat] ->
@@ -1921,21 +1954,14 @@ Qed.
 
 Lemma tTotal_cong {Γ t t' u u'} :
   [Γ |- tApp (tApp (run model) (tQuote t)) u ≅ tApp (tApp (run model) (tQuote t')) u' : arr tNat tNat] ->
+  [Γ |- tStep t u ~ tStep t' u' : tNat] ->
   [Γ |- tApp t u ≅ tApp t' u' : tNat] ->
   [Γ |- tTotal t u ≅ tTotal t' u' : U].
 Proof.
-  intros * Hrun Hev; unfold tTotal.
+  intros * Hrun Hstep Hev; unfold tTotal.
   assert ([|- Γ,, tNat]).
   { apply wfc_cons; gen_typing. }
-  apply convtm_sig; [gen_typing|gen_typing|].
-  apply convtm_convneu, tEval_cong.
-  + apply (convtm_wk (@wk1 Γ tNat)) in Hrun; [|tea].
-    rewrite !wk1_ren_on in Hrun; cbn in Hrun.
-    rewrite !run_ren in Hrun; tea.
-  + change tNat with tNat⟨↑⟩ at 2.
-    apply convneu_var, ty_var0; gen_typing.
-  + apply (convtm_wk (@wk1 Γ tNat)) in Hev; [|tea].
-    rewrite !wk1_ren_on in Hev; tea.
+  apply convtm_convneu, tEval_cong; tea.
 Qed.
 
 Lemma ty_qEvalTy {Γ} n v : [|- Γ] -> [Γ |- qEvalTy n v : U].

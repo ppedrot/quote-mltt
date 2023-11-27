@@ -203,15 +203,14 @@ Axiom run_subst : forall (σ : nat -> term), (run model)[σ] = run model.
 (** Derived notions from the model *)
 
 Definition tTotal t u :=
-  tSig tNat (tEval (tApp (tApp model.(run) (tQuote t⟨↑⟩)) u⟨↑⟩) (tRel 0) (tApp t u)⟨↑⟩).
-(** ∑ k : nat, eval (run (quote t) u) k (t u) *)
+  tEval (tApp (tApp model.(run) (tQuote t)) u) (tStep t u) (tApp t u).
+(** eval (run (quote t) u) (step t u) (t u) *)
 
 Lemma tTotal_ren : forall t u ρ,
   (tTotal t u)⟨ρ⟩ = tTotal t⟨ρ⟩ u⟨ρ⟩.
 Proof.
 intros; unfold tTotal; cbn - [tEval].
 f_equal; rewrite tEval_ren; cbn; do 2 f_equal; try now asimpl.
-f_equal; [|now asimpl].
 now rewrite run_ren.
 Qed.
 
@@ -220,9 +219,10 @@ Lemma tTotal_subst : forall t u σ,
 Proof.
 intros; unfold tTotal; cbn - [tEval].
 f_equal; rewrite tEval_subst; cbn; do 2 f_equal; try now asimpl.
-f_equal; [|now asimpl]; apply run_subst.
+f_equal; apply run_subst.
 Qed.
 
+(*
 Definition qTotal (t u k v : nat) :=
   tPair tNat (tEval (tApp (tApp model.(run) (qNat t)) (qNat u)) (tRel 0) (qNat v))
     (qNat k) (qEvalTm k v).
@@ -244,3 +244,4 @@ intros; unfold closedn, qTotal; cbn - [qEvalTm].
 apply andb_true_intro; split; [apply closedn_qNat|].
 apply closedn_qEvalTm.
 Qed.
+*)

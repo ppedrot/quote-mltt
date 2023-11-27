@@ -216,6 +216,17 @@ Section Fundamental.
     + eapply QuoteValid; irrValid.
   Qed.
 
+  Lemma FundTmStep : forall (Γ : context) (t u : term),
+    FundTmEq Γ (arr tNat tNat) t t -> FundTmEq Γ tNat u u ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ tNat (tStep t u).
+  Proof.
+    intros * [] [] []; unshelve econstructor.
+    + assumption.
+    + apply natValid.
+    + apply StepValid; irrValid.
+  Qed.
+
   Lemma FundTmReflect : forall (Γ : context) (t u : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTmEq Γ tNat u u ->
     FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
@@ -316,22 +327,51 @@ Section Fundamental.
   - apply QuoteCongValid; irrValid.
   Qed.
 
+  Lemma FundTmEqStepEval : forall Γ t u k v,
+    FundTmEq Γ (arr tNat tNat) t t ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    dnf t -> Closed.closed0 t ->
+    (forall k' : nat, k' < k -> FundTyEq Γ (qRun t u k') tZero) ->
+    FundTyEq Γ (qRun t u k) (tSucc (qNat v)) ->
+    FundTmEq Γ tNat (tStep t (qNat u)) (qNat k).
+  Proof.
+  intros * [] [] ?? Hnil []; unshelve econstructor.
+  - assumption.
+  - apply natValid.
+  - apply StepValid; try irrValid.
+    apply qNatValid.
+  - apply qNatValid.
+  - admit.
+  Admitted.
+
+  Lemma FundTmEqStepCong : forall Γ t t' u u',
+    FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat u u' ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTmEq Γ tNat (tStep t u) (tStep t' u').
+  Proof.
+  intros * [] [] [] **; unshelve econstructor.
+  - assumption.
+  - apply natValid.
+  - apply StepValid; try irrValid.
+  - apply StepValid; try irrValid.
+  - apply StepCongValid; try irrValid.
+  Qed.
+
   Lemma FundTmEqReflectEval : forall Γ t u k v,
     FundTmEq Γ (arr tNat tNat) t t ->
     FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
     dnf t -> Closed.closed0 t ->
     (forall k' : nat, k' < k -> FundTyEq Γ (qRun t u k') tZero) ->
     FundTyEq Γ (qRun t u k) (tSucc (qNat v)) ->
-    FundTmEq Γ (tTotal t (qNat u)) (tReflect t (qNat u)) (qTotal (model.(quote) (erase t)) u k v).
+    FundTmEq Γ (tTotal t (qNat u)) (tReflect t (qNat u)) (qEvalTm k v).
   Proof.
   intros * [] [] ?? Hnil []; unshelve econstructor.
   - assumption.
-(*   - apply (totalValid (l := one)); irrValid. *)
-(*   - apply ReflectValid; irrValid. *)
-(*   - admit. *)
-(*   - unshelve eapply irrelevanceTmEq, ReflectEvalValid; tea. *)
-(*     shelve. *)
-(*     all: irrValid. *)
+  - apply (totalValid (l := one)); try irrValid.
+    apply qNatValid.
+  - apply ReflectValid.
+  - admit.
+  - admit.
   Admitted.
 
   Lemma FundTmEqReflectCong : forall Γ t t' u u',
@@ -1262,6 +1302,7 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
   + intros; now apply FundTmQuote.
+  + intros; now apply FundTmStep.
   + intros; now apply FundTmReflect.
   + intros; now eapply FundTmConv.
   + intros; now apply FundTyEqPiCong.
@@ -1274,6 +1315,8 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTmEqBRed.
   + intros; now apply FundTmEqQuoteEval.
   + intros; now apply FundTmEqQuoteCong.
+  + intros; now eapply FundTmEqStepEval.
+  + intros; now eapply FundTmEqStepCong.
   + intros; now apply FundTmEqReflectEval.
   + intros; now apply FundTmEqReflectCong.
   + intros; now apply FundTmEqPiCong.

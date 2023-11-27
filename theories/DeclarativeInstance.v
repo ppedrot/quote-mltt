@@ -125,6 +125,9 @@ Section TypingWk.
     - intros * _ IH **; cbn.
       econstructor.
       now apply IH.
+    - intros; cbn; constructor; eauto.
+      + now change (arr tNat tNat) with (arr tNat tNat)⟨ρ⟩.
+      + rewrite <- (run_ren _ ρ); now apply H4.
     - intros * **.
       unfold ren1, Ren1_well_wk; rewrite tTotal_ren.
       cbn in *; constructor; eauto.
@@ -177,10 +180,30 @@ Section TypingWk.
       constructor.
       now apply IHe.
     - intros * ? IHt ? IHrun ?? ? IHnil ? IHval **.
-      cbn - [qTotal tTotal].
+      cbn; unfold ren1, Ren1_well_wk.
+      rewrite !qNat_ren.
+      eapply TermStepRed.
+      + now apply IHt.
+      + now rewrite <- (run_ren _ ρ); apply IHrun.
+      + now apply dnf_ren.
+      + now apply closed0_ren.
+      + intros k' Hk.
+        unshelve eassert (Hnil := IHnil k' Hk Δ ρ _); [tea|].
+        rewrite <- qRun_ren; [|tea].
+        apply Hnil.
+      + cbn - [qRun] in IHval.
+        unshelve eassert (Hval := IHval Δ ρ _); [tea|].
+        rewrite <- qRun_ren; [|tea].
+        rewrite !qNat_ren in Hval.
+        apply Hval.
+    - intros; cbn.
+      constructor; eauto using dnf_ren, closed0_ren.
+      + change (arr tNat tNat) with (arr tNat tNat)⟨ρ⟩; now eauto.
+      + rewrite <- (run_ren _ ρ); now apply H4.
+    - intros * ? IHt ? IHrun ?? ? IHnil ? IHval **.
+      cbn - [tTotal].
       unfold ren1, Ren1_well_wk.
-      rewrite tTotal_ren, qTotal_ren, !qNat_ren.
-      rewrite <- erase_is_closed0_ren_id with (ρ := ρ); [|tea].
+      rewrite tTotal_ren, qEvalTm_ren, !qNat_ren.
       apply TermReflectRed.
       + now apply IHt.
       + now rewrite <- (run_ren _ ρ); apply IHrun.
@@ -555,27 +578,13 @@ Proof.
 intros.
 assert [|- Γ] by now eapply boundary_tm_conv_ctx.
 assert [|- Γ,, tNat] by (constructor; [tea|now constructor]).
-apply TermSigCong.
-+ now constructor.
-+ apply TermRefl; now constructor.
-+ assert [Γ,, tNat |- t⟨↑⟩ ≅ t'⟨↑⟩ : arr tNat tNat].
-  { rewrite <- (@wk1_ren_on Γ tNat t), <- (@wk1_ren_on Γ tNat t').
-    replace (arr tNat tNat) with (arr tNat tNat)⟨@wk1 Γ tNat⟩ by now (cbn; bsimpl).
-    now apply typing_wk. }
-  assert [Γ,, tNat |- u⟨↑⟩ ≅ u'⟨↑⟩ : tNat].
-  { rewrite <- !(@wk1_ren_on Γ tNat).
-    change tNat with tNat⟨@wk1 Γ tNat⟩.
-    apply typing_wk; tea. }
-  apply tEval_decl_cong.
-  - eapply simple_TermAppCong with tNat; tea.
-    eapply simple_TermAppCong with tNat.
-    * apply TermRefl.
-      change (arr tNat (arr tNat (arr tNat tNat))) with (arr tNat (arr tNat (arr tNat tNat)))⟨@wk1 Γ tNat⟩.
-      replace (run model) with (run model)⟨@wk1 Γ tNat⟩ by apply run_ren.
-      now apply typing_wk.
-    * now apply TermQuoteCong.
-  - apply TermRefl, wfVar; [tea|constructor].
-  - cbn; now eapply simple_TermAppCong with tNat.
+apply tEval_decl_cong.
+- eapply simple_TermAppCong with tNat; tea.
+  eapply simple_TermAppCong with tNat.
+  * now apply TermRefl.
+  * now apply TermQuoteCong.
+- apply TermStepCong; tea.
+- cbn; now eapply simple_TermAppCong with tNat.
 Qed.
 
 (** ** Weakenings of reduction *)
@@ -756,6 +765,10 @@ Module DeclarativeTypingProperties.
   - intros; econstructor; eauto using whne.
     eapply TermConv; [now constructor|].
     assert [|- Γ] by gen_typing.
+    now eapply convUniv, convtm_nat.
+  - intros; econstructor; eauto using whne.
+    eapply TermConv; [now constructor|].
+    assert [|- Γ] by gen_typing.
     eapply convUniv, tTotal_decl_cong; [tea|tea|now symmetry].
   Qed.
 
@@ -827,6 +840,18 @@ Module DeclarativeTypingProperties.
     + constructor; now apply TermRefl.
     + now apply redalg_quote.
     + now constructor.
+  - intros.
+    assert [|- Γ] by gen_typing.
+    split.
+    + constructor; eauto using convtm_qNat.
+    + apply redalg_one_step; now econstructor.
+    + eapply TermStepRed; tea.
+      * admit.
+      * admit.
+  - intros; split.
+    + constructor; [now eapply TermRefl|now eapply TermRefl|tea].
+    + apply redalg_step; tea.
+    + constructor; tea.
   - intros.
     assert [|- Γ] by gen_typing.
     split.

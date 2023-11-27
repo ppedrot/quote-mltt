@@ -131,6 +131,11 @@ Section Definitions.
       | wfTermQuote {Γ} {t} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
           [ Γ |- tQuote t : tNat ]
+      | wfTermStep {Γ} {t u} :
+          [ Γ |- t ≅ t : arr tNat tNat ] ->
+          [ Γ |- u ≅ u : tNat ] ->
+          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- tStep t u : tNat ]
       | wfTermReflect {Γ} {t u} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
           [ Γ |- u ≅ u : tNat ] ->
@@ -185,14 +190,25 @@ Section Definitions.
       | TermQuoteCong {Γ} {t t'} :
           [ Γ |- t ≅ t' : arr tNat tNat ] ->
           [ Γ |- tQuote t ≅ tQuote t' : tNat ]
-      | TermReflectRed {Γ} {t u k v} :
+      | TermStepRed {Γ} {t u k v} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
-(*           [ Γ |- u ≅ u : tNat ] -> *)
           [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
           dnf t -> closed0 t ->
           (forall k', k' < k -> [ Γ |- qRun t u k' ≅ tZero ]) ->
           [ Γ |- qRun t u k ≅ tSucc (qNat v) ] ->
-          [ Γ |- tReflect t (qNat u) ≅ qTotal (model.(quote) (erase t)) u k v : tTotal t (qNat u) ] (* FIXME *)
+          [ Γ |- tStep t (qNat u) ≅ qNat k : tNat ]
+      | TermStepCong {Γ} {t t' u u'} :
+          [ Γ |- t ≅ t' : arr tNat tNat ] ->
+          [ Γ |- u ≅ u' : tNat ] ->
+          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- tStep t u ≅ tStep t' u' : tNat ]
+      | TermReflectRed {Γ} {t u k v} :
+          [ Γ |- t ≅ t : arr tNat tNat ] ->
+          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          dnf t -> closed0 t ->
+          (forall k', k' < k -> [ Γ |- qRun t u k' ≅ tZero ]) ->
+          [ Γ |- qRun t u k ≅ tSucc (qNat v) ] ->
+          [ Γ |- tReflect t (qNat u) ≅ qEvalTm k v : tTotal t (qNat u) ]
       | TermReflectCong {Γ} {t t' u u'} :
           [ Γ |- t ≅ t' : arr tNat tNat ] ->
           [ Γ |- u ≅ u' : tNat ] ->

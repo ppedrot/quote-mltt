@@ -41,6 +41,7 @@ match t with
 | tRefl A t => noccurn n A && noccurn n t
 | tIdElim A x P hr y t => noccurn n A && noccurn n x && noccurn (S (S n)) P && noccurn n hr && noccurn n y && noccurn n t
 | tQuote t => noccurn n t
+| tStep t u => noccurn n t && noccurn n u
 | tReflect t u => noccurn n t && noccurn n u
 end.
 
@@ -155,6 +156,7 @@ Fixpoint erase (t : term) := match t with
 | tRefl A t => tRefl (erase A) (erase t)
 | tIdElim A x P hr y t => tIdElim (erase A) (erase x) (erase P) (erase hr) (erase y) (erase t)
 | tQuote t => tQuote (erase t)
+| tStep t u => tStep (erase t) (erase u)
 | tReflect t u => tReflect (erase t) (erase u)
 end.
 
@@ -401,6 +403,8 @@ all: try now (constructor; eauto).
   unfold closed0; now rewrite erase_is_closedn.
 + constructor; tea.
   unfold closed0; now rewrite !erase_is_closedn.
++ constructor; tea.
+  unfold closed0; now rewrite !erase_is_closedn.
 Qed.
 
 Lemma dnf_erase : forall t, dnf t -> dnf (erase t).
@@ -459,6 +463,7 @@ Fixpoint unannot (t : term) := match t with
 | tRefl A t => tRefl (unannot A) (unannot t)
 | tIdElim A x P hr y t => tIdElim (unannot A) (unannot x) (unannot P) (unannot hr) (unannot y) (unannot t)
 | tQuote t => tQuote (unannot t)
+| tStep t u => tStep (unannot t) (unannot u)
 | tReflect t u => tReflect (unannot t) (unannot u)
 end.
 
@@ -489,6 +494,7 @@ Fixpoint etared (t : term) := match t with
 | tRefl A t => tRefl (etared A) (etared t)
 | tIdElim A x P hr y t => tIdElim (etared A) (etared x) (etared P) (etared hr) (etared y) (etared t)
 | tQuote t => tQuote (etared t)
+| tStep t u => tStep (etared t) (etared u)
 | tReflect t u => tReflect (etared t) (etared u)
 end.
 
@@ -537,6 +543,9 @@ all: try eauto using dnf, dne.
 + constructor; eauto using dne, dnf.
   destruct s; [left|right];
   intro Hc; unfold closed0 in Hc; rewrite closedn_etared in Hc; contradiction.
++ constructor; eauto using dne, dnf.
+  destruct s; [left|right];
+  intro Hc; unfold closed0 in Hc; rewrite closedn_etared in Hc; contradiction.
 Qed.
 
 Lemma dnf_etared : forall t, dnf t -> dnf (etared t).
@@ -562,6 +571,9 @@ all: try eauto using dnf, dne.
 + constructor; eauto.
   destruct s; [left|right];
   unfold closed0; rewrite closedn_unannot; tea.
++ constructor; eauto.
+  destruct s; [left|right];
+  unfold closed0; rewrite closedn_unannot; tea.
 Qed.
 
 Lemma dnf_unannot : forall t, dnf t -> dnf (unannot t).
@@ -578,6 +590,9 @@ Lemma whne_unannot : forall t, whne t -> whne (unannot t).
 Proof.
 induction 1; cbn; eauto using whne.
 + constructor; [|now apply dnf_unannot].
+  unfold closed0; rewrite closedn_unannot; tea.
++ constructor; try now apply dnf_unannot.
+  destruct s; [left|right];
   unfold closed0; rewrite closedn_unannot; tea.
 + constructor; try now apply dnf_unannot.
   destruct s; [left|right];
@@ -788,6 +803,12 @@ Lemma eqnf_tQuote {t t'} :
   eqnf t t' -> eqnf (tQuote t) (tQuote t').
 Proof.
 unfold eqnf; cbn; now intros ->.
+Qed.
+
+Lemma eqnf_tStep {t t' u u'} :
+  eqnf t t' -> eqnf u u' -> eqnf (tStep t u) (tStep t' u').
+Proof.
+unfold eqnf; cbn; now intros -> ->.
 Qed.
 
 Lemma eqnf_tReflect {t t' u u'} :

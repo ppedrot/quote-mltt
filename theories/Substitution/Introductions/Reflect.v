@@ -729,6 +729,19 @@ eapply LRTmEqRed_l, tEvalRedEq.
 + now eapply reflLRTmEq.
 Qed.
 
+Lemma tEvalRedTy {Γ l t k v} (rΓ : [|- Γ])
+  (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat)
+  (rt : [Γ ||-<l> t : tPNat | rNatNat])
+  (rk : [Γ ||-<l> k : tNat | rNat])
+  (rv : [Γ ||-<l> v : tNat | rNat]) :
+  [Γ ||-<one> tEval t k v].
+Proof.
+unshelve epose (rU := LRU_ (redUOne _)); [|tea|].
+enough (rEval : [rU | Γ ||- tEval t k v : U]).
+{ destruct rEval; apply (embRedTyOne rel). }
+eapply tEvalRed; tea.
+Qed.
+
 Definition evalValid {Γ l t k r} (vΓ : [||-v Γ])
   (vNat := natValid (l := l) vΓ)
   (vArr := simpleArrValid vΓ vNat vNat)
@@ -740,10 +753,7 @@ Proof.
 assert (vEval : forall Δ σ (vΔ : [|- Δ]) (vσ : [vΓ | Δ ||-v σ : Γ | vΔ]),
   [Δ ||-< one > tEval t[σ] k[σ] r[σ]]).
 { intros Δ σ vΔ **.
-  unshelve epose (rU := LRU_ (redUOne _)); [|tea|].
-  enough (rEval : [rU | Δ ||- tEval t[σ] k[σ] r[σ] : U]).
-  { destruct rEval; apply (embRedTyOne rel). }
-  unshelve eapply tEvalRed; tea.
+  unshelve eapply tEvalRedTy; tea.
   - destruct vt as [vt _].
     irrelevance0; [reflexivity|]; now unshelve apply vt.
   - destruct vk as [vk _].
@@ -781,7 +791,7 @@ Qed.
 
 End Utils.
 
-Section ReflectValid.
+Section ReflectRed.
 
 Context `{GenericTypingProperties}.
 Context {SN : SNTypingProperties ta _ _ _ _ _}.
@@ -884,9 +894,9 @@ Lemma ReflectRedEq : forall Γ l t t' u u' (rΓ : [|- Γ]) (rNat := natRed rΓ) 
   [Γ ||-<l> tReflect t u ≅ tReflect t' u' : tTotal t u | rTotal ].
 Proof.
 intros * rt rt' ru ru' rtt' ruu' rrun.
-pose (rTotal' := normRedΣ0 (Induction.invLRΣ rTotal)); refold.
-fold (tTotal t u) in rTotal'.
-eapply LRTmEqIrrelevant' with (lrA := LRSig' rTotal'); [reflexivity|].
+(* pose (rTotal' := normRedΣ0 (Induction.invLRΣ rTotal)); refold. *)
+(* fold (tTotal t u) in rTotal'. *)
+(* eapply LRTmEqIrrelevant' with (lrA := LRSig' rTotal'); [reflexivity|]. *)
 assert (Hnft := rtt'); apply escapeEqTerm, snty_nf in Hnft.
 assert (Hnfu := ruu'); apply escapeEqTerm, snty_nf in Hnfu.
 destruct Hnft as (t₀&t'₀&[]&[]&?&?&?).
@@ -932,7 +942,7 @@ eapply LRTmEqRed_l, ReflectRedEq; tea.
 + now eapply reflLRTmEq.
 Qed.
 
-End ReflectValid.
+End ReflectRed.
 
 Section ReflectValid.
 
@@ -958,31 +968,24 @@ Context {Γ l t u} (vΓ : [||-v Γ])
   (vu : [ Γ ||-v< l > u : tNat | vΓ | vNat ])
 .
 
+Lemma StepValid : [ Γ ||-v< l > tStep t u : tNat | vΓ | vNat ].
+Proof.
+Admitted.
+
 Definition totalValid : [Γ ||-v< one > tTotal t u | vΓ].
 Proof.
 intros; unfold tTotal.
-unshelve eapply SigValid; [apply natValid|].
 apply TyCumValid.
 apply (evalValid (l := l)).
-+ rewrite <- (run_ren _ ↑).
-  change (tApp (tApp (run model)⟨↑⟩ (tQuote t⟨↑⟩)) u⟨↑⟩) with
-    (tApp (tApp (run model) (tQuote t)) u)⟨↑⟩.
-  change tPNat with tPNat⟨↑⟩.
-  rewrite <- !(wk1_ren_on Γ tNat).
-  eapply irrelevanceTm', wk1ValidTm; [eapply wk1_ren_on|].
-  eapply (simple_appValid (F := tNat)); [eapply  (simple_appValid (F := tNat))|].
++ eapply (simple_appValid (F := tNat)); [eapply  (simple_appValid (F := tNat))|].
   - apply vrun.
   - apply QuoteValid; tea.
   - tea.
-+ change tNat with (tNat⟨@wk1 Γ tNat⟩) at 2.
-  unshelve eapply irrelevanceTm, var0Valid; tea.
-+ rewrite <- (wk1_ren_on Γ tNat).
-  change tNat with (tNat⟨@wk1 Γ tNat⟩) at 5.
-  unshelve eapply irrelevanceTm, wk1ValidTm; tea.
-  eapply (simple_appValid (F := tNat)); tea.
++ admit.
++ eapply (simple_appValid (F := tNat)); tea.
 Unshelve. all: tea.
 apply simpleArrValid; tea.
-Qed.
+Admitted.
 
 Lemma ReflectValid : [ Γ ||-v< one > tReflect t u : tTotal t u | vΓ | totalValid ].
 Proof.
@@ -1034,13 +1037,19 @@ Context {Γ l t t' u u'} (vΓ : [||-v Γ])
   (vu' : [ Γ ||-v< l > u' : tNat | vΓ | vNat ])
 .
 
+Lemma StepCongValid :
+  [Γ ||-v<l> t ≅ t' : arr tNat tNat | vΓ | vArr] ->
+  [Γ ||-v<l> u ≅ u' : tNat | vΓ | vNat ] ->
+  [Γ ||-v<l> tStep t u ≅ tStep t' u' : tNat | vΓ | vNat ].
+Proof.
+Admitted.
+
 Lemma totalCongValid :
   [Γ ||-v<l> t ≅ t' : arr tNat tNat | vΓ | vArr] ->
   [Γ ||-v<l> u ≅ u' : tNat | vΓ | vNat ] ->
   [Γ ||-v<one> tTotal t u ≅ tTotal t' u' | vΓ | totalValid _ vrun vt vu ].
 Proof.
 intros; unfold tTotal.
-eapply irrelevanceTyEq, SigCong; [|apply natconvValid|].
 Admitted.
 
 Lemma ReflectCongValid :

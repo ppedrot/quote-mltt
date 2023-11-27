@@ -561,6 +561,25 @@ split.
 + now constructor.
 Qed.
 
+Lemma NeTermDecl_tStep : forall Γ (t t' t₀ u u' u₀ : term),
+  [Γ |-[ de ] t ≅ t' : arr tNat tNat] ->
+  [Γ |-[ de ] u ≅ u' : tNat] ->
+  [Γ |-[ de ] model.(run) : arr tNat (arr tNat tPNat) ] ->
+  (~ closed0 t') + (~ closed0 u') -> dnf t' -> dnf u' ->
+  NfTermDecl Γ (arr tNat tNat) t' t₀ ->
+  NfTermDecl Γ tNat u' u₀ ->
+  NeTermDecl Γ tNat (tStep t' u') (tStep t₀ u₀).
+Proof.
+intros * Ht Hu ? ? ? ? [] [].
+assert (t' = t₀) by now eapply dred_dnf.
+assert (u' = u₀) by now eapply dred_dnf.
+subst.
+split; [now constructor|]; split.
++ apply gred_red, redalg_step; tea.
++ do 2 constructor; tea.
++ eapply TermStepCong; tea.
+Qed.
+
 Lemma NeTermDecl_tReflect : forall Γ (t t' t₀ u u' u₀ : term),
   [Γ |-[ de ] t ≅ t' : arr tNat tNat] ->
   [Γ |-[ de ] u ≅ u' : tNat] ->
@@ -578,15 +597,7 @@ split; [now constructor|]; split.
 + apply gred_red, redalg_reflect; tea.
 + do 2 constructor; tea.
 + eapply TermConv; [apply TermReflectCong; tea|].
-  apply convty_term, tTotal_cong.
-  - change (arr tNat tNat) with (arr tNat tNat)[u₀..].
-    eapply (TermAppCong (A := tNat)); [|now apply TermSym].
-    change (tProd tNat (arr tNat tNat)) with (arr tNat (arr tNat tNat))[(tQuote t₀)..].
-    eapply (TermAppCong (A := tNat)); [|now apply TermSym, TermQuoteCong].
-    now apply TermRefl.
-  - change tNat with tNat[u₀..].
-    eapply (TermAppCong (A := tNat)); [|now apply TermSym].
-    now apply TermSym.
+  apply convty_term, tTotal_decl_cong; tea; now symmetry.
 Qed.
 
 End Nf.
@@ -999,6 +1010,7 @@ Module DeepTypingProperties.
   all: try apply DeclarativeTypingProperties.TypingDeclProperties.
   + intros * []; now constructor.
   + intros * [] []; now econstructor.
+  + intros * [] []; now econstructor.
   + intros * ? []; now econstructor.
   Qed.
 
@@ -1075,6 +1087,25 @@ Module DeepTypingProperties.
       end.
       now apply eqnf_tQuote.
   + intros; invnf; eexists.
+    - now eapply convneu_step.
+    - eapply NeTermDecl_tStep; tea; try now eapply lrefl.
+      all: try now symmetry.
+    - eapply NeTermDecl_tStep; tea.
+      all: etransitivity; [now symmetry|tea].
+    - match goal with |- eqnf (tStep ?f ?n) (tStep ?g ?m) =>
+        replace f with t in * by eauto using dred_dnf, nftmdecl_red, nftmdecl_nf;
+        replace g with t' in * by eauto using dred_dnf, nftmdecl_red, nftmdecl_nf;
+        replace n with u in * by eauto using dred_dnf, nftmdecl_red, nftmdecl_nf;
+        replace m with u' in * by eauto using dred_dnf, nftmdecl_red, nftmdecl_nf
+      end.
+      match goal with H : NfTermDecl _ _  t ?r |- _ =>
+        tryif unify t r then fail else assert (r = t) by (now eapply NfTermDecl_unique); subst
+      end.
+      match goal with H : NfTermDecl _ _  u ?r |- _ =>
+        tryif unify u r then fail else assert (r = u) by (now eapply NfTermDecl_unique); subst
+      end.
+      now apply eqnf_tStep.
+  + intros; invnf; eexists.
     - now eapply convneu_reflect.
     - apply NeTermDecl_tReflect; tea; try now eapply lrefl.
       all: try now symmetry.
@@ -1108,6 +1139,8 @@ Module DeepTypingProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now eapply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply DeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now eapply DeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now eapply DeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; change (@red_tm nf) with (@red_tm de).
     now eapply redtm_conv.
   Qed.

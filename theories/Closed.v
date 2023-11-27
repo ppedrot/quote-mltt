@@ -34,6 +34,7 @@ match t with
   (andb (is_closedn (S (S n)) P)
     (andb (is_closedn n hr) (andb (is_closedn n y) (is_closedn n e)))))
 | tQuote t => is_closedn n t
+| tStep t u => andb (is_closedn n t) (is_closedn n u)
 | tReflect t u => andb (is_closedn n t) (is_closedn n u)
 end.
 
