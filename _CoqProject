@@ -68,3 +68,4 @@ theories/Fundamental.v
 theories/DeclarativeSubst.v
 theories/TypeConstructorsInj.v
 theories/Consequences.v
+theories/Main.v
