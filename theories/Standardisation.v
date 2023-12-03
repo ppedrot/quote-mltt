@@ -216,6 +216,16 @@ induction Hr; try discriminate Htag.
   now constructor.
 Qed.
 
+Lemma wsred_emptyElim : forall P t t', [t →w* t'] -> [tEmptyElim P t →w* tEmptyElim P t'].
+Proof.
+intros * Hr.
+remember RedWhStar as tag eqn:Htag in *.
+induction Hr; try discriminate Htag.
++ reflexivity.
++ econstructor; [|eauto].
+  now constructor.
+Qed.
+
 Lemma wsred_fst : forall t t', [t →w* t'] -> [tFst t →w* tFst t'].
 Proof.
 intros * Hr.
@@ -920,6 +930,371 @@ intros t u Hr Hnf.
 now eapply (sred_dredalg_gen RedStd).
 Qed.
 
+(** Commutation with erasure *)
+
+Inductive erased : term -> term -> Set :=
+| erased_tRel {n} : erased (tRel n) (tRel n)
+| erased_tSort {s} : erased (tSort s) (tSort s)
+| erased_tProd {A A' B B'} : erased A A' -> erased B B' -> erased (tProd A B) (tProd A' B')
+| erased_tLambda {A A' t t'} : erased t t' -> erased (tLambda A t) (tLambda A' t')
+| erased_tApp {t t' u u'} : erased t t' -> erased u u' -> erased (tApp t u) (tApp t' u')
+| erased_tNat : erased tNat tNat
+| erased_tZero : erased tZero tZero
+| erased_tSucc {t t'} : erased t t' -> erased (tSucc t) (tSucc t')
+| erased_tNatElim {P P' hz hz' hs hs' t t'} :
+  erased P P' -> erased hz hz' -> erased hs hs' -> erased t t' -> erased (tNatElim P hz hs t) (tNatElim P' hz' hs' t')
+| erased_tEmpty : erased tEmpty tEmpty
+| erased_tEmptyElim {P P' t t'} :
+  erased P P' -> erased t t' -> erased (tEmptyElim P t) (tEmptyElim P' t')
+| erased_tSig {A A' B B'} : erased A A' -> erased B B' -> erased (tSig A B) (tSig A' B')
+| erased_tPair {A A' B B' a a' b b'} :
+  erased a a' -> erased b b' -> erased (tPair A B a b) (tPair A' B' a' b')
+| erased_tFst {t t'} : erased t t' -> erased (tFst t) (tFst t')
+| erased_tSnd {t t'} : erased t t' -> erased (tSnd t) (tSnd t')
+| erased_tId {A A' t t' u u'} : erased A A' -> erased t t' -> erased u u' -> erased (tId A t u) (tId A' t' u')
+| erased_tRefl {A A' t t'} : erased A A' -> erased t t' -> erased (tRefl A t) (tRefl A' t')
+| erased_tIdElim {A A' x x' P P' hr hr' y y' e e'} : 
+  erased A A' -> erased x x' -> erased P P' -> erased hr hr' -> erased y y' -> erased e e' ->
+  erased (tIdElim A x P hr y e) (tIdElim A' x' P' hr' y' e')
+| erased_tQuote {t t'} : erased t t' -> erased (tQuote t) (tQuote t')
+| erased_tStep {t t' u u'} : erased t t' -> erased u u' -> erased (tStep t u) (tStep t' u')
+| erased_tReflect {t t' u u'} : erased t t' -> erased u u' -> erased (tReflect t u) (tReflect t' u')
+(** Additional erasure primitives *)
+| erased_tLambda_eta {A t r} : erased t (tApp r⟨↑⟩ (tRel 0)) -> erased (tLambda A t) r
+| erased_tPair_eta {A B a b r} : erased a (tFst r) -> erased b (tSnd r) -> erased (tPair A B a b) r
+.
+
+Lemma erase_erased : forall t, erased t (erase t).
+Proof.
+induction t; cbn; try now (constructor; eauto).
++ remember (erase t2) as t2'.
+  destruct (eta_fun_intro t2'); subst.
+  - now apply erased_tLambda.
+  - now apply erased_tLambda_eta.
++ remember (erase t3) as t3'.
+  remember (erase t4) as t4'.
+  destruct (eta_pair_intro t3' t4'); subst.
+  - now apply erased_tPair.
+  - now apply erased_tPair_eta.
+Qed.
+
+Lemma erased_eqnf : forall t t', erased t t' -> eqnf t t'.
+Proof.
+induction 1; eauto using
+  eqnf_tRel, eqnf_tSort, eqnf_tProd, eqnf_tLambda, eqnf_tApp, eqnf_tNat, eqnf_tZero, eqnf_tSucc,
+  eqnf_tNatElim, eqnf_tEmpty, eqnf_tEmptyElim, eqnf_tSig, eqnf_tPair, eqnf_tFst, eqnf_tSnd, eqnf_tId,
+  eqnf_tRefl, eqnf_tIdElim, eqnf_tQuote, eqnf_tStep, eqnf_tReflect, eqnf_tLambda_whne, eqnf_tPair_whne.
+Qed.
+
+Lemma erased_is_closedn : forall t t' n, erased t t' -> is_closedn n t = is_closedn n t'.
+Proof.
+intros t t' n Herase; revert n; induction Herase; intros; cbn.
+all: repeat match goal with |- _ && _ = _ && _ => f_equal end; eauto.
++ rewrite IHHerase; cbn; rewrite Bool.andb_true_r.
+  apply NormalEq.closedn_shift.
++ rewrite IHHerase1, IHHerase2.
+  apply Bool.andb_diag.
+Qed.
+
+Lemma erased_closed0 : forall t t', erased t t' -> closed0 t -> closed0 t'.
+Proof.
+intros; unfold closed0; now erewrite <- erased_is_closedn.
+Qed.
+
+Lemma erased_dnf_dne : forall t t', erased t t' -> (dnf t -> dnf t') × (dne t -> dne t').
+Proof.
+assert (Hc : forall t t', erased t t' -> ~ closed0 t -> ~ closed0 t').
+{ intros; unfold closed0 in *; now erewrite <- erased_is_closedn. }
+assert (Hc' : forall t t' u u', erased t t' -> erased u u' -> (~ is_closedn 0 t) + (~ is_closedn 0 u) -> (~ is_closedn 0 t') + (~ is_closedn 0 u')).
+{ intros * ?? []; [left|right]; eauto. }
+induction 1; repeat match goal with H : _ × _ |- _ => destruct H end; split; intros Hnf; inversion Hnf; subst; eauto 6 using dnf, dne.
+all: try match goal with H : dne _ |- _ => now inversion H end.
+all: try match goal with H : dne _ |- _ => now inversion H; subst; eauto 9 using dnf, dne end.
++ assert (Hr : dnf (tApp r⟨↑⟩ (tRel 0))) by eauto.
+  inversion Hr; subst; inversion H0; subst.
+  eapply dnf_ren_rev; now eauto using dne, dnf.
++ assert (Hr : dnf (tFst r)) by eauto.
+  inversion Hr; subst; inversion H1; subst; now eauto using dnf, dne.
+Qed.
+
+Lemma erased_dnf : forall t t', erased t t' -> dnf t -> dnf t'.
+Proof.
+intros; now eapply erased_dnf_dne.
+Qed.
+
+Lemma erased_dne : forall t t', erased t t' -> dne t -> dne t'.
+Proof.
+intros; now eapply erased_dnf_dne.
+Qed.
+
+Lemma erased_whne : forall t t', erased t t' -> whne t -> whne t'.
+Proof.
+induction 1; intros Hne; inversion Hne; subst; eauto using whne.
++ constructor; eauto using erased_dnf.
+  unfold closed0; erewrite <- erased_is_closedn; tea.
++ constructor; eauto using erased_dnf.
+  destruct H3; [left|right]; unfold closed0; erewrite <- erased_is_closedn; tea.
++ constructor; eauto using erased_dnf.
+  destruct H3; [left|right]; unfold closed0; erewrite <- erased_is_closedn; tea.
+Qed.
+
+Lemma erased_ren : forall t t' ρ, erased t t' -> erased t⟨ρ⟩ t'⟨ρ⟩.
+Proof.
+intros t t' ρ Ht; revert ρ; induction Ht; intros ρ; eauto using erased.
++ cbn; apply erased_tLambda_eta.
+  replace r⟨ρ⟩⟨↑⟩ with r⟨↑⟩⟨upRen_term_term ρ⟩ by now bsimpl.
+  apply IHHt.
+Qed.
+
+Lemma erased_refl : forall t, erased t t.
+Proof.
+induction t; eauto using erased.
+Qed.
+
+Lemma erased_trans : forall t u r, erased t u -> erased u r -> erased t r.
+Proof.
+intros t u r Hl; revert r; induction Hl; intros ? Hr.
+all: try now (inversion Hr; subst; eauto 10 using erased, erased_ren).
+Qed.
+
+Lemma erased_subst : forall t t' σ σ', erased t t' -> (forall n, erased (σ n) (σ' n)) -> erased t[σ] t'[σ'].
+Proof.
+assert (Hup : forall σ σ', (forall n : nat, erased (σ n) (σ' n)) -> (forall n : nat, erased (up_term_term σ n) (up_term_term σ' n))).
+{ intros σ σ' Hσ []; cbn; [constructor|].
+  unfold funcomp; now apply erased_ren. }
+intros t t' σ σ' Ht; revert σ σ'.
+induction Ht; intros σ σ' Hσ; cbn; try eauto 10 using erased.
++ cbn; apply erased_tLambda_eta.
+  replace r[σ']⟨↑⟩ with r⟨↑⟩[up_term_term σ'] by now bsimpl.
+  eapply erased_trans; [now eapply IHHt|]; cbn.
+  constructor; [now apply erased_refl|now constructor].
+Qed.
+
+Lemma erased_subst1 : forall t t' u u', erased t t' -> erased u u' -> erased t[u..] t'[u'..].
+Proof.
+intros.
+apply erased_subst; tea.
+intros []; cbn; [tea|constructor].
+Qed.
+
+Lemma erased_qNat : forall n t, erased (qNat n) t -> t = qNat n.
+Proof.
+induction n; intros t Ht; inversion Ht; subst; cbn; [reflexivity|].
+f_equal; now apply IHn.
+Qed.
+
+Lemma eqannot_erased : forall t u, eqannot t u -> erased t u.
+Proof.
+unfold eqannot; induction t; intros u Heq.
+all: destruct u; cbn in Heq; try discriminate Heq; try injection Heq; intros; subst.
+all: eauto 10 using erased.
+Qed.
+
+Fixpoint is_shallow t := match t with
+| tQuote _ | tReflect _ _ | tStep _ _ => false
+| tApp t _ => is_shallow t
+| tNatElim _ _ _ t => is_shallow t
+| tIdElim _ _ _ _ _ t => is_shallow t
+| tEmptyElim _ t => is_shallow t
+| tFst t | tSnd t => is_shallow t
+| _ => true
+end.
+
+Lemma bigstep_wsred : forall t v, [t ↓ v] -> is_shallow v -> [t →w* v].
+Proof.
+remember false as b eqn:Hb.
+induction 1; try discriminate Hb; intros.
+all: eauto using sred, wsred_app, wsred_natElim, wsred_idElim, wsred_emptyElim.
++ eauto 10 using wsred_trans, sred, wsred_app.
++ eauto 10 using wsred_trans, sred, wsred_natElim.
++ eauto 10 using wsred_trans, sred, wsred_natElim.
++ eauto 10 using wsred_trans, sred, wsred_fst.
++ eauto 10 using wsred_trans, sred, wsred_fst.
++ eauto 10 using wsred_trans, sred, wsred_snd.
++ eauto 10 using wsred_trans, sred, wsred_snd.
++ eauto 10 using wsred_trans, sred, wsred_idElim.
++ eauto 10 using bigstep_dredalg, dredalg_pred_clos, pred_sred, sred, bigstep_dnf.
++ discriminate H0.
++ eauto 10 using bigstep_dredalg, dredalg_pred_clos, pred_sred, sred, bigstep_dnf.
++ discriminate H1.
++ eauto 10 using bigstep_dredalg, dredalg_pred_clos, pred_sred, sred, bigstep_dnf.
++ discriminate H1.
+Qed.
+
+Lemma eqannot_sred : forall t r r', [t →s r] -> eqannot r r' -> [t →s r'].
+Proof.
+intros t r r' Hr.
+remember RedStd as tag eqn:Htag in *.
+revert r' Htag. induction Hr; intros r' Htag Heq; try discriminate Htag.
+all: try (unfold eqannot in Heq; destruct r'; cbn in Heq; try discriminate Heq; []); try (injection Heq; intros; subst).
+all: eauto 10 using sred.
+Qed.
+
+Lemma sred_eta_fun : forall t r,
+  [tApp t⟨↑⟩ (tRel 0) →s r] -> dnf r ->
+  (∑ t₀, [t →s t₀] × (eqannot r (tApp t₀⟨↑⟩ (tRel 0)))) + (∑ A₀ t₀, [t →w* tLambda A₀ t₀] × [t₀ →s r]).
+Proof.
+intros t r Happ Hr.
+assert (Hst := Happ).
+apply sred_dredalg in Happ; [|tea]; destruct Happ as (r₀&Hr₀&Hrr).
+apply dredalg_bigstep in Hrr; [|eauto using dnf_eqannot].
+inversion Hrr; subst.
++ assert (Hred := H1).
+  apply bigstep_dredalg in Hred.
+  eapply gred_red, dredalg_ren_adj in Hred; [|apply shift_inj].
+  destruct Hred as [u' Hu']; destruct u'; cbn in Hu'; try discriminate Hu'.
+  injection Hu'; intros; subst; clear Hu'.
+  assert (Hrw : forall t, t⟨upRen_term_term ↑⟩[(tRel 0)..] = t).
+  { intros; bsimpl; apply idSubst_term; intros []; reflexivity. }
+  rewrite Hrw in H2.
+  apply bigstep_dredalg in H1.
+  change (tLambda u'1⟨↑⟩ u'2⟨upRen_term_term ↑⟩) with ((tLambda u'1 u'2)⟨↑⟩) in H1.
+  apply redalg_ren_inv in H1; [|apply shift_inj].
+  apply redalg_bigstep in H1; [|constructor].
+  apply bigstep_wsred in H1; [|constructor].
+  right; do 2 eexists; split; [tea|].
+  eapply eqannot_sred; [|symmetry; tea].
+  now eapply pred_sred, dredalg_pred_clos, bigstep_dredalg.
++ assert (Hred := H1).
+  apply bigstep_dredalg in Hred.
+  eapply gred_red, dredalg_ren_adj in Hred; [|apply shift_inj].
+  destruct Hred; subst.
+  apply bigstep_dnf_det in H4; [subst|eauto using dnf, dne].
+  apply bigstep_dredalg, redalg_ren_inv in H1; [|apply shift_inj].
+  apply bigstep_dredalg in H3.
+  assert (Hred := H3); apply dredalg_ren_adj in H3; [|apply shift_inj].
+  destruct H3; subst.
+  apply redalg_ren_inv in Hred; [|apply shift_inj].
+  unfold eqannot in Hr₀; destruct r; cbn in Hr₀; try discriminate Hr₀; injection Hr₀; intros; subst.
+  destruct r2; cbn in H; try discriminate H; injection H; intros; subst.
+  left; eexists; split; [|now apply eqannot_tApp].
+  eapply pred_sred, dredalg_pred_clos.
+  etransitivity; [now apply gred_red|tea].
+Unshelve. all: constructor.
+Qed.
+
+
+Lemma sred_eta_pair : forall t p q,
+  [tFst t →s p] ->
+  [tSnd t →s q] ->
+  dnf p -> dnf q ->
+  (∑ t₀, [t →s t₀] × (eqannot p (tFst t₀)) × (eqannot q (tSnd t₀))) + (∑ A₀ B₀ a₀ b₀, [t →w* tPair A₀ B₀ a₀ b₀] × [a₀ →s p] × [b₀ →s q]).
+Proof.
+intros t p q Hp Hq Hnfp Hnfq.
+apply sred_dredalg in Hp; [|tea]; destruct Hp as (p₀&Hp&Hrp).
+apply sred_dredalg in Hq; [|tea]; destruct Hq as (q₀&Hq&Hrq).
+apply dredalg_bigstep in Hrp; [|eauto using dnf_eqannot].
+apply dredalg_bigstep in Hrq; [|eauto using dnf_eqannot].
+inversion Hrp; subst; inversion Hrq; subst.
+all: match goal with Hl : [?t ↓ ?l], Hr : [?t ↓ ?r] |- _ => assert (l = r) by now eapply bigstep_det end; subst.
++ injection H; intros; subst; clear H.
+  apply bigstep_wsred in H0; [|constructor].
+  right; do 4 eexists; split; [|split]; [tea| |].
+  - eapply eqannot_sred; [|symmetry; tea].
+    apply pred_sred, dredalg_pred_clos; now apply bigstep_dredalg.
+  - eapply eqannot_sred; [|symmetry; tea].
+    apply pred_sred, dredalg_pred_clos; now apply bigstep_dredalg.
++ inv_whne.
++ inv_whne.
++ match goal with Hl : [?t ⇊ ?l], Hr : [?t ⇊ ?r] |- _ => assert (l = r) by now eapply bigstep_det end; subst.
+  unfold eqannot in Hp; cbn in Hp; destruct p; try discriminate Hp; injection Hp; intros; subst.
+  unfold eqannot in Hq; cbn in Hq; destruct q; try discriminate Hq; injection Hq; intros; subst.
+  left; eexists; split; [|split]; tea.
+  eapply pred_sred, dredalg_pred_clos.
+  etransitivity; [apply gred_red|]; now apply bigstep_dredalg.
+Qed.
+
+Lemma sred_erased_gen : forall tag t u, sred tag t u ->
+  match tag with
+  | RedWh => forall t', erased t t' -> ∑ u', erased u u' × [t' →w* u']
+  | RedWhStar => forall t', erased t t' -> ∑ u', erased u u' × [t' →w* u']
+  | RedStd => forall t', erased t t' -> dnf u -> ∑ u', erased u u' × [t' →s u']
+  end.
+Proof.
+induction 1; cbn; intros t₀ Ht₀.
+all: try (intros Hnf; inv_nf).
+all: try match goal with
+| H : forall t', erased ?w t' -> _, He : erased ?w _ |- _ =>
+  edestruct H as (w₀&Her&?); [exact He|]; inversion Her; []; subst; clear Her
+end.
+all: repeat match goal with
+| H : forall t', erased ?w t' -> _, He : erased ?w _ |- _ =>
+  let Her := fresh in 
+  edestruct H as (?&Her&?); [exact He|]; clear H
+end.
+all: try now (eexists; split; [apply erased_refl|]; eauto using sred).
+all: try now (eexists; split; [now constructor|]; eauto using sred).
+all: repeat match goal with H : erased _ _ |- _ => inversion H; []; subst; clear H end.
+all: repeat match goal with
+| H : forall t', erased ?w t' -> dnf ?t -> _, He : erased ?w _ |- _ =>
+  let Her := fresh in 
+  edestruct H as (?&Her&?); [exact He|now eauto using dnf, dne, dnf_qNat|]; clear H
+end.
+all: repeat match goal with
+| H : forall t', erased ?w t' -> _, He : erased ?w _ |- _ =>
+  let Her := fresh in 
+  edestruct H as (?&Her&?); [exact He|]; clear H
+end.
+all: try (eexists; split; [now eauto using erased|]).
+all: eauto using sred, wsred_app, wsred_natElim, wsred_idElim, wsred_emptyElim, wsred_fst, wsred_snd.
++ inversion H1; subst; clear H1.
+  - edestruct IHsred2 as (v₀&Hv&?); tea.
+    eexists; split; [now constructor|]; eauto using sred.
+  - edestruct IHsred2 as (v₀&Hv&Hr); tea.
+    eapply sred_eta_fun in Hr; [|eauto using erased_dnf].
+    destruct Hr as [(?&?&Heq)|(?&?&?&?)]; subst.
+    * unfold eqannot in Heq; cbn in Heq; destruct v₀; try discriminate Heq.
+      cbn in Heq; injection Heq; intros; subst.
+      destruct v₀2; cbn in H1; try discriminate H1; injection H1; intros; subst.
+      eexists; split; [apply erased_tLambda_eta|].
+      { eapply erased_trans; [tea|]; constructor; [now apply eqannot_erased|constructor]. }
+      now eapply redalg_sred_trans.
+    * eexists; split; [now econstructor|].
+      econstructor; [now etransitivity|tea].
++ inversion H2; subst; clear H2.
+  - edestruct IHsred2 as (a₀&Ha&?); tea.
+    edestruct IHsred3 as (b₀&Hb&?); tea.
+    eexists; split; [now constructor|]; eauto using sred.
+  - edestruct IHsred2 as (a₀&Ha&Hra); tea.
+    edestruct IHsred3 as (b₀&Hb&Hrb); tea.
+    edestruct sred_eta_pair as [(?&?&?&?)|(?&?&?&?&?&?&?)]; eauto using erased_dnf.
+    * eexists; split; [apply erased_tPair_eta|eapply redalg_sred_trans; tea].
+      { eapply erased_trans; [tea|]; now apply eqannot_erased. }
+      { eapply erased_trans; [tea|]; now apply eqannot_erased. }
+    * eexists; split; [now eapply erased_tPair|].
+      eapply redalg_sred_trans; [tea|].
+      eauto using sred.
++ inversion H1; subst.
+  - eexists; split; [now apply erased_subst1|]; eauto using sred.
+  - eexists; split; [|reflexivity].
+    eapply erased_subst1 with (u := a) in H4; tea.
+    cbn in H4; now replace (t'⟨↑⟩[u'..]) with t' in H4 by now bsimpl.
++ inversion H0; subst.
+  - eexists; split; [tea|]; eauto using sred.
+  - eexists; split; [tea|reflexivity].
++ inversion H0; subst.
+  - eexists; split; [tea|]; eauto using sred.
+  - eexists; split; [tea|reflexivity].
++ eexists; split; [apply erased_refl|].
+  replace (erase t') with (erase projT1) by now symmetry; apply erased_eqnf.
+  eauto using sred, erased_dnf, erased_closed0.
++ eexists; split; [apply erased_refl|].
+  apply erased_qNat in H1; subst.
+  replace (erase t') with (erase projT0) in e by now symmetry; apply erased_eqnf.
+  eauto using sred, erased_dnf, erased_closed0.
++ eexists; split; [apply erased_refl|].
+  apply erased_qNat in H1; subst.
+  replace (erase t') with (erase projT0) in e by now symmetry; apply erased_eqnf.
+  eauto using sred, erased_dnf, erased_closed0.
++ now etransitivity.
+Unshelve. all: exact U.
+Qed.
+
+Lemma sred_erased : forall t t' u, [t →s u] -> erased t t' -> dnf u -> ∑ u', erased u u' × [t' →s u'].
+Proof.
+intros; now eapply (sred_erased_gen RedStd).
+Qed.
+
 (* Ad-hoc stuff needed to prove the logical relation *)
 
 Lemma dred_tApp_qNat_compat : forall t t₀ n m,
@@ -937,4 +1312,17 @@ symmetry in Hv; apply eqannot_qNat_inv in Hv; subst.
 apply pred_sred, sred_dredalg in Hw; [|apply dnf_qNat].
 destruct Hw as (u'&Hu'&?).
 symmetry in Hu'; apply eqannot_qNat_inv in Hu'; now subst.
+Qed.
+
+Lemma dred_erase_qNat_compat : forall t n,
+  [t ⇶* qNat n] -> [erase t ⇶* qNat n].
+Proof.
+intros t n Hr.
+apply dredalg_pred_clos, pred_sred in Hr.
+eapply sred_erased in Hr; [|apply erase_erased|apply dnf_qNat].
+destruct Hr as (m&Heq&Hr).
+apply erased_qNat in Heq; subst.
+apply sred_dredalg in Hr; [|apply dnf_qNat].
+destruct Hr as (m&Heq&Hr).
+symmetry in Heq; apply eqannot_qNat_inv in Heq; now subst.
 Qed.

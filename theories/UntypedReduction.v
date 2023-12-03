@@ -634,6 +634,9 @@ Qed.
 
 End StepIndex.
 
+Notation "[ t ↓ u ]" := (bigstep false t u) (at level 0, t, u at level 50).
+Notation "[ t ⇊ u ]" := (bigstep true t u) (at level 0, t, u at level 50).
+
 (** *** One-step reduction. *)
 
 Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
@@ -1193,9 +1196,9 @@ revert t u Ht Hu; induction Hr.
   econstructor; [tea|eauto].
 Qed.
 
-Lemma dred_ren_inv : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶ u⟨ρ⟩] -> [t ⇶ u].
+Lemma dred_ren_inv : forall deep t u ρ, ren_inj ρ -> @OneRedAlg deep t⟨ρ⟩ u⟨ρ⟩ -> @OneRedAlg deep t u.
 Proof.
-intros t u ρ Hρ Hr.
+intros deep t u ρ Hρ Hr.
 remember t⟨ρ⟩ as t' eqn:Ht.
 remember u⟨ρ⟩ as u' eqn:Hu.
 revert t u ρ Ht Hu Hρ; induction Hr; intros t₀ u₀ ρ Ht Hu Hρ.
@@ -1291,9 +1294,9 @@ Ltac unren t := lazymatch t with
 | _ => t
 end.
 
-Lemma dred_ren_adj : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶ u] -> ∑ u', u = u'⟨ρ⟩.
+Lemma dred_ren_adj : forall deep t u ρ, ren_inj ρ -> @OneRedAlg deep t⟨ρ⟩ u -> ∑ u', u = u'⟨ρ⟩.
 Proof.
-intros t u ρ Hρ Hr.
+intros deep t u ρ Hρ Hr.
 remember t⟨ρ⟩ as t' eqn:Ht.
 revert t ρ Hρ Ht; induction Hr; intros t₀ ρ Hρ Ht.
 all: repeat match goal with H : _ = ?t⟨?ρ⟩ |- _ =>
@@ -1319,15 +1322,24 @@ all: let t := lazymatch goal with |- ∑ n, ?t = _ => t end in
 + eexists (tReflect _ _); reflexivity.
 Qed.
 
-Lemma redalg_ren_inv : forall t u ρ, ren_inj ρ -> [t⟨ρ⟩ ⇶* u⟨ρ⟩] -> [t ⇶* u].
+Lemma dredalg_ren_adj : forall deep t u ρ, ren_inj ρ -> @RedClosureAlg deep t⟨ρ⟩ u -> ∑ u', u = u'⟨ρ⟩.
 Proof.
-intros t u ρ Hρ Hr.
+intros deep t u ρ Hρ Hr.
+remember t⟨ρ⟩ as t' eqn:Ht; revert t Ht.
+induction Hr; eauto.
+intros; subst; eapply dred_ren_adj in o; [|tea].
+destruct o; subst; eauto.
+Qed.
+
+Lemma redalg_ren_inv : forall deep t u ρ, ren_inj ρ -> @RedClosureAlg deep t⟨ρ⟩ u⟨ρ⟩ -> @RedClosureAlg deep t u.
+Proof.
+intros deep t u ρ Hρ Hr.
 remember t⟨ρ⟩ as t' eqn:Ht.
 remember u⟨ρ⟩ as u' eqn:Hu.
 revert t u ρ Ht Hu Hρ; induction Hr; intros; subst.
 + intros; subst.
   apply ren_inj_inv in Hu; now subst.
-+ unshelve eassert (H := dred_ren_adj _ _ _ _ _); [..|tea|tea|].
++ unshelve eassert (H := dred_ren_adj _ _ _ _ _ _); [..|tea|tea|].
   destruct H; subst.
   econstructor; [|eapply IHHr]; eauto.
   now eapply dred_ren_inv.

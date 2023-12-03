@@ -8,14 +8,6 @@ From LogRel.Substitution.Introductions Require Import Universe Var Nat SimpleArr
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 
-Section ToProve.
-
-(** Obviously true but annoying to prove *)
-Axiom dred_erase_qNat_compat : forall t n,
-  [t ⇶* qNat n] -> [erase t ⇶* qNat n].
-
-End ToProve.
-
 Section Utils.
 
 Context `{GenericTypingProperties}.
