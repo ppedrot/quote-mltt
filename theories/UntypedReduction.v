@@ -1774,8 +1774,8 @@ Proof.
 unfold closedn.
 intros t u n Hr; revert n; induction Hr; intros ? Hc; cbn in *.
 all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
-all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
-all: try now apply IHHr.
+all: repeat (apply andb_true_intro; split); tea.
+all: try match goal with H : forall n : nat, _ |- _ => now apply H end.
 + now apply closedn_beta.
 + apply closedn_qNat.
 + apply closedn_qNat.

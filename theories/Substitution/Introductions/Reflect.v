@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening UntypedReduction
+From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening UntypedReduction Confluence
   DeclarativeTyping GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Irrelevance Application Reduction Transitivity NormalRed.
 From LogRel.Substitution Require Import Irrelevance Properties SingleSubst.
@@ -9,16 +9,6 @@ Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 
 Section ToProve.
-
-(** TODO: consequences of confluence *)
-Axiom dred_tApp_qNat_closed0 : forall t t₀ n r₀,
-  [t ⇶* t₀] -> [tApp t (qNat n) ⇶* r₀] -> dnf t₀ -> dnf r₀ ->
-  closed0 t₀ -> closed0 r₀.
-
-Axiom dred_tApp_qNat_compat : forall t t₀ n m,
-  [t ⇶* t₀] -> dnf t₀ ->
-  [tApp t (qNat n) ⇶* qNat m] ->
-  [tApp t₀ (qNat n) ⇶* qNat m].
 
 (** Obviously true but annoying to prove *)
 Axiom dred_erase_qNat_compat : forall t n,

@@ -638,6 +638,13 @@ all: etransitivity; eauto.
   now asimpl.
 Qed.
 
+Lemma unannot_subst1 : forall t u, unannot (t[u..]) = (unannot t)[(unannot u)..].
+Proof.
+intros.
+etransitivity; [apply unannot_subst|].
+apply ext_term; intros []; reflexivity.
+Qed.
+
 Lemma unannot_qNat : forall n, unannot (qNat n) = qNat n.
 Proof.
 induction n; cbn in *; f_equal; eauto.
