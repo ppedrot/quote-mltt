@@ -586,6 +586,34 @@ Proof.
 apply dnf_dne_unannot.
 Qed.
 
+Lemma dnf_dne_unannot_rev :
+  (forall t, dnf t -> forall u, t = unannot u -> dnf u) ×
+  (forall t, dne t -> forall u, t = unannot u -> dne u).
+Proof.
+apply dnf_dne_rect; cbn in *; intros.
+all: try match goal with H : _ = unannot ?u |- _ => (destruct u; try discriminate H); [] end.
+all: try match goal with H : _ = unannot ?u |- _ => cbn in H; injection H; intros; subst end.
+all: try eauto 8 using dnf, dne.
++ constructor; eauto.
+  unfold closed0; rewrite <- closedn_unannot; tea.
++ constructor; eauto.
+  destruct s; [left|right];
+  unfold closed0; rewrite <- closedn_unannot; tea.
++ constructor; eauto.
+  destruct s; [left|right];
+  unfold closed0; rewrite <- closedn_unannot; tea.
+Qed.
+
+Lemma dne_unannot_rev : forall t, dne (unannot t) -> dne t.
+Proof.
+intros; now eapply dnf_dne_unannot_rev.
+Qed.
+
+Lemma dnf_unannot_rev : forall t, dnf (unannot t) -> dnf t.
+Proof.
+intros; now eapply dnf_dne_unannot_rev.
+Qed.
+
 Lemma whne_unannot : forall t, whne t -> whne (unannot t).
 Proof.
 induction 1; cbn; eauto using whne.
@@ -597,6 +625,37 @@ induction 1; cbn; eauto using whne.
 + constructor; try now apply dnf_unannot.
   destruct s; [left|right];
   unfold closed0; rewrite closedn_unannot; tea.
+Qed.
+
+Lemma whne_unannot_rev : forall t, whne (unannot t) -> whne t.
+Proof.
+induction t; inversion 1; cbn in *; subst; eauto using whne.
++ constructor; [|now apply dnf_unannot_rev].
+  unfold closed0; rewrite <- closedn_unannot; tea.
++ constructor; try now apply dnf_unannot_rev.
+  destruct H2; [left|right];
+  unfold closed0; rewrite <- closedn_unannot; tea.
++ constructor; try now apply dnf_unannot_rev.
+  destruct H2; [left|right];
+  unfold closed0; rewrite <- closedn_unannot; tea.
+Qed.
+
+Lemma whnf_unannot : forall t, whnf t -> whnf (unannot t).
+Proof.
+induction t; inversion 1; cbn in *; subst; eauto using whnf, whne, whne_unannot.
+all: try match goal with H : whne _ |- _ => inversion H; subst end.
+all: eauto using whnf, whne, whne_unannot.
++ do 2 constructor; [|now apply dnf_unannot].
+  unfold closed0; now rewrite closedn_unannot.
++ do 2 constructor; try now apply dnf_unannot.
+  destruct H3; [left|right]; unfold closed0; now rewrite closedn_unannot.
++ do 2 constructor; try now apply dnf_unannot.
+  destruct H3; [left|right]; unfold closed0; now rewrite closedn_unannot.
+Qed.
+
+Lemma whnf_unannot_rev : forall t, whnf (unannot t) -> whnf t.
+Proof.
+induction t; inversion 1; cbn in *; subst; eauto using whnf, whne, whne_unannot_rev.
 Qed.
 
 Lemma unannot_closedn_subst : forall n t σ,
@@ -963,8 +1022,141 @@ Proof.
 intros; now eapply dnf_dne_eqannot.
 Qed.
 
+Lemma whnf_eqannot : forall t t', eqannot t t' -> whnf t -> whnf t'.
+Proof.
+intros * Hrw ?. apply whnf_unannot_rev; rewrite <- Hrw; now apply whnf_unannot.
+Qed.
+
+Lemma whne_eqannot : forall t t', eqannot t t' -> whne t -> whne t'.
+Proof.
+intros * Hrw ?. apply whne_unannot_rev; rewrite <- Hrw; now apply whne_unannot.
+Qed.
+
 Lemma closed0_eqannot : forall t u, eqannot t u -> closed0 t -> closed0 u.
 Proof.
 intros t u H Hc.
 unfold closed0; now rewrite <- closedn_unannot, <- H, closedn_unannot.
+Qed.
+
+Lemma eqannot_tProd : forall A A' B B', eqannot A A' -> eqannot B B' -> eqannot (tProd A B) (tProd A' B').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tLambda : forall A A' t t', eqannot t t' -> eqannot (tLambda A t) (tLambda A' t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tApp : forall t t' u u', eqannot t t' -> eqannot u u' -> eqannot (tApp t u) (tApp t' u').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tSucc : forall t t', eqannot t t' -> eqannot (tSucc t) (tSucc t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tNatElim : forall P P' hz hz' hs hs' t t',
+  eqannot P P' -> eqannot hz hz' -> eqannot hs hs' -> eqannot t t' ->
+  eqannot (tNatElim P hz hs t) (tNatElim P' hz' hs' t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tEmptyElim : forall P P' t t',
+  eqannot P P' -> eqannot t t' ->
+  eqannot (tEmptyElim P t) (tEmptyElim P' t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tSig : forall A A' B B', eqannot A A' -> eqannot B B' -> eqannot (tSig A B) (tSig A' B').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tPair : forall A A' B B' a a' b b', eqannot a a' -> eqannot b b' -> eqannot (tPair A B a b) (tPair A' B' a' b').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tFst : forall t t', eqannot t t' -> eqannot (tFst t) (tFst t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tSnd : forall t t', eqannot t t' -> eqannot (tSnd t) (tSnd t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tId : forall A A' t t' u u', eqannot A A' -> eqannot t t' -> eqannot u u' -> eqannot (tId A t u) (tId A' t' u').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tRefl : forall A A' t t', eqannot A A' -> eqannot t t' -> eqannot (tRefl A t) (tRefl A' t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tIdElim : forall A A' x x' P P' hr hr' y y' t t',
+  eqannot A A' -> eqannot x x' -> eqannot P P' -> eqannot hr hr' -> eqannot y y' -> eqannot t t' ->
+  eqannot (tIdElim A x P hr y t) (tIdElim A' x' P' hr' y' t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tQuote : forall t t', eqannot t t' -> eqannot (tQuote t) (tQuote t').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tStep : forall t t' u u', eqannot t t' -> eqannot u u' -> eqannot (tStep t u) (tStep t' u').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_tReflect : forall t t' u u', eqannot t t' -> eqannot u u' -> eqannot (tReflect t u) (tReflect t' u').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
+Lemma eqannot_subst1 : forall t t' u u', eqannot t t' -> eqannot u u' -> eqannot t[u..] t'[u'..].
+Proof.
+unfold eqannot; cbn; intros; rewrite !unannot_subst1; congruence.
+Qed.
+
+(** Stuff *)
+
+Lemma dnf_dne_closed0_subst :
+  (forall t, dnf t -> forall n σ, (forall m, m < n -> σ m = tRel m) -> is_closedn n t -> dnf t[σ]) ×
+  (forall t, dne t -> forall n σ, (forall m, m < n -> σ m = tRel m) -> is_closedn n t -> dne t[σ]).
+Proof.
+assert (Hup : forall n σ, (forall m, m < n -> σ m = tRel m) -> (forall m, m < S n -> up_term_term σ m = tRel m)).
+{ intros n σ Hσ [] ?; [reflexivity|].
+  cbn; unfold funcomp; rewrite Hσ; [reflexivity|Lia.lia]. }
+assert (Hc : forall n σ t, (forall m : nat, m < n -> σ m = tRel m) -> is_closedn n t -> ~ closed0 t -> ~ closed0 t[σ]).
+{ intros; unfold closed0.
+  erewrite <- closedn_unannot, unannot_closedn_subst; tea.
+  now rewrite closedn_unannot. }
+apply dnf_dne_rect; intros; cbn in *.
+all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
+all: eauto using dnf, dne.
++ destruct n; [congruence|].
+  rewrite H; [constructor|].
+  apply Compare_dec.leb_complete in H0; Lia.lia.
++ eauto 7 using dnf, dne.
++ eauto 10 using dnf, dne.
++ constructor; destruct s; eauto.
++ constructor; destruct s; eauto.
+Qed.
+
+Lemma dnf_closed0_subst : forall t σ, dnf t -> closed0 t -> dnf t[σ].
+Proof.
+intros t σ Hnf Hc.
+eapply dnf_dne_closed0_subst; tea.
+intros; Lia.lia.
 Qed.

@@ -44,7 +44,7 @@ Inductive pred : term -> term -> Set :=
   [tStep t (qNat u) ⇉ qNat k']
 | pred_reflect {t t' u u'} : [t ⇉ t'] -> [u ⇉ u'] -> [tReflect t u ⇉ tReflect t' u']
 | pred_reflecteval {t u n k k'} :
-  dnf (unannot t) -> closed0 t ->
+  dnf t -> closed0 t ->
   murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
   [tReflect t (qNat u) ⇉ qEvalTm k' n]
 
@@ -106,9 +106,7 @@ intros t t' ρ Hρ Ht; revert ρ Hρ; induction Ht; cbn; eauto 10 using pred, up
   rewrite erase_is_closed0_ren_id; tea.
 + intros ρ Hρ.
   rewrite qNat_ren, qEvalTm_ren.
-  assert (dnf (unannot t⟨ρ⟩)).
-  { rewrite <- unannot_ren; [|tea].
-    now apply dnf_ren. }
+  assert (dnf t⟨ρ⟩) by now apply dnf_ren.
   econstructor; eauto using closed0_ren.
   rewrite erase_is_closed0_ren_id; tea.
 Qed.
@@ -132,7 +130,7 @@ intros t t' σ σ' Ht; revert σ σ'; induction Ht; intros σ σ' Hσ; cbn; eaut
   - rewrite erase_is_closed0_subst_id; tea.
 + rewrite qNat_subst, qEvalTm_subst.
   econstructor.
-  - rewrite unannot_closed0_subst; tea.
+  - now apply dnf_closed0_subst.
   - now apply closed0_subst.
   - rewrite erase_is_closed0_subst_id; tea.
 Qed.
@@ -370,21 +368,21 @@ all: try now saturate_diamond; eauto 10 using pred.
 + eexists; split; [|eapply pred_refl].
   apply dnf_pred_id in H3; [|apply dnf_qNat].
   symmetry in H3; apply eqannot_qNat_inv in H3; subst.
-  assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
+  assert (Heq : unannot t1 = unannot t') by eauto using pred_unannot_id, dnf_unannot.
   assert (Hrw : erase t1 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
   econstructor.
-  - now rewrite <- Heq.
+  - apply dnf_unannot_rev; rewrite <- Heq; now apply dnf_unannot.
   - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
   - now rewrite <- Hrw.
 + eexists; split; [eapply pred_refl|].
   apply dnf_pred_id in H6; [|apply dnf_qNat].
   symmetry in H6; apply eqannot_qNat_inv in H6; subst.
-  assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
+  assert (Heq : unannot t1 = unannot t') by eauto using pred_unannot_id, dnf_unannot.
   assert (Hrw : erase t1 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
   econstructor.
-  - now rewrite <- Heq.
+  - apply dnf_unannot_rev; rewrite <- Heq; now apply dnf_unannot.
   - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
   - now rewrite <- Hrw.
 + apply qNat_inj in H0; subst.
@@ -406,6 +404,13 @@ Notation "[ t ⇉* u ]" := (pred_clos t u) (at level 0, t, u at level 50).
 Lemma pred_trans : forall t u r, [t ⇉* u] -> [u ⇉* r] -> [t ⇉* r].
 Proof.
 intros t u r Hl; revert r; induction Hl; eauto using pred_clos.
+Qed.
+
+#[export] Instance PreOrder_pred_clos : CRelationClasses.PreOrder pred_clos.
+Proof.
+split.
++ intros ?; constructor.
++ intros ??? **; now eapply pred_trans.
 Qed.
 
 Lemma dnf_pred_clos_id : forall t u, dnf t -> [t ⇉* u] -> eqannot t u.
@@ -450,6 +455,17 @@ intros t t' u Hr; revert u; induction Hr; intros a.
   constructor; [tea|now apply pred_refl].
 Qed.
 
+Lemma pred_clos_lambda : forall A A' t t', [t ⇉* t'] -> [tLambda A t ⇉* tLambda A' t'].
+Proof.
+intros A A' t t' Hr; revert A A'; induction Hr; intros; eauto using pred, pred_clos, pred_refl.
+Unshelve. all: exact U.
+Qed.
+
+Lemma pred_clos_quote : forall t t', [t ⇉* t'] -> [tQuote t ⇉* tQuote t'].
+Proof.
+induction 1; eauto using pred, pred_refl, pred_clos.
+Qed.
+
 (* Ad-hoc stuff needed to prove the logical relation *)
 
 Lemma dred_tApp_qNat_closed0 : forall t t₀ n r₀,
@@ -468,8 +484,3 @@ unfold closedn; cbn; apply andb_true_intro; split.
 + tea.
 + apply closed0_qNat.
 Qed.
-
-Axiom dred_tApp_qNat_compat : forall t t₀ n m,
-  [t ⇶* t₀] -> dnf t₀ ->
-  [tApp t (qNat n) ⇶* qNat m] ->
-  [tApp t₀ (qNat n) ⇶* qNat m].

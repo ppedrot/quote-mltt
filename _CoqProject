@@ -19,6 +19,7 @@ theories/Weakening.v
 theories/NormalEq.v
 theories/UntypedReduction.v
 theories/Confluence.v
+theories/Standardisation.v
 theories/GenericTyping.v
 
 theories/DeclarativeTyping.v

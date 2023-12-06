@@ -2159,11 +2159,21 @@ all: try now (
     congruence.
 Qed.
 
-Lemma dredalg_eval : forall deep t r, RedClosureAlg (deep := deep) t r -> dnf r ->
-  ∑ k, eval deep t k = Some r.
+Lemma dredalg_eval : forall t r, [t ⇶* r] -> dnf r ->
+  ∑ k, eval true t k = Some r.
 Proof.
 induction 1; intros.
 + now apply dnf_eval.
++ destruct IHRedClosureAlg as [k Hk]; [tea|].
+  destruct (dred_eval _ _ _ _ _ o Hk) as (k'&?&?).
+  eauto.
+Qed.
+
+Lemma redalg_eval : forall t r, [t ⤳* r] -> whnf r ->
+  ∑ k, eval false t k = Some r.
+Proof.
+induction 1; intros.
++ now apply whnf_eval.
 + destruct IHRedClosureAlg as [k Hk]; [tea|].
   destruct (dred_eval _ _ _ _ _ o Hk) as (k'&?&?).
   eauto.

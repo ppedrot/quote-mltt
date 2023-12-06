@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening UntypedReduction Confluence
+From LogRel Require Import Utils BasicAst Computation Notations Context Closed NormalForms NormalEq Weakening UntypedReduction Confluence Standardisation
   DeclarativeTyping GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Irrelevance Application Reduction Transitivity NormalRed.
 From LogRel.Substitution Require Import Irrelevance Properties SingleSubst.
@@ -1034,7 +1034,8 @@ Lemma dredalg_eval_min {deep t r} : @RedClosureAlg deep t r -> dnf r ->
   ∑ k : nat, (forall k', k' < k -> eval deep t k' = None) × eval deep t k = Some r.
 Proof.
 intros Hred Hnf.
-assert (Heval0 := Hred); apply dredalg_eval in Heval0; [|tea].
+assert (Heval0 : ∑ k, eval deep t k = Some r).
+{ destruct deep; [apply dredalg_eval|apply redalg_eval]; eauto using dnf_whnf. }
 pose (f k := match eval deep t k with None => false | Some _ => true end).
 destruct Heval0 as [k0 Hk0].
 destruct (minimize f k0) as (k&Hk&Hlt); unfold f in *; clear f.
