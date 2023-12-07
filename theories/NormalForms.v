@@ -32,13 +32,13 @@ Unset Elimination Schemes.
 Inductive dnf : term -> Set :=
   | dnf_tSort {s} : dnf (tSort s)
   | dnf_tProd {A B} : dnf A -> dnf B -> dnf (tProd A B)
-  | dnf_tLambda {A t} : dnf A -> dnf t -> dnf (tLambda A t)
+  | dnf_tLambda {A t} : dnf t -> dnf (tLambda A t)
   | dnf_tNat : dnf tNat
   | dnf_tZero : dnf tZero
   | dnf_tSucc {n} : dnf n -> dnf (tSucc n)
   | dnf_tEmpty : dnf tEmpty
   | dnf_tSig {A B} : dnf A -> dnf B -> dnf (tSig A B)
-  | dnf_tPair {A B a b} : dnf A -> dnf B -> dnf a -> dnf b -> dnf (tPair A B a b)
+  | dnf_tPair {A B a b} : dnf a -> dnf b -> dnf (tPair A B a b)
   | dnf_tId {A x y} : dnf A -> dnf x -> dnf y -> dnf (tId A x y)
   | dnf_tRefl {A x} : dnf A -> dnf x -> dnf (tRefl A x)
   | dnf_dne {n} : dne n -> dnf n
@@ -379,10 +379,10 @@ End RenWhnf.
 Fixpoint is_nf ne t {struct t} := match t with
 | tSort _ | tNat | tZero | tEmpty => negb ne
 | tProd A B => negb ne && is_nf false A && is_nf false B
-| tLambda A t => negb ne && is_nf false A && is_nf false t
+| tLambda A t => negb ne && is_nf false t
 | tSucc t => negb ne && is_nf false t
 | tSig A B => negb ne && is_nf false A && is_nf false B
-| tPair A B a b => negb ne && is_nf false A && is_nf false B && is_nf false a && is_nf false b
+| tPair A B a b => negb ne && is_nf false a && is_nf false b
 | tId A t u => negb ne && is_nf false A && is_nf false t && is_nf false u
 | tRefl A t => negb ne && is_nf false A && is_nf false t
 | tRel _ => true

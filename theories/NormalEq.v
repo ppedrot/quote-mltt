@@ -393,11 +393,11 @@ apply dnf_dne_rect; intros; cbn in *.
 all: try now (constructor; eauto).
 + destruct (eta_fun_intro (erase t)).
   - constructor; tea; constructor.
-  - inversion H0; subst; inversion H1; subst.
+  - inversion H; subst; inversion H0; subst.
     constructor; now eapply dne_ren_rev.
 + destruct (eta_pair_intro (erase a) (erase b)).
   - constructor; tea; constructor.
-  - inversion H1; subst; inversion H3; subst.
+  - inversion H; subst; inversion H1; subst.
     now constructor.
 + constructor; tea.
   unfold closed0; now rewrite erase_is_closedn.
@@ -531,13 +531,13 @@ all: try eauto using dnf, dne.
 + remember (etared t) as t₀.
   destruct (eta_fun_intro t₀).
   - constructor; eauto.
-  - inversion H0; subst; inversion H1; subst.
+  - inversion H; subst; inversion H0; subst.
     eauto using dnf_ren_rev, dne, dnf.
 + remember (etared a) as a₀.
   remember (etared b) as b₀.
   destruct (eta_pair_intro a₀ b₀).
   - constructor; eauto.
-  - inversion H2; subst; inversion H3; eauto using dne, dnf.
+  - inversion H0; subst; inversion H1; eauto using dne, dnf.
 + constructor; eauto using dne, dnf.
   intro Hc; unfold closed0 in Hc; rewrite closedn_etared in Hc; contradiction.
 + constructor; eauto using dne, dnf.
@@ -909,4 +909,62 @@ Proof.
 split.
 + repeat intro; now apply Symmetric_eqnf.
 + repeat intro; now eapply Transitive_eqnf.
+Qed.
+
+(** Equality up to annotations *)
+
+Definition eqannot t u := unannot t = unannot u.
+
+Lemma Symmetric_eqannot : forall t u, eqannot t u -> eqannot u t.
+Proof.
+intros; now symmetry.
+Qed.
+
+Lemma Transitive_eqannot : forall t u r, eqannot t u -> eqannot u r -> eqannot t r.
+Proof.
+intros; now transitivity (unannot u).
+Qed.
+
+#[export] Instance PER_eqannot : CRelationClasses.PER eqannot.
+Proof.
+split.
++ repeat intro; now apply Symmetric_eqannot.
++ repeat intro; now eapply Transitive_eqannot.
+Qed.
+
+Lemma eqannot_eqnf : forall t u, eqannot t u -> eqnf t u.
+Proof.
+intros; unfold eqnf.
+rewrite !erase_unannot_etared; now f_equal.
+Qed.
+
+Lemma dnf_dne_eqannot : (forall t, dnf t -> forall u, eqannot t u -> dnf u) × (forall t, dne t -> forall u, eqannot t u -> dne u).
+Proof.
+unfold eqannot.
+apply dnf_dne_rect; cbn in *; intros.
+all: try match goal with H : _ = unannot ?u |- _ => destruct u; cbn in H; try discriminate H; []; try injection H; intros; subst end; eauto 8 using dnf, dne.
++ constructor; eauto.
+  unfold closed0; now rewrite <- closedn_unannot, <- H1, closedn_unannot.
++ constructor; eauto; destruct s.
+  - left; unfold closed0; now rewrite <- closedn_unannot, <- H3, closedn_unannot.
+  - right; unfold closed0; now rewrite <- closedn_unannot, <- H2, closedn_unannot.
++ constructor; eauto; destruct s.
+  - left; unfold closed0; now rewrite <- closedn_unannot, <- H3, closedn_unannot.
+  - right; unfold closed0; now rewrite <- closedn_unannot, <- H2, closedn_unannot.
+Qed.
+
+Lemma dnf_eqannot : forall t u, eqannot t u -> dnf t -> dnf u.
+Proof.
+intros; now eapply dnf_dne_eqannot.
+Qed.
+
+Lemma dne_eqannot : forall t u, eqannot t u -> dne t -> dne u.
+Proof.
+intros; now eapply dnf_dne_eqannot.
+Qed.
+
+Lemma closed0_eqannot : forall t u, eqannot t u -> closed0 t -> closed0 u.
+Proof.
+intros t u H Hc.
+unfold closed0; now rewrite <- closedn_unannot, <- H, closedn_unannot.
 Qed.

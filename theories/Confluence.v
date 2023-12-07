@@ -8,7 +8,7 @@ Inductive pred : term -> term -> Set :=
 | pred_rel {n} : [tRel n ⇉ tRel n]
 | pred_sort {s} : [tSort s ⇉ tSort s]
 | pred_prod {A A' B B'} : [A ⇉ A'] -> [B ⇉ B'] -> [tProd A B ⇉ tProd A' B']
-| pred_lambda {A A' t t'} : [A ⇉ A'] -> [t ⇉ t'] -> [tLambda A t ⇉ tLambda A' t']
+| pred_lambda {A A' t t'} : [t ⇉ t'] -> [tLambda A t ⇉ tLambda A' t']
 | pred_app {t t' u u'} : [t ⇉ t'] -> [u ⇉ u'] -> [tApp t u ⇉ tApp t' u']
 | pred_beta {A t t' u u'} : [t ⇉ t'] -> [u ⇉ u'] -> [tApp (tLambda A t) u ⇉ t'[u'..]]
 | pred_nat : [tNat ⇉ tNat]
@@ -22,7 +22,7 @@ Inductive pred : term -> term -> Set :=
 | pred_empty : [tEmpty ⇉ tEmpty]
 | pred_emptyelim {P P' t t'} : [P ⇉ P'] -> [t ⇉ t'] -> [tEmptyElim P t ⇉ tEmptyElim P' t']
 | pred_sig {A A' B B'} : [A ⇉ A'] -> [B ⇉ B'] -> [tSig A B ⇉ tSig A' B']
-| pred_pair {A A' B B' a a' b b'} : [A ⇉ A'] -> [B ⇉ B'] -> [a ⇉ a'] -> [b ⇉ b'] ->
+| pred_pair {A A' B B' a a' b b'} : [a ⇉ a'] -> [b ⇉ b'] ->
   [tPair A B a b ⇉ tPair A' B' a' b']
 | pred_fst {t t'} : [t ⇉ t'] -> [tFst t ⇉ tFst t']
 | pred_fst_beta {A B a a' b} : [a ⇉ a'] -> [tFst (tPair A B a b) ⇉ a']
@@ -65,11 +65,16 @@ Proof.
 unfold closed0; induction n; cbn; eauto.
 Qed.
 
-Lemma dnf_dne_pred_id : (forall t, dnf t -> forall u, [t ⇉ u] -> t = u) × (forall t, dne t -> forall u, [t ⇉ u] -> t = u).
+Lemma dnf_dne_pred_id : (forall t, dnf t -> forall u, [t ⇉ u] -> eqannot t u) × (forall t, dne t -> forall u, [t ⇉ u] -> eqannot t u).
 Proof.
-apply dnf_dne_rect; intros; match goal with H : [?t ⇉ ?u] |- _ => inversion H; subst end; eauto.
-all: try match goal with H : dne _ |- _ => now inversion H end.
-all: try (f_equal; eauto).
+unfold eqannot.
+apply dnf_dne_rect; intros.
+all: match goal with H : [?t ⇉ ?u] |- _ => inversion H; subst end; cbn in *; eauto.
+all: try match goal with H : dne _ |- _ => now inversion H end; cbn in *.
+all: try now (f_equal; eauto).
+all: try match goal with H : forall u, [?t ⇉ u] -> _, H' : [?t ⇉ ?u] |- _ => specialize (H _ H'); cbn in H; injection H; intros; subst end.
+all: try now (f_equal; tea).
++ inversion d; subst; inversion H12.
 + contradiction.
 + assert (closed0 (qNat u1)) by apply closed0_qNat.
   destruct s; contradiction.
@@ -77,7 +82,7 @@ all: try (f_equal; eauto).
   destruct s; contradiction.
 Qed.
 
-Lemma dnf_pred_id : forall t u, dnf t -> [t ⇉ u] -> t = u.
+Lemma dnf_pred_id : forall t u, dnf t -> [t ⇉ u] -> eqannot t u.
 Proof.
 intros t u Hnf Hr; eapply dnf_dne_pred_id in Hnf; tea.
 Qed.
@@ -209,8 +214,8 @@ Lemma diamond_tLambda_inv : forall A t, diamond (tLambda A t) -> diamond t.
 Proof.
 intros A t IH tl tr Hl Hr.
 edestruct IH as (v&Hlv&Hrv).
-+ eapply (pred_lambda (t' := tl)); eauto using pred_refl.
-+ eapply (pred_lambda (t' := tr)); eauto using pred_refl.
++ eapply (pred_lambda (A' := A) (t' := tl)); eauto using pred_refl.
++ eapply (pred_lambda (A' := A) (t' := tr)); eauto using pred_refl.
 + inversion Hlv; subst; inversion Hrv; subst; eexists; split; tea.
 Qed.
 
@@ -227,8 +232,8 @@ Lemma diamond_tPair_inv_fst : forall A B a b, diamond (tPair A B a b) -> diamond
 Proof.
 intros A B a b IH tl tr Hl Hr.
 edestruct IH as (v&Hlv&Hrv).
-+ eapply (pred_pair (a' := tl)); eauto using pred_refl.
-+ eapply (pred_pair (a' := tr)); eauto using pred_refl.
++ eapply (pred_pair (A' := A) (B' := B) (a' := tl)); eauto using pred_refl.
++ eapply (pred_pair (A' := A) (B' := B) (a' := tr)); eauto using pred_refl.
 + inversion Hlv; subst; inversion Hrv; subst; eexists; split; tea.
 Qed.
 
@@ -236,8 +241,8 @@ Lemma diamond_tPair_inv_snd : forall A B a b, diamond (tPair A B a b) -> diamond
 Proof.
 intros A B a b IH tl tr Hl Hr.
 edestruct IH as (v&Hlv&Hrv).
-+ eapply (pred_pair (b' := tl)); eauto using pred_refl.
-+ eapply (pred_pair (b' := tr)); eauto using pred_refl.
++ eapply (pred_pair (A' := A) (B' := B) (b' := tl)); eauto using pred_refl.
++ eapply (pred_pair (A' := A) (B' := B) (b' := tr)); eauto using pred_refl.
 + inversion Hlv; subst; inversion Hrv; subst; eexists; split; tea.
 Qed.
 
@@ -246,6 +251,13 @@ Qed.
   | H : diamond ?t, H' : [?t ⇉ _], H'' : [?t ⇉ _] |- _ =>
     specialize (H _ _ H' H''); destruct H as (?&?&?)
   end.
+
+Lemma eqannot_qNat_inv : forall t n, eqannot t (qNat n) -> t = qNat n.
+Proof.
+intros t n; revert t; induction n; intros t Ht; cbn in *; destruct t; cbn in Ht; try discriminate Ht.
++ reflexivity.
++ f_equal; apply IHn; unfold eqannot in *; cbn in Ht; congruence.
+Qed.
 
 Lemma pred_diamond : forall t, diamond t.
 Proof.
@@ -330,7 +342,8 @@ all: try now saturate_diamond; eauto 10 using pred.
   - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
 + eexists; split; eapply pred_refl.
 + eexists; split; [|eapply pred_refl].
-  apply dnf_pred_id in H3; [subst|apply dnf_qNat].
+  apply dnf_pred_id in H3; [|apply dnf_qNat].
+  symmetry in H3; apply eqannot_qNat_inv in H3; subst.
   assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
   assert (Hrw : erase t1 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
@@ -339,7 +352,8 @@ all: try now saturate_diamond; eauto 10 using pred.
   - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
   - now rewrite <- Hrw.
 + eexists; split; [eapply pred_refl|].
-  apply dnf_pred_id in H6; [subst|apply dnf_qNat].
+  apply dnf_pred_id in H6; [|apply dnf_qNat].
+  symmetry in H6; apply eqannot_qNat_inv in H6; subst.
   assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
   assert (Hrw : erase t1 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
@@ -354,7 +368,8 @@ all: try now saturate_diamond; eauto 10 using pred.
   injection Hrw; intros; subst; clear Hrw.
   eexists; split; apply pred_refl.
 + eexists; split; [|eapply pred_refl].
-  apply dnf_pred_id in H3; [subst|apply dnf_qNat].
+  apply dnf_pred_id in H3; [|apply dnf_qNat].
+  symmetry in H3; apply eqannot_qNat_inv in H3; subst.
   assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
   assert (Hrw : erase t1 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
@@ -363,7 +378,8 @@ all: try now saturate_diamond; eauto 10 using pred.
   - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
   - now rewrite <- Hrw.
 + eexists; split; [eapply pred_refl|].
-  apply dnf_pred_id in H6; [subst|apply dnf_qNat].
+  apply dnf_pred_id in H6; [|apply dnf_qNat].
+  symmetry in H6; apply eqannot_qNat_inv in H6; subst.
   assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
   assert (Hrw : erase t1 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
@@ -378,6 +394,7 @@ all: try now saturate_diamond; eauto 10 using pred.
   injection Hrw; intros; subst; clear Hrw.
   apply qNat_inj in H; subst.
   eexists; split; apply pred_refl.
+Unshelve. all: exact U.
 Qed.
 
 Inductive pred_clos : term -> term -> Set :=
@@ -391,10 +408,12 @@ Proof.
 intros t u r Hl; revert r; induction Hl; eauto using pred_clos.
 Qed.
 
-Lemma dnf_pred_clos_id : forall t u, dnf t -> [t ⇉* u] -> t = u.
+Lemma dnf_pred_clos_id : forall t u, dnf t -> [t ⇉* u] -> eqannot t u.
 Proof.
 induction 2; try reflexivity.
-apply dnf_pred_id in p; [|tea]; subst; eauto.
+apply dnf_pred_id in p; [|tea].
+etransitivity; [tea|].
+now eapply IHpred_clos, dnf_eqannot.
 Qed.
 
 Lemma pred_confluent : forall t tl tr, [t ⇉* tl] -> [t ⇉* tr] -> ∑ v, [tl ⇉* v] × [tr ⇉* v].
@@ -442,7 +461,8 @@ apply dredalg_pred_clos in Ht.
 apply dredalg_pred_clos in Happ.
 eapply pred_clos_app with (u := (qNat n)) in Ht.
 edestruct (pred_confluent) as (v&Hw&Hv); [apply Ht|apply Happ|].
-eapply dnf_pred_clos_id in Hv; [|tea]; subst.
+eapply dnf_pred_clos_id in Hv; [|tea].
+eapply closed0_eqannot; [symmetry; tea|].
 eapply pred_clos_closedn; [apply Hw|].
 unfold closedn; cbn; apply andb_true_intro; split.
 + tea.

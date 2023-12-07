@@ -155,7 +155,6 @@ Definition eval_body (eval : bool -> term -> option term) (murec : term -> optio
     else Some (tProd A B)
   | tLambda A t =>
     if deep then
-      let* A := eval true A in
       let* t := eval true t in
       Some (tLambda A t)
     else Some (tLambda A t)
@@ -172,8 +171,6 @@ Definition eval_body (eval : bool -> term -> option term) (murec : term -> optio
     else Some (tSig A B)
   | tPair A B a b =>
     if deep then
-      let* A := eval true A in
-      let* B := eval true B in
       let* a := eval true a in
       let* b := eval true b in
       Some (tPair A B a b)
@@ -776,10 +773,8 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   [ A ⤳ A' ] -> [ tProd A B ⤳ tProd A' B ]
 | prodCod {A B B'} : deep ->
   dnf A -> [ B ⤳ B' ] -> [ tProd A B ⤳ tProd A B' ]
-| lamDom {A A' t} : deep ->
-  [ A ⤳ A' ] -> [ tLambda A t ⤳ tLambda A' t ]
 | lamBody {A t t'} : deep ->
-  dnf A -> [ t ⤳ t' ] -> [ tLambda A t ⤳ tLambda A t' ]
+  [ t ⤳ t' ] -> [ tLambda A t ⤳ tLambda A t' ]
 | appHead {t t' u} : deep ->
   whne t -> [ t ⤳ t' ] -> [ tApp t u ⤳ tApp t' u ]
 | appSubstNe {t u u'} : deep ->
@@ -803,16 +798,10 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | sigCod {A B B'} : deep ->
   dnf A ->
   [ B ⤳ B' ] -> [ tSig A B ⤳ tSig A B' ]
-| pairDom {A A' B a b} : deep ->
-  [ A ⤳ A' ] -> [ tPair A B a b ⤳ tPair A' B a b ]
-| pairCod {A B B' a b} : deep ->
-  dnf A ->
-  [ B ⤳ B' ] -> [ tPair A B a b ⤳ tPair A B' a b ]
 | pairFst {A B a a' b} : deep ->
-  dnf A -> dnf B ->
   [ a ⤳ a' ] -> [ tPair A B a b ⤳ tPair A B a' b ]
 | pairSnd {A B a b b'} : deep ->
-  dnf A -> dnf B -> dnf a ->
+  dnf a ->
   [ b ⤳ b' ] -> [ tPair A B a b ⤳ tPair A B a b' ]
 | fstHead {n n'} : deep ->
   whne n -> [ n ⤳ n' ] -> [ tFst n ⤳ tFst n' ]
@@ -1537,20 +1526,14 @@ transitivity (tProd A₀ B).
     now constructor.
 Qed.
 
-Lemma dredalg_lambda : forall A A₀ t t₀,
-  [A ⇶* A₀] -> dnf A₀ ->
-  [t ⇶* t₀] -> [tLambda A t ⇶* tLambda A₀ t₀].
+Lemma dredalg_lambda : forall A t t₀,
+  [t ⇶* t₀] -> [tLambda A t ⇶* tLambda A t₀].
 Proof.
-intros A A₀ t t₀ HRA HAnf HRt.
-transitivity (tLambda A₀ t).
-- clear - HRA HAnf; induction HRA.
-  * constructor.
-  * econstructor; [|now eauto].
-    now constructor.
-- clear - HAnf HRt; induction HRt.
-  * constructor.
-  * econstructor; [|now eauto].
-    now constructor.
+intros A t t₀ HRt.
+induction HRt.
+- constructor.
+- econstructor; [|now eauto].
+  now constructor.
 Qed.
 
 Lemma dredalg_app : forall t t₀ u u₀,
@@ -1587,28 +1570,17 @@ transitivity (tSig A₀ B).
     now constructor.
 Qed.
 
-Lemma dredalg_pair : forall A A₀ B B₀ a a₀ b b₀,
-  [A ⇶* A₀] -> dnf A₀ -> [B ⇶* B₀] -> dnf B₀ ->
+Lemma dredalg_pair : forall A B a a₀ b b₀,
   [a ⇶* a₀] -> dnf a₀ -> [b ⇶* b₀] -> dnf b₀ ->
-  [tPair A B a b ⇶* tPair A₀ B₀ a₀ b₀].
+  [tPair A B a b ⇶* tPair A B a₀ b₀].
 Proof.
-intros A A₀ B B₀ a a₀ b b₀ HRA HA HRB HB HRa Ha HRb Hb.
-transitivity (tPair A₀ B a b);
-  [|transitivity (tPair A₀ B₀ a b);
-    [|transitivity (tPair A₀ B₀ a₀ b)]].
-- clear - HRA HA; induction HRA.
+intros A B a a₀ b b₀ HRa Ha HRb Hb.
+transitivity (tPair A B a₀ b).
+- clear - HRa; induction HRa.
   * constructor.
   * econstructor; [|now eauto].
     now constructor.
-- clear - HA HRB; induction HRB.
-  * constructor.
-  * econstructor; [|now eauto].
-    now constructor.
-- clear - HA HB HRa; induction HRa.
-  * constructor.
-  * econstructor; [|now eauto].
-    now constructor.
-- clear - HA HB Ha HRb; induction HRb.
+- clear - Ha HRb; induction HRb.
   * constructor.
   * econstructor; [|now eauto].
     now constructor.

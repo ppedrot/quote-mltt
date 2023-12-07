@@ -177,7 +177,7 @@ split.
   constructor; [tea|now eapply TermTrans|tea].
 Qed.
 
-Lemma NfTermDecl_tLambda : forall Γ A A' A₀ B t t₀,
+Lemma NfTermDecl_tLambda : forall Γ A A' B t t₀,
   [Γ |-[ de ] A] ->
   [Γ |-[ de ] A'] ->
   [Γ,, A |-[ de ] B] ->
@@ -185,11 +185,10 @@ Lemma NfTermDecl_tLambda : forall Γ A A' A₀ B t t₀,
   [Γ |-[ de ] tLambda A' t : tProd A B] ->
   [Γ,, A |-[ de ] t : B] ->
   [Γ,, A' |-[ de ] t : B] ->
-  NfTypeDecl Γ A' A₀ ->
   NfTermDecl (Γ,, A) B (tApp (tLambda A' t)⟨↑⟩ (tRel 0)) t₀ ->
-  NfTermDecl Γ (tProd A B) (tLambda A' t) (tLambda A₀ t₀).
+  NfTermDecl Γ (tProd A B) (tLambda A' t) (tLambda A' t₀).
 Proof.
-intros * ? ? ? ? ? ? Ht [] [].
+intros * ? ? ? ? ? ? Ht [].
 assert (eq0 : forall t, t⟨upRen_term_term ↑⟩[(tRel 0)..] = t).
 { bsimpl; apply idSubst_term; intros [|]; reflexivity. }
 split.
@@ -202,34 +201,33 @@ split.
 + assert [|- Γ] by boundary.
   assert [|- Γ,, A] by now constructor.
   apply TermLambdaCong; tea.
-  - eapply TypeTrans; tea.
-  - eapply TermTrans; [|tea].
-    rewrite <- (eq0 B).
-    eapply TermSym; cbn; eapply TermTrans; [eapply TermBRed|].
-    * rewrite <- (wk1_ren_on Γ A); eapply typing_wk; tea.
-    * repeat rewrite <- (wk1_ren_on Γ A).
-      do 2 rewrite <- (wk_up_wk1_ren_on Γ A' A).
-      eapply typing_wk; tea.
-      constructor; tea.
-      now eapply typing_wk.
-    * eapply wfTermConv; [now apply ty_var0|].
-      repeat rewrite <- (wk1_ren_on Γ A).
-      eapply typing_wk; tea.
-    * do 2 rewrite eq0; apply TermRefl; tea.
+  eapply TermTrans; [|tea].
+  rewrite <- (eq0 B).
+  eapply TermSym; cbn; eapply TermTrans; [eapply TermBRed|].
+  * rewrite <- (wk1_ren_on Γ A); eapply typing_wk; tea.
+  * repeat rewrite <- (wk1_ren_on Γ A).
+    do 2 rewrite <- (wk_up_wk1_ren_on Γ A' A).
+    eapply typing_wk; tea.
+    constructor; tea.
+    now eapply typing_wk.
+  * eapply wfTermConv; [now apply ty_var0|].
+    repeat rewrite <- (wk1_ren_on Γ A).
+    eapply typing_wk; tea.
+  * do 2 rewrite eq0; apply TermRefl; tea.
 Qed.
 
-Lemma NfTermDecl_tLambda0 : forall Γ A A₀ B t t₀,
+Lemma NfTermDecl_tLambda0 : forall Γ A B t t₀,
   [Γ |-[ de ] A] ->
-  NfTypeDecl Γ A A₀ ->
   NfTermDecl (Γ,, A) B t t₀ ->
-  NfTermDecl Γ (tProd A B) (tLambda A t) (tLambda A₀ t₀).
+  NfTermDecl Γ (tProd A B) (tLambda A t) (tLambda A t₀).
 Proof.
-intros * ? [] [].
+intros * ? [].
 split.
 + apply dredalg_lambda; tea.
 + now constructor.
 + constructor; tea.
-  now apply TypeRefl.
+  - now apply TypeRefl.
+  - now apply TypeRefl.
 Qed.
 
 Lemma NfTypeDecl_tSig : forall Γ A A' A₀ B B₀,
@@ -365,7 +363,7 @@ intros; split.
 + now repeat econstructor.
 Qed.
 
-Lemma NfTermDecl_tPair : forall Γ A A' A₀ B B' B₀ a a' a₀ b' b₀,
+Lemma NfTermDecl_tPair : forall Γ A A' B B' a a' a₀ b' b₀,
   [Γ |-[ de ] A] ->
   [Γ,, A |-[ de ] B] ->
   [Γ |-[ de ] tPair A' B' a' b' : tSig A B] ->
@@ -373,20 +371,16 @@ Lemma NfTermDecl_tPair : forall Γ A A' A₀ B B' B₀ a a' a₀ b' b₀,
   [Γ,, A |-[ de ] B ≅ B'] ->
   [Γ |-[ de ] B[a..] ≅ B[a'..]] ->
   [Γ |-[ de ] a ≅ a' : A] ->
-  NfTypeDecl Γ A' A₀ ->
-  NfTypeDecl (Γ,, A) B' B₀ ->
   NfTermDecl Γ A a' a₀ ->
   NfTermDecl Γ B[a..] b' b₀ ->
-  NfTermDecl Γ (tSig A B) (tPair A' B' a' b') (tPair A₀ B₀ a₀ b₀).
+  NfTermDecl Γ (tSig A B) (tPair A' B' a' b') (tPair A' B' a₀ b₀).
 Proof.
-intros * ? ? ? ? ? ? ? [] [] [] [].
+intros * ? ? ? ? ? ? ? [] [].
 split.
 + apply dredalg_pair; tea.
 + now constructor.
 + apply TermPairCong; tea.
-  - now eapply TypeTrans.
-  - now eapply TypeTrans.
-  - eapply convtm_conv; tea.
+  eapply convtm_conv; tea.
 Qed.
 
 Lemma NeTermDecl_NfTermDecl : forall Γ A n n₀,
@@ -761,12 +755,12 @@ Module DeepTypingProperties.
   Qed.
 
   Definition exp_fun {Γ A B f} (w : isNfFun Γ A B f) : term := match w with
-  | LamNfFun _ A₀ _ t₀ _ _ _ _ _ _ _ => tLambda A₀ t₀
+  | LamNfFun A' A₀ _ t₀ _ _ _ _ _ _ _ => tLambda A' t₀
   | NeNfFun _ n₀ _ _ => n₀
   end.
 
   Definition exp_pair {Γ A B p} (w : isNfPair Γ A B p) : term := match w with
-  | PairNfPair _ A₀ _ B₀ _ a₀ _ b₀ _ _ _ _ _ _ _ _ _ _ => tPair A₀ B₀ a₀ b₀
+  | PairNfPair A' A₀ B' B₀ _ a₀ _ b₀ _ _ _ _ _ _ _ _ _ _ => tPair A' B' a₀ b₀
   | NeNfPair _ n₀ _ _ => n₀
   end.
 
