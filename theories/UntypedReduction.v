@@ -7,6 +7,8 @@ From LogRel Require Import Utils BasicAst Computation Notations Context Closed N
 
 (** Step-indexed normalization function *)
 
+Arguments murec : simpl never.
+
 Section StepIndex.
 
 Definition bindopt {A B} (x : option A) (f : A -> option B) :=
@@ -17,56 +19,6 @@ end.
 
 #[local]
 Notation "'let*' x ':=' t 'in' u" := (bindopt t (fun x => u)) (at level 50, x binder).
-
-(* Compute the smallest n s.t. a function returns Some *)
-
-Section Murec.
-
-Context {A : Type}.
-Variable f : nat -> option A.
-
-Fixpoint muval (k : nat) {struct k} : list (option A) :=
-match k with
-| 0 => nil
-| S k => cons (f k) (muval k)
-end.
-
-Fixpoint muget (n : nat) (l : list (option A)) : option (nat × A) :=
-match l with
-| nil => None
-| cons None l => muget (S n) l
-| cons (Some x) _ => Some (n, x)
-end.
-
-Definition murec (k : nat) := muget 0 (List.rev (muval k)).
-
-Lemma murec_S : forall k r, murec k = Some r -> murec (S k) = Some r.
-Proof.
-intros k r; cbn; unfold murec.
-generalize 0 as n; generalize (List.rev (muval k)) as l.
-induction l as [|x l]; intros; cbn in *.
-+ discriminate.
-+ destruct x; eauto.
-Qed.
-
-Lemma murec_mon : forall k k' r, k <= k' -> murec k = Some r -> murec k' = Some r.
-Proof.
-induction 1; eauto using murec_S.
-Qed.
-
-Lemma murec_det : forall k k' r r', murec k = Some r -> murec k' = Some r' -> r = r'.
-Proof.
-intros k k' r r' Hk Hk'.
-assert (murec (max k k') = Some r).
-{ apply (murec_mon k); [Lia.lia|eauto]. }
-assert (murec (max k k') = Some r').
-{ apply (murec_mon k'); [Lia.lia|eauto]. }
-now congruence.
-Qed.
-
-End Murec.
-
-Arguments murec : simpl never.
 
 Definition eval_body (eval : bool -> term -> option term) (murec : term -> option (nat × term))
   (deep : bool) (t : term) (k : nat) : option term :=

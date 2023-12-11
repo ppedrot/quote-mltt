@@ -245,3 +245,157 @@ apply andb_true_intro; split; [apply closedn_qNat|].
 apply closedn_qEvalTm.
 Qed.
 *)
+
+(* Compute the smallest n s.t. a function returns Some *)
+
+Section Murec.
+
+Context {A : Type}.
+Variable f : nat -> option A.
+
+Fixpoint murec0 (n : nat) :=
+match n with
+| 0 => None
+| S n =>
+  match murec0 n with
+  | None =>
+    match f n with
+    | Some v => Some v
+    | None => murec0 n
+    end
+  | Some v => Some v
+  end
+end.
+
+End Murec.
+
+Definition murec {A} f n :=
+  @murec0 (nat × A) (fun n => match f n with None => None | Some v => Some (n, v) end) n.
+
+Lemma murec0_S : forall A f k r, @murec0 A f k = Some r -> @murec0 A f (S k) = Some r.
+Proof.
+intros; cbn; now rewrite H.
+Qed.
+
+Lemma murec_S : forall A f k r, @murec A f k = Some r -> @murec A f (S k) = Some r.
+Proof.
+intros; now apply murec0_S.
+Qed.
+
+Lemma murec_mon : forall A f k k' r, k <= k' -> @murec A f k = Some r -> murec f k' = Some r.
+Proof.
+induction 1; eauto using murec_S.
+Qed.
+
+Lemma murec_det : forall A f k k' r r', @murec A f k = Some r -> murec f k' = Some r' -> r = r'.
+Proof.
+intros A f k k' r r' Hk Hk'.
+assert (murec f (max k k') = Some r).
+{ apply (murec_mon _ _ k); [Lia.lia|eauto]. }
+assert (murec f (max k k') = Some r').
+{ apply (murec_mon _ _ k'); [Lia.lia|eauto]. }
+now congruence.
+Qed.
+
+Lemma minimize (f : nat -> bool) (n : nat) :
+  is_true (f n) -> ∑ m, is_true (f m) × (forall m', m' < m -> ~ is_true (f m')).
+Proof.
+revert f; induction n; intros f Hn.
++ exists 0; split; [tea|Lia.lia].
++ destruct (IHn (fun n => f (S n)) Hn) as (m&Hm&Hlt).
+  remember (f 0) as b eqn:Hb; symmetry in Hb; destruct b.
+  - exists 0; split; [tea|Lia.lia].
+  - exists (S m); split; [tea|].
+    intros []; [congruence|].
+    intros; apply Hlt; Lia.lia.
+Qed.
+
+Lemma murec0_None : forall {A} {f k}, (forall k', k' < k -> f k' = None) -> @murec0 A f k = None.
+Proof.
+intros A f k Hk.
+induction k; cbn.
++ reflexivity.
++ rewrite IHk; [rewrite Hk; eauto|].
+  intros; now apply Hk.
+Qed.
+
+Lemma murec_None : forall {A} {f k}, (forall k', k' < k -> f k' = None) -> @murec A f k = None.
+Proof.
+intros A f k Hk; apply murec0_None.
+intros; now rewrite Hk.
+Qed.
+
+Lemma murec0_None_rev : forall {A} {f k k'}, k' < k -> @murec0 A f k = None -> f k' = None.
+Proof.
+intros A f k k' Hlt Hk; revert k' Hlt; induction k; cbn in *.
++ intros; Lia.lia.
++ destruct (murec0 f k); [discriminate|].
+  intros; destruct (PeanoNat.Nat.eq_dec k k').
+  - subst; destruct (f k'); congruence.
+  - apply IHk; eauto; Lia.lia.
+Qed.
+
+Lemma murec_None_rev : forall {A} {f k k'}, k' < k -> @murec A f k = None -> f k' = None.
+Proof.
+intros A f k k' Hlt Heq; unfold murec.
+eapply murec0_None_rev in Heq; tea.
+cbn in Heq; destruct (f k'); congruence.
+Qed.
+
+Lemma murec_Some_lt : forall {A} {f k k' v}, @murec A f k = Some (k', v) -> k' < k.
+Proof.
+induction k; intros k' v Heq; cbn in *.
++ discriminate.
++ fold (murec f k) in Heq.
+  remember (murec f k) as w eqn:Hw in *; destruct w as [[]|].
+  - injection Heq; intros; subst.
+    enough (k' < k) by Lia.lia.
+    eauto.
+  - destruct (f k); [|congruence].
+    injection Heq; intros; subst; Lia.lia.
+Qed.
+
+Lemma murec_intro {A} {f k v} :
+  (forall k', k' < k -> f k' = None) -> f k = Some v ->
+  @murec A f (S k) = Some (k, v).
+Proof.
+intros Hlt Hk; cbn.
+rewrite murec0_None, Hk; eauto.
+intros; rewrite Hlt; eauto.
+Qed.
+
+Lemma murec_elim_Some {A f k k₀ v} : @murec A f k₀ = Some (k, v) -> f k = Some v.
+Proof.
+intros Heq.
+assert (Hlt : k < k₀) by now eapply murec_Some_lt.
+revert k v Hlt Heq; induction k₀; intros k v Hlt Heq; cbn in *.
++ discriminate.
++ fold (murec f k₀) in Heq.
+  remember (murec f k₀) as w eqn:Hw in *; destruct w as [[]|].
+  - injection Heq; intros; subst.
+    symmetry in Hw; apply murec_Some_lt in Hw.
+    now apply IHk₀.
+  - remember (f k₀) as z eqn:Hz in *; destruct z; [|discriminate].
+    injection Heq; intros; now subst.
+Qed.
+
+Lemma murec_elim_None {A f k k₀ k' v} : k' < k -> @murec A f k₀ = Some (k, v) -> f k' = None.
+Proof.
+intros Hlt Heq.
+remember (f k') as w eqn:Hf; symmetry in Hf; destruct w; [|reflexivity].
+exfalso.
+assert (Hlt₀ : k < k₀) by now eapply murec_Some_lt.
+revert v a k k' Hlt Hlt₀ Heq Hf.
+induction k₀.
++ intros; cbn; Lia.lia.
++ intros; cbn in *.
+  fold (murec f k₀) in Heq.
+  remember (murec f k₀) as w eqn:Hw in *; destruct w as [[]|].
+  - injection Heq; intros; subst.
+    symmetry in Hw; apply murec_Some_lt in Hw.
+    now eapply (IHk₀ v a k k').
+  - remember (f k₀) as z eqn:Hz in *; destruct z; [|discriminate].
+    injection Heq; intros; subst.
+    symmetry in Hw; eapply (murec_None_rev (k' := k')) in Hw; [|tea].
+    congruence.
+Qed.

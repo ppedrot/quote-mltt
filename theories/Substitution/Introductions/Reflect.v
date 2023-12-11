@@ -988,48 +988,6 @@ intros Heq [Hevl Hnil Hval]; split.
 + erewrite <- eqnf_qRun; eauto.
 Qed.
 
-Lemma minimize (f : nat -> bool) (n : nat) :
-  is_true (f n) -> ∑ m, is_true (f m) × (forall m', m' < m -> ~ is_true (f m')).
-Proof.
-revert f; induction n; intros f Hn.
-+ exists 0; split; [tea|Lia.lia].
-+ destruct (IHn (fun n => f (S n)) Hn) as (m&Hm&Hlt).
-  remember (f 0) as b eqn:Hb; symmetry in Hb; destruct b.
-  - exists 0; split; [tea|Lia.lia].
-  - exists (S m); split; [tea|].
-    intros []; [congruence|].
-    intros; apply Hlt; Lia.lia.
-Qed.
-
-Lemma murec_intro {A} {f k v} :
-  (forall k', k' < k -> f k' = None) -> f k = Some v ->
-  @murec A f (S k) = Some (k, v).
-Proof.
-intros Hlt Hk; cbn.
-assert (Hrw : forall l, muget 0 (List.rev (muval f k) ++ l) = muget k l).
-{ revert Hlt; clear.
-  induction k; cbn; [reflexivity|].
-  intros Hlt l.
-  rewrite <- List.app_assoc; rewrite IHk; [|now eauto].
-  cbn; now rewrite Hlt. }
-rewrite Hrw; cbn; now rewrite Hk.
-Qed.
-
-Lemma murec_elim_None {A f k k₀ k' v} : k' < k -> @murec A f k₀ = Some (k, v) -> f k' = None.
-Proof.
-unfold murec.
-revert f v k k'.
-induction k₀ as [|k₀]; cbn; intros f v k k' Hlt Hrec.
-Admitted.
-
-Lemma murec_elim_Some {A f k k₀ v} : @murec A f k₀ = Some (k, v) -> f k = Some v.
-Proof.
-intros Hrec.
-induction k₀; cbn in *.
-+ congruence.
-+ 
-Admitted.
-
 Lemma dredalg_eval_min {deep t r} : @RedClosureAlg deep t r -> dnf r ->
   ∑ k : nat, (forall k', k' < k -> eval deep t k' = None) × eval deep t k = Some r.
 Proof.
