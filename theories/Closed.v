@@ -59,8 +59,8 @@ all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
   intros [] ?; compute; intuition.
 + eapply IHt3; [|eassumption].
   intros [|[]] ?; compute; intuition.
-  do 2 apply Arith_prebase.lt_n_S_stt.
-  apply Hρ; now do 2 apply Arith_prebase.lt_S_n.
+  do 2 apply Arith_base.lt_n_S_stt.
+  apply Hρ; now do 2 apply PeanoNat.lt_S_n.
 Qed.
 
 Lemma closedn_ren_rev ρ n n' (t : term) : (forall m, ρ m < n' -> m < n) -> closedn n' t⟨ρ⟩ -> closedn n t.
@@ -81,8 +81,8 @@ all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
   intros [] ?; compute; intuition.
 + eapply IHt3; [|eassumption].
   intros [|[]] ?; compute; intuition.
-  do 2 apply Arith_prebase.lt_n_S_stt; apply Hρ.
-  do 2 apply Arith_prebase.lt_S_n; tea.
+  do 2 apply Arith_base.lt_n_S_stt; apply Hρ.
+  do 2 apply PeanoNat.lt_S_n; tea.
 Qed.
 
 Lemma closed0_ren ρ (t : term) : closed0 t -> closed0 t⟨ρ⟩.
@@ -110,19 +110,19 @@ all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
 + now apply Hσ, PeanoNat.Nat.ltb_lt.
 + eapply IHt2; [|tea].
-  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, Arith_prebase.lt_S_n.
+  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, PeanoNat.lt_S_n.
 + eapply IHt2; [|tea].
-  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, Arith_prebase.lt_S_n.
+  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, PeanoNat.lt_S_n.
 + eapply IHt1; [|tea].
-  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, Arith_prebase.lt_S_n.
+  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, PeanoNat.lt_S_n.
 + eapply IHt1; [|tea].
-  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, Arith_prebase.lt_S_n.
+  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, PeanoNat.lt_S_n.
 + eapply IHt2; [|tea].
-  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, Arith_prebase.lt_S_n.
+  intros [] ?; cbn; [reflexivity|]; unfold funcomp; now apply closedn_shift, Hσ, PeanoNat.lt_S_n.
 + eapply IHt3; [|eassumption].
   intros [|[]] ?; cbn; try reflexivity.
   unfold funcomp.
-  now apply closedn_shift, closedn_shift, Hσ, Arith_prebase.lt_S_n, Arith_prebase.lt_S_n.
+  now apply closedn_shift, closedn_shift, Hσ, PeanoNat.lt_S_n, PeanoNat.lt_S_n.
 Qed.
 
 Lemma closedn_beta : forall t u n, closedn (S n) t -> closedn n u -> closedn n t[u..].

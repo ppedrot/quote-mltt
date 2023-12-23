@@ -83,7 +83,7 @@ Section TypeConstructors.
       2: now exfalso ; gen_typing.
       clear HeqU.
       remember U as T eqn:HeqU in nfT' |- * at 2.
-      destruct nfT' ; inversion HeqU ; subst.
+      destruct nfT'; inversion HeqU ; subst.
       2: now exfalso ; gen_typing.
       now reflexivity.
     - intros [nT ? ne] -> nfT T' nfT' HΓ HT' [nT' ? ne']; cbn in *.

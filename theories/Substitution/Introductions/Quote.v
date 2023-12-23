@@ -161,7 +161,7 @@ Qed.
   + eapply qNatRed.
   + transitivity (tQuote t₀).
     - now apply redtm_quote.
-    - replace (erase t) with (erase t₀) by tea.
+    - replace (erase t) with (erase t₀).
       apply redtm_evalquote; tea.
       now eapply urefl.
   Qed.
