@@ -418,7 +418,7 @@ apply dnf_dne_erase.
 Qed.
 
 Lemma quote_ren : forall t (ρ : nat -> nat), closed0 t ->
-  (qNat (quote model (erase t)))⟨ρ⟩ = qNat (quote model (erase t⟨ρ⟩)).
+  (qNat (quote (erase t)))⟨ρ⟩ = qNat (quote (erase t⟨ρ⟩)).
 Proof.
 intros.
 rewrite qNat_ren; do 2 f_equal.
@@ -426,7 +426,7 @@ now rewrite erase_is_closed0_ren_id.
 Qed.
 
 Lemma quote_subst : forall t (σ : nat -> term), closed0 t ->
-  (qNat (quote model (erase t)))[σ] = qNat (quote model (erase t[σ])).
+  (qNat (quote (erase t)))[σ] = qNat (quote (erase t[σ])).
 Proof.
 intros.
 rewrite qNat_subst; do 2 f_equal.
@@ -435,7 +435,7 @@ Qed.
 
 (** FIXME: move me somewhere else *)
 Definition qRun (t : term) (u k : nat) : term :=
-  tApp (tApp (tApp model.(run) (qNat (model.(quote) (erase t)))) (qNat u)) (qNat k).
+  tApp (tApp (tApp run (qNat (quote (erase t)))) (qNat u)) (qNat k).
 
 Lemma qRun_ren : forall t u k ρ, closed0 t -> (qRun t u k)⟨ρ⟩ = qRun t⟨ρ⟩ u k.
 Proof.

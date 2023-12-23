@@ -134,12 +134,12 @@ Section Definitions.
       | wfTermStep {Γ} {t u} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
           [ Γ |- u ≅ u : tNat ] ->
-          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- run : arr tNat (arr tNat tPNat) ] ->
           [ Γ |- tStep t u : tNat ]
       | wfTermReflect {Γ} {t u} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
           [ Γ |- u ≅ u : tNat ] ->
-          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- run : arr tNat (arr tNat tPNat) ] ->
           [ Γ |- tReflect t u : tTotal t u ]
       | wfTermConv {Γ} {t A B} :
           [ Γ |- t : A ] -> 
@@ -186,13 +186,13 @@ Section Definitions.
       | TermQuoteRed {Γ} {t} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
           dnf t -> closed0 t ->
-          [ Γ |- tQuote t ≅ qNat (model.(quote) (erase t)) : tNat ]
+          [ Γ |- tQuote t ≅ qNat (quote (erase t)) : tNat ]
       | TermQuoteCong {Γ} {t t'} :
           [ Γ |- t ≅ t' : arr tNat tNat ] ->
           [ Γ |- tQuote t ≅ tQuote t' : tNat ]
       | TermStepRed {Γ} {t u k v} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
-          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- run : arr tNat (arr tNat tPNat) ] ->
           dnf t -> closed0 t ->
           (forall k', k' < k -> [ Γ |- qRun t u k' ≅ tZero : tNat ]) ->
           [ Γ |- qRun t u k ≅ tSucc (qNat v) : tNat ] ->
@@ -200,11 +200,11 @@ Section Definitions.
       | TermStepCong {Γ} {t t' u u'} :
           [ Γ |- t ≅ t' : arr tNat tNat ] ->
           [ Γ |- u ≅ u' : tNat ] ->
-          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- run : arr tNat (arr tNat tPNat) ] ->
           [ Γ |- tStep t u ≅ tStep t' u' : tNat ]
       | TermReflectRed {Γ} {t u k v} :
           [ Γ |- t ≅ t : arr tNat tNat ] ->
-          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- run : arr tNat (arr tNat tPNat) ] ->
           dnf t -> closed0 t ->
           (forall k', k' < k -> [ Γ |- qRun t u k' ≅ tZero : tNat ]) ->
           [ Γ |- qRun t u k ≅ tSucc (qNat v) : tNat ] ->
@@ -212,7 +212,7 @@ Section Definitions.
       | TermReflectCong {Γ} {t t' u u'} :
           [ Γ |- t ≅ t' : arr tNat tNat ] ->
           [ Γ |- u ≅ u' : tNat ] ->
-          [ Γ |- model.(run) : arr tNat (arr tNat tPNat) ] ->
+          [ Γ |- run : arr tNat (arr tNat tPNat) ] ->
           [ Γ |- tReflect t u ≅ tReflect t' u' : tTotal t u ]
       | TermPiCong {Γ} {A B C D} :
           [ Γ |- A : U] ->

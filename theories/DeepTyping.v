@@ -558,7 +558,7 @@ Qed.
 Lemma NeTermDecl_tStep : forall Γ (t t' t₀ u u' u₀ : term),
   [Γ |-[ de ] t ≅ t' : arr tNat tNat] ->
   [Γ |-[ de ] u ≅ u' : tNat] ->
-  [Γ |-[ de ] model.(run) : arr tNat (arr tNat tPNat) ] ->
+  [Γ |-[ de ] run : arr tNat (arr tNat tPNat) ] ->
   (~ closed0 t') + (~ closed0 u') -> dnf t' -> dnf u' ->
   NfTermDecl Γ (arr tNat tNat) t' t₀ ->
   NfTermDecl Γ tNat u' u₀ ->
@@ -577,7 +577,7 @@ Qed.
 Lemma NeTermDecl_tReflect : forall Γ (t t' t₀ u u' u₀ : term),
   [Γ |-[ de ] t ≅ t' : arr tNat tNat] ->
   [Γ |-[ de ] u ≅ u' : tNat] ->
-  [Γ |-[ de ] model.(run) : arr tNat (arr tNat tPNat) ] ->
+  [Γ |-[ de ] run : arr tNat (arr tNat tPNat) ] ->
   (~ closed0 t') + (~ closed0 u') -> dnf t' -> dnf u' ->
   NfTermDecl Γ (arr tNat tNat) t' t₀ ->
   NfTermDecl Γ tNat u' u₀ ->

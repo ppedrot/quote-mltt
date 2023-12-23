@@ -143,7 +143,7 @@ Definition eval_body (eval : bool -> term -> option term) (murec : term -> optio
   | tQuote t =>
     let* t := eval true t in
     if is_closedn 0 t then
-      Some (qNat (model.(quote) (erase t)))
+      Some (qNat (quote (erase t)))
     else Some (tQuote t)
   | tStep t u =>
     let* t := eval true t in
@@ -203,7 +203,7 @@ Inductive bigstep : bool -> term -> term -> Set :=
 | bs_refl : forall A t, [tRefl A t ↓ tRefl A t]
 | bs_idElim_refl : forall A A₀ x x₀ P hr y e r, [e ↓ tRefl A₀ x₀] -> [hr ↓ r] -> [tIdElim A x P hr y e ↓ r]
 | bs_idElim_ne : forall A x P hr y e e₀, [e ↓ e₀] -> whne e₀ -> [tIdElim A x P hr y e ↓ tIdElim A x P hr y e₀]
-| bs_quote_eval : forall t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote t ↓ qNat (model.(quote) (erase t₀))]
+| bs_quote_eval : forall t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote t ↓ qNat (quote (erase t₀))]
 | bs_quote_ne : forall t t₀, [t ⇊ t₀] -> ~ closed0 t₀ -> [tQuote t ↓ tQuote t₀]
 | bs_step_eval : forall t t₀ u u₀ n k k',
   [t ⇊ t₀] -> [u ⇊ qNat u₀] -> closed0 t₀ ->
@@ -248,7 +248,7 @@ Inductive bigstep : bool -> term -> term -> Set :=
 | dbs_idElim_refl : forall A A₀ x x₀ P hr y e r, [e ↓ tRefl A₀ x₀] -> [hr ⇊ r] -> [tIdElim A x P hr y e ⇊ r]
 | dbs_idElim_ne : forall A A₀ x x₀ P P₀ hr hr₀ y y₀ e n e₀, [e ↓ n] -> whne n ->
   [A ⇊ A₀] -> [x ⇊ x₀] -> [P ⇊ P₀] -> [hr ⇊ hr₀] -> [y ⇊ y₀] -> [n ⇊ e₀] -> [tIdElim A x P hr y e ⇊ tIdElim A₀ x₀ P₀ hr₀ y₀ e₀]
-| dbs_quote_eval : forall t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote t ⇊ qNat (model.(quote) (erase t₀))]
+| dbs_quote_eval : forall t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote t ⇊ qNat (quote (erase t₀))]
 | dbs_quote_ne : forall t t₀, [t ⇊ t₀] -> ~ closed0 t₀ -> [tQuote t ⇊ tQuote t₀]
 | dbs_step_eval : forall t t₀ u u₀ n k k',
   [t ⇊ t₀] -> [u ⇊ qNat u₀] -> closed0 t₀ ->
@@ -673,7 +673,7 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | termEvalAlg {t} :
   dnf t ->
   closed0 t ->
-  [ tQuote t ⤳ qNat (model.(quote) (erase t)) ]
+  [ tQuote t ⤳ qNat (quote (erase t)) ]
 | termStepAlg {t u n k k'} :
   dnf t ->
   closed0 t ->

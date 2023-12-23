@@ -127,11 +127,11 @@ Section TypingWk.
       now apply IH.
     - intros; cbn; constructor; eauto.
       + now change (arr tNat tNat) with (arr tNat tNat)⟨ρ⟩.
-      + rewrite <- (run_ren _ ρ); now apply H4.
+      + rewrite <- run_ren with (ρ := ρ); now apply H4.
     - intros * **.
       unfold ren1, Ren1_well_wk; rewrite tTotal_ren.
       cbn in *; constructor; eauto.
-      rewrite <- (run_ren _ ρ); eauto.
+      rewrite <- run_ren with (ρ := ρ); eauto.
     - intros * _ IHt _ IHAB ? ρ ?.
       econstructor.
       1: now eapply IHt.
@@ -184,7 +184,7 @@ Section TypingWk.
       rewrite !qNat_ren.
       eapply TermStepRed.
       + now apply IHt.
-      + now rewrite <- (run_ren _ ρ); apply IHrun.
+      + now rewrite <- run_ren with (ρ := ρ); apply IHrun.
       + now apply dnf_ren.
       + now apply closed0_ren.
       + intros k' Hk.
@@ -199,14 +199,14 @@ Section TypingWk.
     - intros; cbn.
       constructor; eauto using dnf_ren, closed0_ren.
       + change (arr tNat tNat) with (arr tNat tNat)⟨ρ⟩; now eauto.
-      + rewrite <- (run_ren _ ρ); now apply H4.
+      + rewrite <- run_ren with (ρ := ρ); now apply H4.
     - intros * ? IHt ? IHrun ?? ? IHnil ? IHval **.
       cbn - [tTotal].
       unfold ren1, Ren1_well_wk.
       rewrite tTotal_ren, qEvalTm_ren, !qNat_ren.
       apply TermReflectRed.
       + now apply IHt.
-      + now rewrite <- (run_ren _ ρ); apply IHrun.
+      + now rewrite <- run_ren with (ρ := ρ); apply IHrun.
       + now apply dnf_ren.
       + now apply closed0_ren.
       + intros k' Hk.
@@ -221,7 +221,7 @@ Section TypingWk.
     - intros.
       unfold ren1, Ren1_well_wk.
       rewrite tTotal_ren; cbn in *; constructor; eauto using dnf_ren, closed0_ren.
-      rewrite <- (run_ren _ ρ); eauto.
+      rewrite <- run_ren with (ρ := ρ); eauto.
     - intros Γ A A' B B' _ IHA _ IHAA' _ IHBB' ? ρ ?.
       cbn.
       econstructor.
@@ -570,7 +570,7 @@ eapply TermNatElimCong.
 Qed.
 
 Lemma tTotal_decl_cong : forall Γ t t' u u',
-  [Γ |- run model : arr tNat (arr tNat (arr tNat tNat))] ->
+  [Γ |- run : arr tNat (arr tNat (arr tNat tNat))] ->
   [Γ |- t ≅ t' : arr tNat tNat] ->
   [Γ |- u ≅ u' : tNat] ->
   [Γ |- tTotal t u ≅ tTotal t' u' : U].

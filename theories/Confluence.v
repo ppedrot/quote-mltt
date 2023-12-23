@@ -36,7 +36,7 @@ Inductive pred : term -> term -> Set :=
 | pred_idelimrefl {A x P hr hr' y B z} : [hr ⇉ hr'] ->
   [tIdElim A x P hr y (tRefl B z) ⇉ hr']
 | pred_quote {t t'} : [t ⇉ t'] -> [tQuote t ⇉ tQuote t']
-| pred_quoteeval {t} : dnf (unannot t) -> closed0 t -> [tQuote t ⇉ qNat (model.(quote) (erase t))]
+| pred_quoteeval {t} : dnf (unannot t) -> closed0 t -> [tQuote t ⇉ qNat (quote (erase t))]
 | pred_step {t t' u u'} : [t ⇉ t'] -> [u ⇉ u'] -> [tStep t u ⇉ tStep t' u']
 | pred_stepeval {t u n k k'} :
   dnf (unannot t) -> closed0 t ->

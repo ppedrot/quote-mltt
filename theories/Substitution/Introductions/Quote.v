@@ -154,7 +154,7 @@ Qed.
 
   Lemma QuoteEvalRedEq : forall Γ l t t₀ (rNat : [Γ ||-<l> tNat]),
     [Γ |- t ≅ t₀ : tPNat] -> [t ⇶* t₀] -> dnf t₀ -> closed0 t₀ -> eqnf t t₀ ->
-    [Γ ||-<l> tQuote t ≅ qNat (model.(quote) (erase t)) : tNat | rNat ].
+    [Γ ||-<l> tQuote t ≅ qNat (quote (erase t)) : tNat | rNat ].
   Proof.
   intros.
   eapply redSubstTerm.
@@ -180,7 +180,7 @@ Qed.
   assert (Hc' : is_closedn 0 r₀ = b).
   { erewrite eqnf_is_closedn; [tea|now apply Symmetric_eqnf]. }
   destruct b.
-  - pose (q := qNat (model.(quote) (erase l₀))).
+  - pose (q := qNat (quote (erase l₀))).
     exists q q.
     + constructor; [now apply ty_qNat|].
       transitivity (tQuote l₀).
@@ -240,7 +240,7 @@ Qed.
       assert [Δ |- tQuote r : tNat ].
       { now apply ty_quote. }
       pose (c := is_closedn 0 r); assert (is_closedn 0 r = c) as Hc by reflexivity; destruct c.
-      + pose (q := qNat (model.(quote) (erase r))).
+      + pose (q := qNat (quote (erase r))).
         exists q; [|now apply convtm_qNat|apply qNatRed0].
         constructor.
         { now apply ty_qNat. }
@@ -264,7 +264,7 @@ Qed.
   Qed.
 
 Lemma evalQuoteValid : dnf t -> closed0 t ->
-  [Γ ||-v<l> tQuote t ≅ qNat (model.(quote) (erase t)) : tNat | vΓ | vNat].
+  [Γ ||-v<l> tQuote t ≅ qNat (quote (erase t)) : tNat | vΓ | vNat].
 Proof.
 destruct SN as [sn].
 econstructor.
@@ -276,7 +276,7 @@ unshelve eassert (vte0 := vte Δ σ σ tΔ vσ vσ _).
 apply escapeEqTerm, sn in vte0 as (t₀&u₀&[]&[]&?&?&?); cbn in *.
 assert [Δ |-[ ta ] t[σ] : tProd tNat tNat].
 { eapply escapeTerm, vtt0. }
-pose (q := qNat (model.(quote) (erase t₀))).
+pose (q := qNat (quote (erase t₀))).
 exists q q; cbn in *.
 - constructor; [now apply ty_qNat|].
   transitivity (tQuote t₀).

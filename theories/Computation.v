@@ -190,20 +190,21 @@ Qed.
 
 (** Axiomatic definition of a computation model internal to MLTT *)
 
-Record Model := {
-  quote : term -> nat;
-  run : term;
-  run_ren : forall ρ, run⟨ρ⟩ = run;
-}.
+Axiom quote : term -> nat.
+Axiom run : term.
 
-Axiom model : Model.
+(** Slightly contrived way to state that [run] is closed. *)
+Axiom run_subst : forall (σ : nat -> term), run[σ] = run.
 
-Axiom run_subst : forall (σ : nat -> term), (run model)[σ] = run model.
+Lemma run_ren : forall ρ, run⟨ρ⟩ = run.
+Proof.
+intros; rewrite rinstInst'_term; apply run_subst.
+Qed.
 
 (** Derived notions from the model *)
 
 Definition tTotal t u :=
-  tEval (tApp (tApp model.(run) (tQuote t)) u) (tStep t u) (tApp t u).
+  tEval (tApp (tApp run (tQuote t)) u) (tStep t u) (tApp t u).
 (** eval (run (quote t) u) (step t u) (t u) *)
 
 Lemma tTotal_ren : forall t u ρ,

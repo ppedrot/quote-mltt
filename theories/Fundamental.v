@@ -218,7 +218,7 @@ Section Fundamental.
 
   Lemma FundTmStep : forall (Γ : context) (t u : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTmEq Γ tNat u u ->
-    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) run ->
     FundTm Γ tNat (tStep t u).
   Proof.
     intros * [] [] []; unshelve econstructor.
@@ -229,7 +229,7 @@ Section Fundamental.
 
   Lemma FundTmReflect : forall (Γ : context) (t u : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTmEq Γ tNat u u ->
-    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) run ->
     FundTm Γ (tTotal t u) (tReflect t u).
   Proof.
     intros * [] [] []; unshelve econstructor.
@@ -306,7 +306,7 @@ Section Fundamental.
 
   Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),
     FundTmEq Γ (arr tNat tNat) t t -> dnf t -> Closed.closed0 t ->
-    FundTmEq Γ tNat (tQuote t) (qNat (model.(quote) (erase t))).
+    FundTmEq Γ tNat (tQuote t) (qNat (quote (erase t))).
   Proof.
   intros * []? ?; unshelve econstructor.
   - assumption.
@@ -329,7 +329,7 @@ Section Fundamental.
 
   Lemma FundTmEqStepEval : forall Γ t u k v,
     FundTmEq Γ (arr tNat tNat) t t ->
-    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) run ->
     dnf t -> Closed.closed0 t ->
     (forall k' : nat, k' < k -> FundTmEq Γ tNat (qRun t u k') tZero) ->
     FundTmEq Γ tNat (qRun t u k) (tSucc (qNat v)) ->
@@ -347,7 +347,7 @@ Section Fundamental.
 
   Lemma FundTmEqStepCong : forall Γ t t' u u',
     FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat u u' ->
-    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) run ->
     FundTmEq Γ tNat (tStep t u) (tStep t' u').
   Proof.
   intros * [] [] [] **; unshelve econstructor.
@@ -360,7 +360,7 @@ Section Fundamental.
 
   Lemma FundTmEqReflectEval : forall Γ t u k v,
     FundTmEq Γ (arr tNat tNat) t t ->
-    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) run ->
     dnf t -> Closed.closed0 t ->
     (forall k' : nat, k' < k -> FundTmEq Γ tNat (qRun t u k') tZero) ->
     FundTmEq Γ tNat (qRun t u k) (tSucc (qNat v)) ->
@@ -379,7 +379,7 @@ Section Fundamental.
 
   Lemma FundTmEqReflectCong : forall Γ t t' u u',
     FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat u u' ->
-    FundTm Γ (arr tNat (arr tNat tPNat)) model.(run) ->
+    FundTm Γ (arr tNat (arr tNat tPNat)) run ->
     FundTmEq Γ (tTotal t u) (tReflect t u) (tReflect t' u').
   Proof.
   intros * [] [] [] **; unshelve econstructor.

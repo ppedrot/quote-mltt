@@ -936,7 +936,7 @@ Context `{GenericTypingProperties}.
 Context {SN : SNTypingProperties ta _ _ _ _ _}.
 
 Lemma StepClosed0RedEq : forall Γ l t u k v (rΓ : [|- Γ]) (rNat := natRed rΓ),
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNat))] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNat))] ->
   dnf t -> [Γ |- t ≅ t : arr tNat tNat] -> closed0 t -> EvalStep Γ t u k v ->
   [rNat | Γ ||- tStep t (qNat u) ≅ qNat k : tNat].
 Proof.
@@ -1002,11 +1002,11 @@ Qed.
 
 Axiom run_spec_None : forall t u k,
   eval true (tApp t (qNat u)) k = None ->
-  [tApp (tApp (tApp (run model) (qNat (quote model t))) (qNat u)) (qNat k) ⇶* tZero].
+  [tApp (tApp (tApp run (qNat (quote t))) (qNat u)) (qNat k) ⇶* tZero].
 
 Axiom run_spec_Some : forall t u k v,
   eval true (tApp t (qNat u)) k = Some (qNat v) ->
-  [tApp (tApp (tApp (run model) (qNat (quote model t))) (qNat u)) (qNat k) ⇶* tSucc (qNat v)].
+  [tApp (tApp (tApp run (qNat (quote t))) (qNat u)) (qNat k) ⇶* tSucc (qNat v)].
 
 Lemma reify_EvalStep {Γ l t n v} (rNat : [Γ ||-<l> tNat]) :
   (forall k, [rNat | Γ ||- qRun t n k : tNat]) ->
@@ -1038,7 +1038,7 @@ Qed.
 Lemma StepRedEq : forall Γ l t t' u u' (rΓ : [|- Γ]) (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat),
   [Γ ||-<l> t ≅ t' : arr tNat tNat | rNatNat ] ->
   [Γ ||-<l> u ≅ u' : tNat | rNat ] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [Γ ||-<l> tStep t u ≅ tStep t' u' : tNat | rNat ].
 Proof.
 intros * rtt' ruu' rrun.
@@ -1046,7 +1046,7 @@ assert (rt : [Γ ||-<l> t : arr tNat tNat | rNatNat ]) by now eapply LRTmEqRed_l
 assert (rt' : [Γ ||-<l> t' : arr tNat tNat | rNatNat ]) by now eapply LRTmEqRed_r.
 assert (ru : [Γ ||-<l> u : tNat | rNat ]) by now eapply LRTmEqRed_l.
 assert (ru' : [Γ ||-<l> u' : tNat | rNat ]) by now eapply LRTmEqRed_r.
-assert [Γ |- run model : arr tNat (arr tNat tPNat)] by now eapply escapeTerm.
+assert [Γ |- run : arr tNat (arr tNat tPNat)] by now eapply escapeTerm.
 assert (Hnft := rtt'); apply escapeEqTerm, snty_nf in Hnft.
 assert (Hnfu := ruu'); apply escapeEqTerm, snty_nf in Hnfu.
 destruct Hnft as (t₀&t'₀&[]&[]&?&?&?).
@@ -1127,7 +1127,7 @@ Qed.
 Lemma StepRed : forall Γ l t u (rΓ : [|- Γ]) (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat),
   [Γ ||-<l> t : arr tNat tNat | rNatNat ] ->
   [Γ ||-<l> u : tNat | rNat ] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [Γ ||-<l> tStep t u : tNat | rNat ].
 Proof.
 intros.
@@ -1195,7 +1195,7 @@ Lemma StepEvalRedEq : forall Γ l t t₀ u k v (rNat : [Γ ||-<l> tNat]) (rNatNa
   [Γ ||-<l> t : arr tNat tNat | rNatNat ] ->
   (forall k', k' < k -> [rNat | Γ ||- qRun t u k' ≅ tZero : tNat]) ->
   [rNat | Γ ||- qRun t u k ≅ tSucc (qNat v) : tNat] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [rNat | Γ ||- tStep t (qNat u) ≅ qNat k : tNat].
 Proof.
 intros * Ht Hr Hnf Hc Hannot rt rnil rval rrun.
@@ -1223,7 +1223,7 @@ Context {SN : SNTypingProperties ta _ _ _ _ _}.
 Lemma TotalURedEq {Γ l t t' u u'} (rΓ : [|- Γ]) (rU : [Γ ||-<one> U]) (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat) :
   [Γ ||-<l> t ≅ t' : arr tNat tNat | rNatNat ] ->
   [Γ ||-<l> u ≅ u' : tNat | rNat ] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [rU | Γ ||- tTotal t u ≅ tTotal t' u' : U].
 Proof.
 intros rt ru rrun.
@@ -1248,7 +1248,7 @@ Qed.
 Lemma TotalURed {Γ l t u} (rΓ : [|- Γ]) (rU : [Γ ||-<one> U]) (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat) :
   [Γ ||-<l> t : arr tNat tNat | rNatNat ] ->
   [Γ ||-<l> u : tNat | rNat ] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [rU | Γ ||- tTotal t u : U].
 Proof.
 intros.
@@ -1261,7 +1261,7 @@ Qed.
 Lemma TotalRed {Γ l t u} (rΓ : [|- Γ]) (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat) :
   [Γ ||-<l> t : arr tNat tNat | rNatNat ] ->
   [Γ ||-<l> u : tNat | rNat ] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [Γ ||-<one> tTotal t u].
 Proof.
 intros.
@@ -1303,7 +1303,7 @@ induction n; cbn [nShift plus]; intros.
 Qed.
 
 Lemma qEvalTyEvalStepRedEq {Γ l t n k v} (rΓ : [|- Γ]) (rU : [Γ ||-<one> U]) (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat)
-  (f := (tApp (tApp (run model) (qNat (quote model (erase t)))) (qNat n))) :
+  (f := (tApp (tApp run (qNat (quote (erase t)))) (qNat n))) :
   [Γ ||-<l> f : tPNat | rNatNat] ->
   EvalStep Γ t n k v ->
   [rU | Γ ||- tEval f (qNat k) (qNat v) ≅ qEvalTy k v : U].
@@ -1343,7 +1343,7 @@ Lemma ReflectRedEq : forall Γ l t t' u u' (rΓ : [|- Γ]) (rNat := natRed rΓ) 
   (rTotal : [Γ ||-<l> tTotal t u]),
   [Γ ||-<l> t ≅ t' : arr tNat tNat | rNatNat ] ->
   [Γ ||-<l> u ≅ u' : tNat | rNat ] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [Γ ||-<l> tReflect t u ≅ tReflect t' u' : tTotal t u | rTotal ].
 Proof.
 intros * rtt' ruu' rrun.
@@ -1352,7 +1352,7 @@ assert (rt' : [Γ ||-<l> t' : arr tNat tNat | rNatNat ]) by now eapply LRTmEqRed
 assert (ru : [Γ ||-<l> u : tNat | rNat ]) by now eapply LRTmEqRed_l.
 assert (ru' : [Γ ||-<l> u' : tNat | rNat ]) by now eapply LRTmEqRed_r.
 assert (rU : [Γ ||-<one> U]) by now apply LRU_, redUOne.
-assert [Γ |- run model : arr tNat (arr tNat (arr tNat tNat))] by now eapply escapeTerm.
+assert [Γ |- run : arr tNat (arr tNat (arr tNat tNat))] by now eapply escapeTerm.
 assert [Γ |- tTotal t u ≅ tTotal t' u' : U].
 { now unshelve eapply escapeEqTerm, TotalURedEq. }
 assert (Hnft := rtt'); apply escapeEqTerm, snty_nf in Hnft.
@@ -1410,7 +1410,7 @@ remember (andb ct cu) as cb eqn:Hcb; symmetry in Hcb; destruct cb.
   { eapply reify_EvalStep; [tea|].
     now eapply dred_tApp_qNat_compat. }
 
-  assert [rNat | Γ ||- tQuote t ≅ qNat (model.(quote) (erase t₀)) : tNat].
+  assert [rNat | Γ ||- tQuote t ≅ qNat (quote (erase t₀)) : tNat].
   { eapply redSubstTerm; [now eapply qNatRed|].
     transitivity (tQuote t₀).
     - now eapply redtm_quote.
@@ -1427,8 +1427,8 @@ remember (andb ct cu) as cb eqn:Hcb; symmetry in Hcb; destruct cb.
     unshelve eapply (SimpleArr.simple_appcongTerm (F := tNat)); tea; [|apply qNatRed].
     now eapply reflLRTmEq. }
 
-  assert [rNatNat | Γ ||- tApp (tApp (run model) (tQuote t)) u ≅
-    tApp (tApp (run model) (qNat (model.(quote) (erase t₀)))) (qNat n₀) : tPNat].
+  assert [rNatNat | Γ ||- tApp (tApp run (tQuote t)) u ≅
+    tApp (tApp run (qNat (quote (erase t₀)))) (qNat n₀) : tPNat].
   { unshelve eapply (SimpleArr.simple_appcongTerm (F := tNat)); eauto using SimpleArr.ArrRedTy, qNatRed.
     unshelve eapply (SimpleArr.simple_appcongTerm (F := tNat)); eauto using SimpleArr.ArrRedTy, qNatRed, LRTmEqRed_l, LRTmEqRed_r.
     now eapply reflLRTmEq. }
@@ -1484,7 +1484,7 @@ Lemma ReflectRed : forall Γ l t u (rΓ : [|- Γ])
   (rTotal : [Γ ||-<l> tTotal t u]),
   [Γ ||-<l> t : arr tNat tNat | rNatNat] ->
   [Γ ||-<l> u : tNat | rNat] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [Γ ||-<l> tReflect t u : tTotal t u | rTotal].
 Proof.
 intros.
@@ -1496,7 +1496,7 @@ Qed.
 Lemma qTmEvalRed {Γ l t t₀ u k v} (rΓ : [|-Γ]) (rNat := natRed (l := l) rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat)
   (rTotal : [Γ ||-<one> tTotal t (qNat u)]) :
   [Γ |- t ≅ t₀ : tPNat] -> [t ⇶* t₀] -> dnf t₀ -> closed0 t -> eqnf t t₀ ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [rNatNat | Γ ||- t : tPNat] ->
   (forall k', k' < k -> [rNat | Γ ||- qRun t u k' ≅ tZero : tNat]) ->
   [rNat | Γ ||- qRun t u k ≅ tSucc (qNat v) : tNat] ->
@@ -1528,11 +1528,11 @@ assert (v' = v); [|subst v'].
   apply dred_erase_qNat_compat in Hred; cbn in Hred.
   rewrite erase_qNat in Hred.
   eapply qNat_inj, dredalg_det; eauto using dnf_qNat. }
-assert [rNat | Γ ||- tQuote t ≅ qNat (model.(quote) (erase t)) : tNat].
+assert [rNat | Γ ||- tQuote t ≅ qNat (quote (erase t)) : tNat].
 { eapply QuoteEvalRedEq; tea.
   now eapply dredalg_closed0. }
 assert (rEqLU : [rU | Γ ||- (tTotal t (qNat u)) ≅
-  tEval (tApp (tApp (run model) (qNat (quote model (erase t)))) (qNat u)) (qNat k) (qNat v) : U]).
+  tEval (tApp (tApp run (qNat (quote (erase t)))) (qNat u)) (qNat k) (qNat v) : U]).
 { unshelve eapply tEvalURedEq; tea.
   + unshelve eapply simple_AppRedEq, qNatRedEq; eauto using SimpleArr.ArrRedTy; try apply qNatRed.
     unshelve eapply simple_AppRedEq; [..|tea].
@@ -1541,7 +1541,7 @@ assert (rEqLU : [rU | Γ ||- (tTotal t (qNat u)) ≅
     now eapply dredalg_closed0.
   + eapply dnf_closed_qNatRedEq; tea.
 }
-assert (rEqRU : [rU | Γ ||- tEval (tApp (tApp (run model) (qNat (quote model (erase t)))) (qNat u)) (qNat k) (qNat v)
+assert (rEqRU : [rU | Γ ||- tEval (tApp (tApp run (qNat (quote (erase t)))) (qNat u)) (qNat k) (qNat v)
   ≅ qEvalTy k v : U]).
 { unshelve eapply qEvalTyEvalStepRedEq; tea.
   unshelve eapply SimpleArr.simple_appTerm, qNatRed; eauto using SimpleArr.ArrRedTy.
@@ -1566,13 +1566,13 @@ Lemma ReflectEvalRedEq : forall Γ l t t₀ u k v (rΓ : [|- Γ])
   [Γ ||-<l> t : arr tNat tNat | rNatNat ] ->
   (forall k', k' < k -> [rNat | Γ ||- qRun t u k' ≅ tZero : tNat]) ->
   [rNat | Γ ||- qRun t u k ≅ tSucc (qNat v) : tNat] ->
-  [Γ ||-<l> run model : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
+  [Γ ||-<l> run : arr tNat (arr tNat tPNat) | SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat)] ->
   [rTotal | Γ ||- tReflect t (qNat u) ≅ qEvalTm k v : tTotal t (qNat u)].
 Proof.
 intros * ????? rt rnil rval rrun.
 eapply redSubstTerm.
 + eapply qTmEvalRed; tea.
-+ assert [Γ |-[ ta ] run model : arr tNat (arr tNat tPNat)] by now eapply escapeTerm.
++ assert [Γ |-[ ta ] run : arr tNat (arr tNat tPNat)] by now eapply escapeTerm.
   assert (closed0 t₀) by now eapply dredalg_closed0.
   transitivity (tReflect t₀ (qNat u)).
   - apply redtm_reflect; eauto using dnf_qNat, convtm_qNat, @RedClosureAlg.
@@ -1669,7 +1669,7 @@ Context {Γ l t u} (vΓ : [||-v Γ])
   (vNat := natValid (l := l) vΓ)
   (vArr := simpleArrValid vΓ vNat vNat)
   (vRun := simpleArrValid vΓ vNat (simpleArrValid vΓ vNat vArr))
-  (vrun : [ Γ ||-v< l > run model : arr tNat (arr tNat tPNat) | vΓ | vRun ])
+  (vrun : [ Γ ||-v< l > run : arr tNat (arr tNat tPNat) | vΓ | vRun ])
   (vt : [ Γ ||-v< l > t : arr tNat tNat | vΓ | vArr ])
   (vu : [ Γ ||-v< l > u : tNat | vΓ | vNat ])
 .
@@ -1715,7 +1715,7 @@ Context {Γ l t u} (vΓ : [||-v Γ])
   (vNat := natValid (l := l) vΓ)
   (vArr := simpleArrValid vΓ vNat vNat)
   (vRun := simpleArrValid vΓ vNat (simpleArrValid vΓ vNat vArr))
-  (vrun : [ Γ ||-v< l > run model : arr tNat (arr tNat tPNat) | vΓ | vRun ])
+  (vrun : [ Γ ||-v< l > run : arr tNat (arr tNat tPNat) | vΓ | vRun ])
   (vt : [ Γ ||-v< l > t : arr tNat tNat | vΓ | vArr ])
   (vu : [ Γ ||-v< l > u : tNat | vΓ | vNat ])
 .
@@ -1727,7 +1727,7 @@ Proof.
 apply mkValid; intros; cbn.
 pose (rNat := natRed (l := l) wfΔ).
 assert (rrun : [SimpleArr.ArrRedTy (natRed wfΔ)
-   (SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNat)) | Δ ||- run model : arr tNat (arr tNat (arr tNat tNat))]).
+   (SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNat)) | Δ ||- run : arr tNat (arr tNat (arr tNat tNat))]).
 { rewrite <- (run_subst σ).
   unshelve (irrelevance0; [|apply vrun]); eauto. }
 unshelve (irrelevance0; [symmetry; apply tTotal_subst|]); [exact one| |].
@@ -1761,7 +1761,7 @@ Context {Γ l t} {u k v : nat} (vΓ : [||-v Γ])
   (vNat := natValid (l := l) vΓ)
   (vArr := simpleArrValid vΓ vNat vNat)
   (vRun := simpleArrValid vΓ vNat (simpleArrValid vΓ vNat vArr))
-  (vrun : [ Γ ||-v< l > run model : arr tNat (arr tNat tPNat) | vΓ | vRun ])
+  (vrun : [ Γ ||-v< l > run : arr tNat (arr tNat tPNat) | vΓ | vRun ])
   (vt : [ Γ ||-v< l > t : arr tNat tNat | vΓ | vArr ])
 .
 
@@ -1810,7 +1810,7 @@ pose (rNat := natRed (l := l) wfΔ).
 pose (rNatNat := SimpleArr.ArrRedTy rNat rNat).
 assert (rt : [rNatNat | Δ ||- t[σ] : tPNat]).
 { eapply LRTmRedIrrelevantCum'; [reflexivity|]; now unshelve eapply vt. }
-assert (rrun : [SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat) | Δ ||- run model : arr tNat (arr tNat (arr tNat tNat))]).
+assert (rrun : [SimpleArr.ArrRedTy rNat (SimpleArr.ArrRedTy rNat rNatNat) | Δ ||- run : arr tNat (arr tNat (arr tNat tNat))]).
 { rewrite <- (run_subst σ).
   unshelve (irrelevance0; [|apply vrun]); eauto. }
 destruct (nf_eval rt) as (t₀&?&?&?).
@@ -1878,7 +1878,7 @@ Context {Γ l t t' u u'} (vΓ : [||-v Γ])
   (vNat := natValid (l := l) vΓ)
   (vArr := simpleArrValid vΓ vNat vNat)
   (vRun := simpleArrValid vΓ vNat (simpleArrValid vΓ vNat vArr))
-  (vrun : [ Γ ||-v< l > run model : arr tNat (arr tNat tPNat) | vΓ | vRun ])
+  (vrun : [ Γ ||-v< l > run : arr tNat (arr tNat tPNat) | vΓ | vRun ])
   (vt : [ Γ ||-v< l > t : arr tNat tNat | vΓ | vArr ])
   (vt' : [ Γ ||-v< l > t' : arr tNat tNat | vΓ | vArr ])
   (vu : [ Γ ||-v< l > u : tNat | vΓ | vNat ])

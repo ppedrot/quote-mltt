@@ -76,7 +76,7 @@ Inductive sred : red_tag -> term -> term -> Set :=
   [t →s t'] ->
   dnf t' ->
   closed0 t' ->
-  [tQuote t →w qNat (model.(quote) (erase t'))]
+  [tQuote t →w qNat (quote (erase t'))]
 | wred_termStepAlg {t t' u u' n k k'} :
   [t →s t'] ->
   [u →s qNat u'] ->
