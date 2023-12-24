@@ -185,14 +185,34 @@ Proof.
   now eapply convneu_whne.
 Qed.
 
+(** Strong normalization *)
+
+Section SN.
+
+Import DeepTyping.DeepTypingData.
+Import DeepTyping.DeepTypingProperties.
+
+Lemma strong_normalization : forall Γ A t, [Γ |-[de] t : A] -> ∑ v, [t ⇊ v].
+Proof.
+intros * H.
+apply TermRefl in H.
+apply Fundamental in H as [].
+eapply escapeTmEq in Vtu.
+apply snty_nf in Vtu as (t₀&?&[]&?&?&?&?).
+exists t₀.
+now eapply dredalg_bigstep.
+Qed.
+
+End SN.
+
 (** *** Canonicity: every closed natural number is a numeral, i.e. an iteration of [tSucc] on [tZero]. *)
 
 Section NatCanonicityInduction.
 
-  #[local] Lemma red_nat_empty : [ε ||-Nat tNat].
+  Let red_nat_empty : [ε ||-Nat tNat].
   Proof.
     repeat econstructor.
-  Qed.
+  Defined.
 
   Lemma nat_red_empty_ind :
     (forall t, [ε ||-Nat t : tNat | red_nat_empty] ->
@@ -227,8 +247,41 @@ Section NatCanonicityInduction.
 
 End NatCanonicityInduction.
 
+Section NatCanonicityDeepRed.
+
+Import DeepTyping.DeepTypingData.
+Import DeepTyping.DeepTypingProperties.
+
+Let red_nat_empty : [ε ||-Nat tNat].
+Proof.
+repeat econstructor.
+Defined.
+
+Lemma _nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
+Proof.
+  intros Ht.
+  assert (rt : [LRNat_ one red_nat_empty | ε ||- t : tNat]).
+  { apply Fundamental in Ht as [?? Vt%reducibleTm]; irrelevance. }
+  assert (Htt : [ε |-[nf] t ≅ t : tNat]).
+  { now eapply LogicalRelation.Escape.escapeEqTerm, Reflexivity.reflLRTmEq. }
+  destruct Htt as [t₀ ?? [Hr Hnf Ht₀]].
+  assert (Hn : ∑ n, t₀ = qNat n).
+  { eapply Reflect.dnf_closed_qNat in Hr; tea.
+    + destruct Hr as (n&?&?); subst; now exists n.
+    + apply (allfv_closed ε).
+      now apply typing_fv in Ht₀ as (?&?&?). }
+  destruct Hn as [n]; subst; exists n; now eapply dredalg_bigstep.
+Qed.
+
+End NatCanonicityDeepRed.
+
 Lemma nat_canonicity {t} : [ε |- t : tNat] ->
   ∑ n : nat, [ε |- t ≅ qNat n : tNat].
 Proof.
   now apply _nat_canonicity.
+Qed.
+
+Lemma nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
+Proof.
+  now apply _nat_canonicity_dred.
 Qed.
