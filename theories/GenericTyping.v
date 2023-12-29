@@ -333,7 +333,7 @@ Section GenericTyping.
   Class ConvTypeProperties :=
   {
     convty_term {Γ A B} : [Γ |- A ≅ B : U] -> [Γ |- A ≅ B] ;
-    convty_equiv {Γ} :> PER (conv_type Γ) ;
+    convty_equiv {Γ} :: PER (conv_type Γ) ;
     convty_wk {Γ Δ A B} (ρ : Δ ≤ Γ) :
       [|- Δ ] -> [Γ |- A ≅ B] -> [Δ |- A⟨ρ⟩ ≅ B⟨ρ⟩] ;
     convty_exp {Γ A A' B B'} :
@@ -359,7 +359,7 @@ Section GenericTyping.
 
   Class ConvTermProperties :=
   {
-    convtm_equiv {Γ A} :> PER (conv_term Γ A) ;
+    convtm_equiv {Γ A} :: PER (conv_term Γ A) ;
     convtm_conv {Γ t u A A'} : [Γ |- t ≅ u : A] -> [Γ |- A ≅ A'] -> [Γ |- t ≅ u : A'] ;
     convtm_wk {Γ Δ t u A} (ρ : Δ ≤ Γ) :
       [|- Δ ] -> [Γ |- t ≅ u : A] -> [Δ |- t⟨ρ⟩ ≅ u⟨ρ⟩ : A⟨ρ⟩] ;
@@ -424,7 +424,7 @@ Section GenericTyping.
 
   Class ConvNeuProperties :=
   {
-    convneu_equiv {Γ A} :> PER (conv_neu_conv Γ A) ;
+    convneu_equiv {Γ A} :: PER (conv_neu_conv Γ A) ;
     convneu_conv {Γ t u A A'} : [Γ |- t ~ u : A] -> [Γ |- A ≅ A'] -> [Γ |- t ~ u : A'] ;
     convneu_wk {Γ Δ t u A} (ρ : Δ ≤ Γ) :
       [|- Δ ] -> [Γ |- t ~ u : A] -> [Δ |- t⟨ρ⟩ ~ u⟨ρ⟩ : A⟨ρ⟩] ;
@@ -498,7 +498,7 @@ Section GenericTyping.
     redty_refl {Γ A} :
       [ Γ |- A] ->
       [Γ |- A ⤳* A] ;
-    redty_trans {Γ} :>
+    redty_trans {Γ} ::
       Transitive (red_ty Γ) ;
   }.
 
@@ -618,7 +618,7 @@ Section GenericTyping.
     redtm_refl {Γ A t } :
       [ Γ |- t : A] ->
       [Γ |- t ⤳* t : A] ;
-    redtm_trans {Γ A} :>
+    redtm_trans {Γ A} ::
       Transitive (red_tm Γ A) ;
   }.
 
@@ -635,14 +635,14 @@ Class GenericTypingProperties `(ta : tag)
   `(RedType ta) `(RedTerm ta)
 :=
 {
-  wfc_prop :> WfContextProperties ;
-  wfty_prop :> WfTypeProperties ;
-  typ_prop :> TypingProperties ;
-  convty_prop :> ConvTypeProperties ;
-  convtm_prop :> ConvTermProperties ;
-  convne_prop :> ConvNeuProperties ;
-  redty_prop :> RedTypeProperties ;
-  redtm_prop :> RedTermProperties ;
+  wfc_prop :: WfContextProperties ;
+  wfty_prop :: WfTypeProperties ;
+  typ_prop :: TypingProperties ;
+  convty_prop :: ConvTypeProperties ;
+  convtm_prop :: ConvTermProperties ;
+  convne_prop :: ConvNeuProperties ;
+  redty_prop :: RedTypeProperties ;
+  redtm_prop :: RedTermProperties ;
 }.
 
 Record isNf (t t₀ : term) := {
@@ -953,7 +953,7 @@ Section GenericConsequences.
     well_formed_typed := well_typed_typed Γ t w
   |}.
 
-  #[nonuniform]Coercion well_typed_well_formed : well_typed >-> well_formed.
+  #[warning="-uniform-inheritance"]Coercion well_typed_well_formed : well_typed >-> well_formed.
 
   Definition well_formed_well_typed Γ t (w : well_formed Γ t) : (well_typed Γ t + [Γ |- t]) :=
   (match (well_formed_class _ _ w) as c return
