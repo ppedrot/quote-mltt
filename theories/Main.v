@@ -21,6 +21,21 @@ Qed.
 
 Print Assumptions consistency.
 
+(*
+Axioms:
+run : term
+quote : term -> nat
+run_subst : forall σ : nat -> term, run[[σ]] = run
+run_spec_Some
+  : forall (t : term) (u k v : nat),
+    eval true (tApp t (qNat u)) k = Some (qNat v) ->
+    [[tApp (tApp (tApp run (qNat (quote t))) (qNat u)) (qNat k) ⇶* tSucc (qNat v)]]
+run_spec_None
+  : forall (t : term) (u k : nat),
+    eval true (tApp t (qNat u)) k = None ->
+    [[tApp (tApp (tApp run (qNat (quote t))) (qNat u)) (qNat k) ⇶* tZero]]
+*)
+
 Lemma strong_normalization : forall Γ A t, [Γ |-[de] t : A] -> ∑ v, [t ⇊ v].
 Proof.
 intros; now eapply strong_normalization.
