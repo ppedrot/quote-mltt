@@ -553,10 +553,8 @@ eapply TermNatElimCong.
   { repeat constructor; tea. }
   apply wfTermAnd.
   - apply wfTermId; auto_type.
-    eapply simple_TermApp with tNat; apply wfVar; tea.
-    * constructor.
-    * change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 6.
-      repeat constructor.
+    eapply simple_TermApp with tNat; first [apply wfVar|apply wfTermZero]; tea.
+    constructor.
   - change U with U[(tShift (tRel 0))..]; eapply (wfTermApp (A := tPNat)).
     * apply wfVar; [auto_type|].
       change (tProd tPNat U) with (tProd tPNat U)⟨↑⟩⟨↑⟩ at 1.

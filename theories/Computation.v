@@ -31,14 +31,15 @@ Definition tEval (n k v : term) :=
     (tLambda tPNat (tIsVal (tApp (tRel 0) tZero) v⟨↑⟩))
     (tLambda tNat (tLambda (arr tPNat U) (tLambda tPNat
       (tAnd
-        (tIsNil (tApp (tRel 0) (tRel 2)))
+        (tIsNil (tApp (tRel 0) tZero))
         (tApp (tRel 1) (tShift (tRel 0)))))))
     k) n.
 
 (*
 Fixpoint eval (k : nat) (v : nat) : (nat -> nat) -> Set :=
-| 0 => fun n => n 0 = S v
-| S k => fun n => n k = 0 /\ eval k v (fun c => n (S c))
+match k with
+| 0 => fun p => p 0 = S v
+| S k => fun p => p 0 = 0 /\ eval k v (fun n => p (S n))
 end
 *)
 

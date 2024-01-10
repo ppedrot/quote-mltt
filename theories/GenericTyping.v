@@ -1506,7 +1506,7 @@ Definition tEvalBranchSucc :=
   tLambda tNat
     (tLambda (arr tPNat U)
        (tLambda tPNat
-          (tAnd (tIsNil (tApp (tRel 0) (tRel 2))) (tApp (tRel 1) (tShift (tRel 0)))))).
+          (tAnd (tIsNil (tApp (tRel 0) tZero)) (tApp (tRel 1) (tShift (tRel 0)))))).
 
 Lemma ty_evalBranchZeroBody : forall Γ v,
   [Γ |- v : tNat] ->
@@ -1579,9 +1579,7 @@ assert [Γ,, tNat,, arr tPNat U,, tPNat |- tRel 0 : tPNat].
 apply ty_evalBranchSuccBody.
 + eapply ty_var; [tea|].
   change tPNat with tPNat⟨↑⟩; constructor.
-+ eapply ty_var; [tea|].
-  change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 2.
-  do 3 constructor.
++ eapply ty_zero; tea.
 + eapply ty_var; [tea|].
  change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩ at 2.
  do 2 constructor.
@@ -1669,7 +1667,7 @@ Lemma redtm_evalBranchSucc : forall Γ t k v,
   [Γ |- t : tPNat] ->
   [Γ |- k : tNat] ->
   [Γ |- v : tNat] ->
-  [Γ |- tEval t (tSucc k) v ⤳* tAnd (tIsNil (tApp t k)) (tEval (tShift t) k v) : U].
+  [Γ |- tEval t (tSucc k) v ⤳* tAnd (tIsNil (tApp t tZero)) (tEval (tShift t) k v) : U].
 Proof.
 intros.
 unfold tEval at 2.
@@ -1715,8 +1713,7 @@ etransitivity; [|etransitivity; [etransitivity; [etransitivity|]|]].
   apply ty_evalBranchSuccBody.
   - apply ty_var; tea.
     change tPNat with tPNat⟨↑⟩; constructor.
-  - apply ty_var; tea.
-    change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 6; do 3 constructor.
+  - apply ty_zero; tea.
   - apply ty_var; tea.
     change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩; do 2 constructor.
 + eapply redtm_simple_app; [|tea].
@@ -1729,11 +1726,7 @@ etransitivity; [|etransitivity; [etransitivity; [etransitivity|]|]].
   - apply ty_var; tea.
     change tPNat with tPNat⟨↑⟩.
     constructor.
-  - match goal with |- [_ |- ?t : _ ] => replace t with k⟨@wk1 Γ (arr tPNat U)⟩⟨@wk1 (Γ,, arr tPNat U) tPNat⟩ end.
-    2:{ cbn; now bsimpl. }
-    change tNat with tNat⟨@wk1 Γ (arr tPNat U)⟩⟨@wk1 (Γ,, arr tPNat U) tPNat⟩ at 5.
-    apply ty_wk; tea.
-    apply ty_wk; tea.
+  - apply ty_zero; tea.
   - apply ty_var; tea.
     change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩.
     do 2 constructor.
@@ -1745,11 +1738,7 @@ etransitivity; [|etransitivity; [etransitivity; [etransitivity|]|]].
   apply ty_evalBranchSuccBody.
   - apply ty_var; tea.
     change tPNat with tPNat⟨↑⟩; constructor.
-  - match goal with |- [_ |- ?t : _] => replace t with k⟨↑⟩ end.
-    2:{ bsimpl; apply rinstInst'_term. }
-    rewrite <- (@wk1_ren_on Γ tPNat).
-    change tNat with tNat⟨@wk1 Γ tPNat⟩.
-    now apply ty_wk.
+  - apply ty_zero; tea.
   - change (arr tPNat U) with (arr tPNat U)[k⟨↑⟩..].
     assert [Γ,, tPNat |- k⟨↑⟩ : tNat].
     { rewrite <- (@wk1_ren_on Γ tPNat).
@@ -1767,11 +1756,11 @@ etransitivity; [|etransitivity; [etransitivity; [etransitivity|]|]].
   rewrite !tShift_subst; cbn - [tAnd tIsNil tIsVal tShift].
   match goal with |- [ _ |- ?t ⤳* ?u : _ ] => assert (Hrw : t = u) end.
   { f_equal; f_equal; f_equal.
-    + now bsimpl.
     + cbn; unfold tEvalBranchZero, tIsVal.
       f_equal; f_equal; f_equal; bsimpl; symmetry; apply rinstInst'_term.
     + now bsimpl. }
   rewrite Hrw; clear Hrw; apply redtm_refl.
+  assert [Γ |- tZero : tNat] by now eapply ty_zero.
   apply ty_evalBranchSuccBody; tea.
   change (arr tPNat U) with (arr tPNat U)[k..].
   eapply ty_natElim; tea.
@@ -1900,15 +1889,13 @@ change (arr tPNat U)⟨↑⟩ with (arr tPNat U).
 eapply simple_lambda_cong; tea.
 apply convtm_and.
 + apply ty_isNil.
-  eapply (ty_simple_app (A := tNat)); tea; apply ty_var; tea.
-  - constructor.
-  - change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 2; do 3 constructor.
+  eapply (ty_simple_app (A := tNat)); tea; first [apply ty_zero|apply ty_var]; tea.
+  constructor.
 + apply tIsNil_cong.
   apply convtm_convneu, (convneu_simple_app (A := tNat)).
   - apply convneu_var, ty_var; tea.
     constructor.
-  - apply convtm_convneu, convneu_var, ty_var; tea.
-    change tNat with tNat⟨↑⟩⟨↑⟩⟨↑⟩ at 2; do 3 constructor.
+  - now apply convtm_zero.
 + apply convtm_convneu, (convneu_simple_app (A := tPNat)).
   - apply convneu_var, ty_var; tea.
     change (arr tPNat U) with (arr tPNat U)⟨↑⟩⟨↑⟩ at 2.

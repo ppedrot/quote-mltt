@@ -708,12 +708,14 @@ Lemma tEvalSuccRedEq {Γ l t k v} (rΓ : [|- Γ])
   (rk : [Γ ||-<l> k : tNat | rNat])
   (rv : [Γ ||-<l> v : tNat | rNat])
   (rrec : [rU | Γ ||- tEval (tShift t) k v : U]) :
-  [Γ ||-<one> tEval t (tSucc k) v ≅ tAnd (tIsNil (tApp t k)) (tEval (tShift t) k v) : U | rU].
+  [Γ ||-<one> tEval t (tSucc k) v ≅ tAnd (tIsNil (tApp t tZero)) (tEval (tShift t) k v) : U | rU].
 Proof.
 apply redSubstTerm.
 + apply tAndURed; tea.
   unshelve eapply tIsNilRed; [shelve|tea|].
   eapply SimpleArr.simple_appTerm; tea.
+  unshelve eapply zeroRed; [|tea].
+  constructor; now apply redtywf_refl, wft_nat.
 + apply redtm_evalBranchSucc.
   - now eapply escapeTerm.
   - now eapply escapeTerm.
@@ -796,10 +798,9 @@ apply NatRedEqInduction; unfold P.
     tea.
   - apply tAndURedEq; tea.
     * unshelve eapply tIsNilRedEq; [shelve|tea|].
-      assert [rNat | Γ ||- k ≅ k' : tNat] by apply rk.
+      assert [rNat | Γ ||- tZero : tNat] by now apply zeroRed.
+      assert [rNat | Γ ||- tZero ≅ tZero : tNat] by now apply zeroRedEq.
       unshelve eapply (SimpleArr.simple_appcongTerm (F := tNat)); tea.
-      { now eapply LRTmEqRed_l. }
-      { now eapply LRTmEqRed_r. }
     * apply IH; tea.
       now apply tShiftRedEq.
 + intros k k' rk ?? t t' rt.
@@ -919,7 +920,7 @@ induction k; cbn [qNat qEvalTy].
   eapply transEqTerm; [eapply tEvalSuccRedEq|]; tea.
   apply tAndURedEq; tea.
   - unshelve eapply tIsNilRedEq; [exact one|tea|].
-    apply Hlt; Lia.lia.
+    apply (Hlt 0); Lia.lia.
   - apply IHk; tea.
     * intros k' Hk'.
       assert [rNat | Γ ||- qNat k' : tNat] by apply qNatRed.
@@ -1329,10 +1330,10 @@ induction k; intros acc Hstep.
     now unshelve apply tShiftRed, nShiftRed.
   - cbn [qEvalTy]; apply tAndURedEq; tea.
     { unshelve eapply tIsNilRedEq; tea.
-      eapply transEqTerm; [eapply (nShiftAppRedEq (m := k))|]; tea.
+      eapply transEqTerm; [eapply (nShiftAppRedEq (m := 0))|]; tea.
       eapply dnf_closed_qNatRedEq with (n := 0); [now unshelve eauto using SimpleArr.simple_appTerm, qNatRed|].
       destruct Hstep as [[k₀ Hk] _ _].
-      apply (murec_elim_None (k' := (acc + k))) in Hk; [|Lia.lia].
+      apply (murec_elim_None (k' := (acc + 0))) in Hk; [|Lia.lia].
       now apply run_spec_None.
     }
     { apply (IHk (S acc)).
