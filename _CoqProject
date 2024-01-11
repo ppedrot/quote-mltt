@@ -1,5 +1,3 @@
--R coq-partialfun/theories PartialFun
-
 -Q theories LogRel
 
 theories/Utils.v
