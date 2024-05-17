@@ -1,19 +1,29 @@
 Presentation
 =======
 
-This repository contains an extensive formalisation of a dependent type theory (MLT with one universe and a number of type formers: Π, Σ, ℕ, Id). It contains:
-- a proof by logical relations, inspired by the approach of [Abel et al.]((https://github.com/mr-ohman/logrel-mltt/)) (described in [*Decidability of conversion for Type Theory in Type Theory*, 2018](https://dl.acm.org/doi/10.1145/3158111)), and ideas by [Loïc Pujet](https://github.com/loic-p/logrel-mltt) on removing induction-recursion from it;
-- a formalisation of multiple conversion-checking algorithms (type-directed and term-directed)
-  and a bidirectional type system, all fully verified.
+This repo contains the formalisation work accompanying the paper [*“Upon This Quote I Will Build My Church Thesis”*](https://www.xn--pdrot-bsa.fr/articles/quotett.pdf).
 
-Parts of the formalisation has been described in the following papers:
-- [*Martin-Löf à la Coq*](https://dl.acm.org/doi/10.1145/3636501.3636951) presents the core of the project;
-- [*What does it take to certify conversion?*](https://arxiv.org/abs/2502.15500) focuses more on the verification of the properties of the algorithms, including the term-directed one.
+The formalization is based on a [previous work](https://github.com/coqhott/logrel-coq/) by Adjej et al ([*Martin-Löf à la Coq*, CPP'24](https://arxiv.org/abs/2310.06376)), which itself follows a similar [Agda formalization](https://github.com/mr-ohman/logrel-mltt/) (described in [*Decidability of conversion for Type Theory in Type Theory*, 2018](https://dl.acm.org/doi/10.1145/3158111)). In order to avoid some work on the syntax, this project uses the [AutoSubst](https://github.com/uds-psl/autosubst-ocaml) project to generate syntax-related boilerplate.
 
-The project has also been used as a base for the following work:
-- [*Definitional Functoriality for Dependent (Sub)Types*](https://hal.science/hal-04160858v3), which extends the type system with lists and a definitionally functorial map operator (with applications to subtyping for dependent types);
-- [*“Upon This Quote I Will Build My Church Thesis”*](https://dl.acm.org/doi/10.1145/3661814.3662070), which extends the type system with primitives for quoting;
-- [*Continuity in Type Theory*, Chapter 4](https://theses.hal.science/tel-04617881v1), which extends the system with sheaf-like conditions to obtain continuity properties.
+TL;DR HOWTO INSTALL
+===================
+
+- Install opam through your favourite means.
+- Double-check that no Coq-related environment variables like COQBIN or COQPATH are set.
+- Launch the following commands in the folder of this development.
+```
+opam switch create . --empty
+eval $(opam env)
+opam install ocaml-base-compiler=4.11.2
+opam repo --this-switch add coq-released https://coq.inria.fr/opam/released
+opam install . --deps-only
+make
+```
+
+IMPORTANT NOTE
+==============
+
+The coqdocjs subfolder is **not** part of this development, but an independent project vendored here for simplicity of the build process. The upstream repository can be found at https://github.com/coq-community/coqdocjs/.
 
 Building
 ===========
