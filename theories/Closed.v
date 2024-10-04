@@ -48,17 +48,17 @@ all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
 + now apply PeanoNat.Nat.ltb_lt, Hρ, PeanoNat.Nat.ltb_lt.
 + eapply IHt2; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt2; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt1; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt1; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt2; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt3; [|eassumption].
-  intros [|[]] ?; compute; intuition.
+  intros [|[]] ?; compute; intuition (auto with arith).
   do 2 apply Arith_base.lt_n_S_stt.
   apply Hρ; now do 2 apply PeanoNat.lt_S_n.
 Qed.
@@ -70,17 +70,17 @@ all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: repeat (apply andb_true_intro; split); f_equal; try now intuition.
 + now apply PeanoNat.Nat.ltb_lt, Hρ, PeanoNat.Nat.ltb_lt.
 + eapply IHt2; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt2; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt1; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt1; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt2; [|tea].
-  intros [] ?; compute; intuition.
+  intros [] ?; compute; intuition (auto with arith).
 + eapply IHt3; [|eassumption].
-  intros [|[]] ?; compute; intuition.
+  intros [|[]] ?; compute; intuition (auto with arith).
   do 2 apply Arith_base.lt_n_S_stt; apply Hρ.
   do 2 apply PeanoNat.lt_S_n; tea.
 Qed.
