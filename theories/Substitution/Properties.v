@@ -80,11 +80,10 @@ Proof.
   intro vσσ'. eapply wkSubstSEq ; eassumption.
 Qed.
 
-Lemma consWkSubstSEq' {Γ Δ Ξ A σ σ' a b l} {VΓ : [||-v Γ]} {wfΔ : [|- Δ]}
+Lemma consWkSubstEq {Γ Δ Ξ A σ σ' a b l} {VΓ : [||-v Γ]} {wfΔ : [|- Δ]}
   (VA : [Γ ||-v<l> A | VΓ])
   (Vσσ' : [Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ])
   (ρ : Ξ ≤ Δ) wfΞ {RA}
-  (Ra : [Ξ ||-<l> a : A[σ]⟨ρ⟩ | RA])
   (Rab : [Ξ ||-<l> a ≅ b : A[σ]⟨ρ⟩ | RA]) :
   [Ξ ||-v (a .: σ⟨ρ⟩) ≅  (b .: σ'⟨ρ⟩) : Γ ,, A | validSnoc VΓ VA | wfΞ ].
 Proof.
@@ -112,7 +111,7 @@ Qed.
 
 Lemma liftSubstEq' {Γ σ σ' Δ lF F} {VΓ : [||-v Γ]} {wfΔ : [|- Δ]}
   (VF : [Γ ||-v<lF> F | VΓ])
-  {Vσ : [Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ]} :
+  (Vσ : [Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ]) :
   let VΓF := validSnoc VΓ VF in
   let ρ := wk_up F (@wk_id Γ) in
   let wfΔF := wfc_cons wfΔ (escape (validTy VF wfΔ Vσ)) in

@@ -48,6 +48,19 @@ Solve All Obligations with
 Definition normRedΠ {Γ F G l} (h : [Γ ||-<l> tProd F G]) : [Γ ||-<l> tProd F G] :=
   LRPi' (normRedΠ0 (invLRΠ h)).
 
+#[program]
+Definition normEqRedΠ {Γ F F' G G' l} (h : [Γ ||-<l> tProd F G])
+  (heq : [Γ ||-<l> _ ≅ tProd F' G' | h]) : [Γ ||-<l> _ ≅ tProd F' G' | normRedΠ h] :=
+  {|
+    PiRedTyEq.dom := F';
+    PiRedTyEq.cod := G';
+  |}.
+Solve All Obligations with
+  intros; assert[Γ ||-<l> _ ≅ tProd F' G' | normRedΠ h] as [?? red] by irrelevance;
+  pose proof (e := redtywf_whnf red whnf_tProd);
+  symmetry in e; injection e; clear e;
+  destruct h ; intros; cbn in *; subst; eassumption.
+
 Definition normRedΣ {Γ F G l} (h : [Γ ||-<l> tSig F G]) : [Γ ||-<l> tSig F G] :=
   LRSig' (normRedΣ0 (invLRΣ h)).
 
@@ -160,9 +173,9 @@ Ltac normRedΠ id :=
   set (G := _);
   let g := eval unfold G in G in
   match g with
-  | [ LRAd.pack ?R | _ ||- ?t : _] =>
+  | [ LRAd.pack ?R | _ ||- ?t ≅ ?u : _] =>
     pose (id := normRedΠ0 (invLRΠ R)); subst G;
-    enough [_ ||-<_> t : _ | LRPi' id] by irrelevance
+    enough [_ ||-<_> t ≅ u : _ | LRPi' id] by irrelevance
   end.
 
 (* Normalizes a term reducible at a Π type *)

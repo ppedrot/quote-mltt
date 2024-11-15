@@ -109,6 +109,24 @@ Proof.
   unshelve eapply convSubstEqCtx1; cycle 5; tea; now eapply symValidTyEq.
 Qed.
 
+Lemma convTmEqCtx1 {Γ A B C t u l}
+  (VΓ : [||-v Γ])
+  (VΓA : [||-v Γ ,, A])
+  (VΓB : [||-v Γ ,, B])
+  (VA : [_ ||-v<l> A | VΓ])
+  (VB : [_ ||-v<l> B | VΓ])
+  (VC : [_ ||-v<l> C | VΓA])
+  (VC' : [_ ||-v<l> C | VΓB])
+  (VAB : [_ ||-v<l> A ≅ B | VΓ | VA])
+  (VPtu : [_ ||-v<l> t ≅ u : _ | VΓA | VC]) :
+  [_ ||-v<l> t ≅ u : _ | VΓB | VC'].
+Proof.
+  constructor; intros; irrelevanceRefl.
+  (unshelve now eapply validTmEq); tea.
+  now unshelve (eapply convSubstEqCtx1; tea; now eapply symValidTyEq).
+Qed.
+
+
 Lemma convSubstEqCtx2 {Γ Δ A1 B1 A2 B2 l σ σ'}
   (VΓ : [||-v Γ])
   (wfΔ : [|- Δ])
