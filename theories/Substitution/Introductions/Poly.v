@@ -2,7 +2,7 @@ From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening
   GenericTyping LogicalRelation Validity.
-From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Irrelevance Transitivity.
+From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Irrelevance Transitivity EqRedRight InstKripke.
 From LogRel.Substitution Require Import Irrelevance Properties Reflexivity.
 From LogRel.Substitution.Introductions Require Import Universe.
 
@@ -20,13 +20,6 @@ Qed.
 
 Lemma subst_wk_id_tail Γ P t : P[t .: @wk_id Γ >> tRel] = P[t..].
 Proof. setoid_rewrite id_ren; now bsimpl. Qed.
-
-(* Also used in EqRedRight *)
-Lemma eq_id_subst_scons {Γ A} B : B = B[tRel 0 .: @wk1 Γ A >> tRel].
-Proof.
-  clear; bsimpl; rewrite scons_eta'; now bsimpl.
-Qed.
-
 
 Set Printing Primitive Projection Parameters.
 

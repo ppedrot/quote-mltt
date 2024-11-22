@@ -10,6 +10,12 @@ Set Universe Polymorphism.
 Section Consequence.
 Context `{GenericTypingProperties}.
 
+Lemma eq_id_subst_scons {Γ A} B : B = B[tRel 0 .: @wk1 Γ A >> tRel].
+Proof.
+  clear; bsimpl; rewrite scons_eta'; now bsimpl.
+Qed.
+
+
 
 Lemma PolyRedEqRedRight {Γ l A B A' B'} (PA : PolyRed Γ l A B)
   (ihA : forall (Δ : context) (ρ : Δ ≤ Γ) (h : [|- Δ]) X,
@@ -36,12 +42,9 @@ Proof.
   assert [Γ |- A'] by now eapply escape, instKripke.
   assert [|-Γ,,A'] by gen_typing.
   unshelve econstructor; tea.
-  - unshelve epose proof (hcod (Γ,,A') (tRel 0) (tRel 0) (wk1 _) _ _); tea.
+  - unshelve epose proof (X := hcod (Γ,,A') (tRel 0) (tRel 0) (wk1 _) _ _); tea.
     1: eapply var0; tea; now bsimpl.
-    escape.
-    (* These should be lemmas... *)
-    replace B' with B'[tRel 0 .: wk1 (Γ := Γ) A' >> tRel]; tea.
-    clear; bsimpl; rewrite scons_eta'; now bsimpl.
+    escape; now rewrite <- eq_id_subst_scons in EscX.
   - intros.
     assert [hdom Δ ρ h | _ ||- _ ≅ A⟨ρ⟩].
     1: eapply LRTyEqSym ; unshelve eauto; tea.
