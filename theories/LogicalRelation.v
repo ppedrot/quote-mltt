@@ -291,9 +291,9 @@ Module PolyRedEq.
     `{WfType ta} `{ConvType ta}
     {Γ : context} {shp pos: term} {PA : PolyRedPack Γ shp pos} {shp' pos' : term}
   : Type := {
-    shpRed {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
+    shpRed [Δ] (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
       [ PA.(PolyRedPack.shpRed) ρ h | Δ ||- shp⟨ρ⟩ ≅ shp'⟨ρ⟩ ];
-    posRed {Δ a b} (ρ : Δ ≤ Γ) (h : [ |- Δ ])
+    posRed [Δ a b] (ρ : Δ ≤ Γ) (h : [ |- Δ ])
       (ha : [ PA.(PolyRedPack.shpRed) ρ h | Δ ||- a ≅ b : shp⟨ρ⟩]) :
       [ PA.(PolyRedPack.posRed) ρ h ha | Δ ||- pos[a .: (ρ >> tRel)] ≅ pos'[a .: (ρ >> tRel)] ];
   }.
@@ -498,9 +498,9 @@ Module SigRedTmEq.
     redL : SigRedTm ΣA t ;
     redR : SigRedTm ΣA u ;
     eq : [ Γ |- redL.(nf) ≅ redR.(nf) : ΣA.(outTy) ];
-    eqFst {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
+    eqFst [Δ] (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
       [ΣA.(PolyRedPack.shpRed) ρ h | Δ ||- tFst redL.(nf)⟨ρ⟩ ≅ tFst redR.(nf)⟨ρ⟩ : ΣA.(ParamRedTyPack.dom)⟨ρ⟩] ;
-    eqSnd {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
+    eqSnd [Δ] (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
       [ΣA.(PolyRedPack.posRed) ρ h (eqFst ρ h) | Δ ||- tSnd redL.(nf)⟨ρ⟩ ≅ tSnd redR.(nf)⟨ρ⟩ : _] ;
   }.
 
@@ -977,12 +977,12 @@ Section PolyRed.
     {
       shpTy : [Γ |- shp] ;
       posTy : [Γ,, shp |- pos] ;
-      shpRed {Δ} (ρ : Δ ≤ Γ) : [ |- Δ ] -> [ LogRel@{i j k l} l | Δ ||- shp⟨ρ⟩ ] ;
-      posRed {Δ} {a b} (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
+      shpRed [Δ] (ρ : Δ ≤ Γ) : [ |- Δ ] -> [ LogRel@{i j k l} l | Δ ||- shp⟨ρ⟩ ] ;
+      posRed [Δ a b] (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
           [ (shpRed ρ h) |  Δ ||- a ≅ b : shp⟨ρ⟩] ->
           [ LogRel@{i j k l} l | Δ ||- pos[a .: (ρ >> tRel)]] ;
       posExt
-        {Δ a b}
+        [Δ a b]
         (ρ : Δ ≤ Γ)
         (h :  [ |- Δ ])
         (hab : [ (shpRed ρ h) | Δ ||- a ≅ b : shp⟨ρ⟩]) :

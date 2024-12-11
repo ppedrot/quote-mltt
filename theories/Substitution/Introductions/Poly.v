@@ -54,49 +54,51 @@ Section PolyValidity.
 
 
   Lemma polyCodSubstRed {Γ l F G} (RF : [Γ ||-<l> F]) :
-    PolyRed Γ l F G -> forall t, [Γ ||-<l> t : _ | RF] -> [Γ ||-<l> G[t..]].
+    PolyRed Γ l F G -> forall t u, [Γ ||-<l> t ≅ u : _ | RF] -> [Γ ||-<l> G[t..]].
   Proof.
-    intros PFG ??.
-    escape. assert (wfΓ : [|- Γ]) by gen_typing.
+    intros PFG ???.
+    assert (wfΓ : [|- Γ]) by (escape ; gen_typing).
     erewrite <- subst_wk_id_tail.
-    eapply (PolyRed.posRed PFG wk_id wfΓ).
+    eapply (PolyRed.posRed PFG wk_id wfΓ ).
     irrelevance.
   Qed.
 
   Lemma polyCodSubstExtRed {Γ l F G} (RF : [Γ ||-<l> F]) (PFG : PolyRed Γ l F G) (RG := polyCodSubstRed RF PFG) :
-    forall t u (Rt : [Γ ||-<l> t : _ | RF]), [Γ ||-<l> u : _ | RF] -> [Γ ||-<l> t ≅ u : _ | RF] ->
-    [Γ ||-<l> G[t..] ≅ G[u..]| RG t Rt].
+    forall t u (Rt : [Γ ||-<l> t ≅ u : _ | RF]),
+    [Γ ||-<l> G[t..] ≅ G[u..]| RG t u Rt].
   Proof.
-    intros. escape. assert (wfΓ : [|- Γ]) by gen_typing.
+    intros. assert (wfΓ : [|- Γ]) by (escape; gen_typing).
     irrelevance0; erewrite <- subst_wk_id_tail; [reflexivity|].
     unshelve eapply (PolyRed.posExt PFG wk_id wfΓ); irrelevance.
   Qed.
 
-
   Lemma polyRedId {Γ l F G} : PolyRed Γ l F G -> [Γ ||-<l> F] × [Γ ,, F ||-<l> G].
   Proof.
-    intros [?? RF RG]; split.
-    -  rewrite <- (wk_id_ren_on Γ F). eapply RF; gen_typing.
-    - replace G with G[tRel 0 .: @wk1 Γ F >> tRel].
-      2: bsimpl; rewrite scons_eta'; now asimpl.
-      eapply RG. eapply var0; tea; now bsimpl.
-      Unshelve. gen_typing.
+    intros PFG; assert (wfΓ : [|- Γ]) by (destruct PFG; gen_typing).
+    split; [exact (instKripke wfΓ (PolyRed.shpRed PFG))| exact (instKripkeSubst wfΓ (PolyRed.posRed PFG))].
   Qed.
 
   Lemma polyRedEqId {Γ l F F' G G'} (PFG : PolyRed Γ l F G) (RFG := polyRedId PFG) :
     PolyRedEq PFG F' G' -> [Γ ||-<l> F ≅ F' | fst RFG] × [Γ ,, F ||-<l> G ≅ G' | snd RFG].
   Proof.
-    intros [RFF' RGG']; destruct RFG; escape; split.
-    - rewrite <- (wk_id_ren_on Γ F'); irrelevance0.
-      2: unshelve eapply RFF'; gen_typing.
-      apply wk_id_ren_on.
-    - replace G' with G'[tRel 0 .: @wk1 Γ F >> tRel].
-      2: bsimpl; rewrite scons_eta'; now asimpl.
-      irrelevance0.
-      2: eapply RGG'.
-      bsimpl; rewrite scons_eta'; now asimpl.
-      Unshelve. 2: gen_typing.
-      2: eapply var0; tea; now bsimpl.
+    intros PFGeq; assert (wfΓ : [|- Γ]) by (destruct PFG; gen_typing).
+    split.
+    - pose (instKripkeEq wfΓ (PolyRedEq.shpRed PFGeq)); irrelevance.
+    - unshelve epose proof (instKripkeSubstEq wfΓ  _).
+      7: intros; eapply LRTransEq; [|unshelve eapply (PolyRedEq.posRed PFGeq _ _ (urefl hab))];
+        try (unshelve eapply (PolyRed.posExt PFG); tea).
+      irrelevance.
+  Qed.
+
+  Lemma polyRedEqCodSubstExt {Γ l F F' G G'} (RF : [Γ ||-<l> F]) (PFG : PolyRed Γ l F G) (RG := polyCodSubstRed RF PFG) :
+    PolyRedEq PFG F' G' ->
+    forall t u (Rt : [Γ ||-<l> t ≅ u : _ | RF]),
+    [Γ ||-<l> G[t..] ≅ G'[u..]| RG t u Rt].
+  Proof.
+    intros Peq *; assert (wfΓ : [|- Γ]) by (destruct PFG; gen_typing).
+    unshelve epose proof (h := posRedExt Peq wk_id wfΓ _).
+    3: irrelevance.
+    rewrite subst_wk_id_tail in h; irrelevance.
   Qed.
 
   Lemma polyRedSubst {Γ l A B t} (PAB : PolyRed Γ l A B)

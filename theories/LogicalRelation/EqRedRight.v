@@ -15,6 +15,18 @@ Proof.
   clear; bsimpl; rewrite scons_eta'; now bsimpl.
 Qed.
 
+Set Printing Primitive Projection Parameters.
+
+Lemma posRedExt {Γ l A B A' B'} {PA : PolyRed Γ l A B} (PA' : PolyRedEq PA A' B') [Δ a b]
+  (ρ : Δ ≤ Γ) (h : [|- Δ]) (ha : [PolyRed.shpRed PA ρ h | Δ ||- a ≅ b : A⟨ρ⟩]) :
+    [PolyRed.posRed PA ρ h ha | Δ ||- B[a .: ρ >> tRel] ≅ B'[b .: ρ >> tRel]].
+Proof.
+  eapply LRTransEq.
+  1: eapply (PolyRed.posExt PA).
+  unshelve eapply (PolyRedEq.posRed PA').
+  2: tea.
+  2: now symmetry.
+Qed.
 
 
 Lemma PolyRedEqRedRight {Γ l A B A' B'} (PA : PolyRed Γ l A B)
@@ -23,10 +35,10 @@ Lemma PolyRedEqRedRight {Γ l A B A' B'} (PA : PolyRed Γ l A B)
   (ihB : forall (Δ : context) (a b : term) (ρ : Δ ≤ Γ) (h : [|- Δ])
     (ha : [PolyRed.shpRed PA ρ h | Δ ||- a ≅ b : A⟨ρ⟩]) X,
     [PolyRed.posRed PA ρ h ha | Δ ||- B[a .: ρ >> tRel] ≅ X] ->
-    [Δ ||-< l > X]) :
-  PolyRedEq PA A' B' -> PolyRed Γ l A' B'.
+    [Δ ||-< l > X])
+  (PA' : PolyRedEq PA A' B') : PolyRed Γ l A' B'.
 Proof.
-  destruct PA; intros []; cbn in *.
+  destruct PA; pose proof PA' as []; cbn in *.
   assert [|-Γ] by gen_typing.
   assert (hdom: forall (Δ : context) (ρ : Δ ≤ Γ), [ |-[ ta ] Δ] -> [Δ ||-< l > A'⟨ρ⟩]).
   1:{ intros; eapply ihA; eauto. Unshelve. tea. }
@@ -50,12 +62,9 @@ Proof.
     1: eapply LRTyEqSym ; unshelve eauto; tea.
     assert [shpRed Δ ρ h | _ ||- a ≅ b : _].
     1: eapply LRTmEqConv; tea.
-    eapply LRTransEq; [eapply LRTyEqSym, LRTransEq|].
-    2,3: eauto.
-    unshelve eauto; tea; now symmetry.
-    Unshelve.
-    2,3,5: tea.
-    2: now symmetry.
+    eapply LRTransEq.
+    + unshelve eapply LRTyEqSym, (posRedExt PA'); [|tea|now symmetry].
+    + unshelve eapply (PolyRedEq.posRed PA'); [|tea|now symmetry].
 Qed.
 
 #[program]

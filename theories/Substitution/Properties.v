@@ -46,14 +46,14 @@ Qed.
 
 Set Printing Primitive Projection Parameters.
 
-Lemma consSubstEqvalid {Γ σ σ' t l A Δ} {VΓ : [||-v Γ]} {wfΔ : [|- Δ]}
+Lemma consSubstEqvalid {Γ σ σ' t u l A Δ} {VΓ : [||-v Γ]} {wfΔ : [|- Δ]}
   (Vσσ' : [Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ])
   {VA : [Γ ||-v<l> A | VΓ]}
-  (Vt : [Γ ||-v<l> t : A | VΓ | VA]) :
-  [Δ ||-v (t[σ] .: σ) ≅  (t[σ'] .: σ') : Γ ,, A | validSnoc VΓ VA | wfΔ ].
+  (Vt : [Γ ||-v<l> t ≅ u : A | VΓ | VA]) :
+  [Δ ||-v (t[σ] .: σ) ≅  (u[σ'] .: σ') : Γ ,, A | validSnoc VΓ VA | wfΔ ].
 Proof.
   unshelve econstructor; intros; tea.
-  now apply validTmExt.
+  now apply validTmEq.
 Qed.
 
 Lemma wkSubstSEq {Γ} (VΓ : [||-v Γ]) :

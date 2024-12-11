@@ -11,8 +11,7 @@ Context `{GenericTypingProperties} {Γ : context}.
 Lemma UValid (VΓ : [||-v Γ]) : [Γ ||-v<one> U | VΓ].
 Proof.
   unshelve econstructor; intros.
-  - eapply LRU_; econstructor; tea; [constructor|].
-    cbn; eapply redtywf_refl; gen_typing.
+  - now eapply LRU_, redUOneCtx.
   - cbn; constructor; eapply redtywf_refl; gen_typing.
 Defined.
 

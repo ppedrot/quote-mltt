@@ -1,7 +1,7 @@
 (** * LogRel.LogicalRelation.InstKripke: combinators to instantiate Kripke-style quantifications *)
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening
-  GenericTyping LogicalRelation Validity.
+  GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Escape Reflexivity Neutral Weakening Irrelevance Application Reduction Transitivity NormalRed EqRedRight.
 
 Set Universe Polymorphism.

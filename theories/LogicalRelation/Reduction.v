@@ -337,6 +337,35 @@ Proof.
     now eapply fst, reflIdPropEq.
 Qed.
 
+
+Lemma redTmEqNf {Γ l A t u} {RA : [Γ ||-<l> A]} :
+  [Γ ||-<l> t ≅ u : A | RA] -> ∑ (v : term), [Γ |- t :⤳*: v : A] × whnf v.
+Proof.
+  revert t u; pattern l,Γ,A,RA; apply LR_rect_TyUr; clear l Γ A RA.
+  - intros ??? h ??  [[]]; eexists; split; tea.
+    2: now eapply isType_whnf.
+    eapply redtmwf_conv; tea.
+    destruct h; cbn in *; gen_typing.
+  - intros ??? h ?? []; eexists; split; tea.
+    1: eapply redtmwf_conv; tea; destruct h; timeout 2 gen_typing.
+    constructor; now eapply convneu_whne.
+  - intros ??? h ???? [Rt]; pose proof (PiRedTmEq.whnf Rt); destruct Rt; cbn in *.
+    eexists; split; tea.
+    eapply redtmwf_conv; tea; destruct h; cbn in *; timeout 2 gen_typing.
+  - intros ??? h ?? [??????? []%NatPropEq_whnf]; eexists; split.
+    1: eapply redtmwf_conv; tea; destruct h; cbn in *; eapply convty_exp; gen_typing.
+    assumption.
+  - intros ??? h ?? [??????? []%(EmptyPropEq_whnf (NA:=h))]; eexists; split.
+    1: eapply redtmwf_conv; tea; destruct h; cbn in *; eapply convty_exp; gen_typing.
+    assumption.
+  - intros ??? h ???? [Rt]; pose proof (SigRedTmEq.whnf Rt); destruct Rt.
+    eexists; split; tea; cbn in *.
+    eapply redtmwf_conv; tea; destruct h; cbn in *; eapply convty_exp; gen_typing.
+  - intros ??? h ???? [????? [? _]%IdPropEq_whnf]; eexists; split; tea; cbn in *.
+    eapply redtmwf_conv; tea; destruct h; cbn in *; tea; unfold_id_outTy; cbn.
+    eapply convty_exp; gen_typing.
+  Qed.
+
 Lemma redTmEqFwdBoth {Γ l A t t' w w'} {RA : [Γ ||-<l> A]} :
   [Γ ||-<l> t ≅ t' : A | RA] -> [Γ |- t :⤳*: w : A] -> [Γ |- t' :⤳*: w' : A] -> whnf w -> whnf w' -> [Γ ||-<l> w ≅ w' : A | RA].
 Proof.

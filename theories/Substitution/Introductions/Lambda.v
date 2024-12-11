@@ -72,10 +72,10 @@ Lemma lamPiRedTm {F' G'}
   : PiRedTm R (tLambda F' t')[σ'].
 Proof.
   refold.
-  pose proof (VG'':=convCtx1 VΓ VΓF (validSnoc VΓ VF') VF VF' VFF' VG').
+  pose proof (VG'':=convCtx1 VΓ VΓF (validSnoc VΓ VF') VF  VFF' VG').
   epose proof (PiCong VΓ VF VG VF' VG'' VFF' VGG').
-  epose proof (VtG' := convEq VΓF VG VG' VGG' Vtt').
-  epose proof (convTmEqCtx1 VΓ VΓF (validSnoc VΓ VF') VF VF' VG' VG'' VFF' VtG').
+  epose proof (VtG' := conv VΓF VG VG' VGG' Vtt').
+  epose proof (convTmEqCtx1 VΓ VΓF (validSnoc VΓ VF') VF  VG' VG'' VFF' VtG').
   instValid (liftSubstEq' VF' (urefl Vσσ'));
   instValid Vσσ'; instValid (urefl Vσσ'). escape.
 
@@ -88,7 +88,7 @@ Proof.
   1: now unshelve eapply wkEq.
 
   rewrite 2! consWkEq'.
-  pose proof (ureflValidTm _ _ Vtt').
+  pose proof (ureflValidTm Vtt').
   unshelve epose (Vaσ' := consWkSubstEq VF (urefl Vσσ') ρ h _).
   4: eapply LRTmEqConv; [|tea]; irrelevanceRefl; eapply wkEq; tea.
   1: now eapply wk.
@@ -111,15 +111,15 @@ Lemma lamCongValid {F' G'}
 Proof.
   econstructor; intros. cbn -[PiValid].
   normRedΠ R; refold.
-  pose proof (VG'':=convCtx1 VΓ VΓF (validSnoc VΓ VF') VF VF' VFF' VG').
+  pose proof (VG'':=convCtx1 VΓ VΓF (validSnoc VΓ VF') VF VFF' VG').
   epose proof (PiCong VΓ VF VG VF' VG'' VFF' VGG').
-  epose proof (VtG' := convEq VΓF VG VG' VGG' Vtt').
-  epose proof (convTmEqCtx1 VΓ VΓF (validSnoc VΓ VF') VF VF' VG' VG'' VFF' VtG').
+  epose proof (VtG' := conv VΓF VG VG' VGG' Vtt').
+  epose proof (convTmEqCtx1 VΓ VΓF (validSnoc VΓ VF') VF VG' VG'' VFF' VtG').
   simple refine (let ht : PiRedTm R (tLambda F t)[σ] := _ in _).
   1:{
-    pose proof (VFF := reflValidTy _ VF).
-    pose proof (VGG := reflValidTy _ VG).
-    pose proof (Vtt := reflValidTm _ _ (lreflValidTm _ _ Vtt')).
+    pose proof (VFF := reflValidTy VF).
+    pose proof (VGG := reflValidTy VG).
+    pose proof (Vtt := lreflValidTm _ Vtt').
     eapply (lamPiRedTm VF VFF VG VGG Vtt wfΔ (lrefl Vσσ') _).
   }
   simple refine (let ht' : PiRedTm R (tLambda F' t')[σ'] := _ in _).
@@ -174,16 +174,13 @@ Lemma betaValid {t a} (Vt : [Γ ,, F ||-v<l> t : G | VΓF | VG])
   (Va : [Γ ||-v<l> a : F | VΓ | VF]) :
   [Γ ||-v<l> tApp (tLambda F t) a ≅ t[a..] : G[a..] | VΓ | substS VG Va].
 Proof.
-  eapply redwfSubstValid.
-  2: eapply substSTm; irrValid.
-  econstructor; intros; cbn.
-  econstructor.
-  - rewrite 2! singleSubst_subst_eq'.
-    instValid (consSubstEqvalid Vσσ' Va); now escape.
-  - rewrite 2!singleSubst_subst_eq.
-    instValid (lrefl Vσσ').
-    instValid (liftSubstEq' VF (lrefl Vσσ')).
-    escape; now eapply redtm_beta.
+  eapply redSubstValid.
+  2: eapply substSTm ; irrValid.
+  constructor; intros; cbn.
+  rewrite 2!singleSubst_subst_eq.
+  instValid (lrefl Vσσ').
+  instValid (liftSubstEq' VF (lrefl Vσσ')).
+  escape; now eapply redtm_beta.
 Qed.
 
 

@@ -8,7 +8,7 @@ Set Universe Polymorphism.
 Section Reflexivity.
 Context `{GenericTypingProperties}.
 
-Lemma reflValidTy {Γ A l} (VΓ : [||-v Γ])
+Lemma reflValidTy {Γ A l} {VΓ : [||-v Γ]}
   (VA : [Γ ||-v<l> A | VΓ]) :
   [Γ ||-v<l> A ≅ A | VΓ | VA].
 Proof.
@@ -16,8 +16,8 @@ Proof.
 Qed.
 Set Printing Primitive Projection Parameters.
 
-Lemma ureflValidTy {Γ A B l} (VΓ : [||-v Γ])
-  (VA : [Γ ||-v<l> A | VΓ])
+Lemma ureflValidTy {Γ A B l} {VΓ : [||-v Γ]}
+  {VA : [Γ ||-v<l> A | VΓ]}
   (VAB : [Γ ||-v<l> A ≅ B | VΓ | VA]) :
   [Γ ||-v<l> B | VΓ ].
 Proof.
@@ -29,16 +29,15 @@ Proof.
   (unshelve now eapply validTyEq); tea; now eapply lrefl.
 Qed.
 
-Lemma reflValidTm {Γ t A l} (VΓ : [||-v Γ])
-  (VA : [Γ ||-v<l> A | VΓ])
+#[deprecated(note="Unneeded")]
+Lemma reflValidTm {Γ t A l} {VΓ : [||-v Γ]}
+  {VA : [Γ ||-v<l> A | VΓ]}
   (Vt : [Γ ||-v<l> t : A | VΓ | VA]) :
   [Γ ||-v<l> t ≅ t : A | VΓ | VA].
-Proof.
-  constructor; intros; now eapply validTmExt.
-Qed.
+Proof. exact Vt. Qed.
 
 Lemma lreflValidTm {Γ t u A l} (VΓ : [||-v Γ])
-  (VA : [Γ ||-v<l> A | VΓ])
+  {VA : [Γ ||-v<l> A | VΓ]}
   (Vtu : [Γ ||-v<l> t ≅ u : A | VΓ | VA]) :
   [Γ ||-v<l> t : A | VΓ | VA].
 Proof.
@@ -51,8 +50,9 @@ Proof.
   Unshelve. 1,6-8:tea. now eapply urefl.
 Qed.
 
-Lemma ureflValidTm {Γ t u A l} (VΓ : [||-v Γ])
-  (VA : [Γ ||-v<l> A | VΓ])
+Lemma ureflValidTm {Γ t u A l}
+  {VΓ : [||-v Γ]}
+  {VA : [Γ ||-v<l> A | VΓ]}
   (Vtu : [Γ ||-v<l> t ≅ u : A | VΓ | VA]) :
   [Γ ||-v<l> u : A | VΓ | VA].
 Proof.

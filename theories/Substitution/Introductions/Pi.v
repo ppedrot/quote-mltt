@@ -119,15 +119,10 @@ Section PiTyDomValidity.
     unshelve econstructor.
     - intros Δ vΔ σ σ' [vσ v0]; instValid vσ; cbn in *.
       rewrite eq_subst_eta; eapply singleSubstΠ1; tea.
-      now eapply lrefl.
     - cbn; refold.
       intros Δ vΔ σ σ' [vσσ' v00']; instValid vσσ'; instValid (urefl vσσ'); cbn in *.
       pose proof (polyRedEqId _ (normEqRedΠ _ REvΠFG)) as [? _].
       rewrite 2!eq_subst_eta; eapply singleSubstΠ2; tea.
-      eapply singleSubstΠ1; tea.
-      eapply urefl, LRTmEqConv; [|tea].
-      irrelevance.
-      Unshelve. 2: now eapply LRTyEqRedRight.
     Qed.
 
 End PiTyDomValidity.
@@ -225,7 +220,7 @@ Section PiTmValidity.
 
   Lemma PiValidU : [ Γ ||-v< one > tProd F G : U | VΓ | UValid VΓ ].
   Proof.
-    eapply lreflValidTm, PiCongTm; tea; now eapply reflValidTm.
+    now eapply lreflValidTm, PiCongTm.
   Qed.
 
 End PiTmValidity.

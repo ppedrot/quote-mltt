@@ -36,7 +36,7 @@ theories/LogicalRelation/EqRedRight.v
 theories/LogicalRelation/Reduction.v
 theories/LogicalRelation/NormalRed.v
 theories/LogicalRelation/Application.v
-# theories/LogicalRelation/SimpleArr.v
+theories/LogicalRelation/SimpleArr.v
 theories/LogicalRelation/Id.v
 
 theories/Validity.v

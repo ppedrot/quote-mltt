@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping LogicalRelation.
+From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping LogicalRelation EqRedRight.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -157,15 +157,6 @@ Section MoreDefs.
     : [||-v Γ ,, A ] :=
     Build_VAdequate (snocVPack Γ VΓ A l VA) (VRSnoc VΓ VΓ VA).
 
-  Record termValidity@{i j k l} {Γ l} {t A : term}
-    {VΓ : [VR@{i j k l}| ||-v Γ]}
-    {VA : typeValidity@{k i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*)} : Type :=
-    {
-      validTmExt : forall {Δ : context} (wfΔ : [|- Δ ]) {σ σ' : nat -> term}
-        (Vσσ' : [ Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ]),
-        [Δ ||-<l> t[σ] ≅ t[σ'] : A[σ] | validTy VA wfΔ Vσσ' ]
-    }.
-
   Record typeEqValidity@{i j k l} {Γ l} {A B : term}
     {VΓ : [VR@{i j k l}| ||-v Γ]}
     {VA : typeValidity@{k i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*)} : Type :=
@@ -184,6 +175,21 @@ Section MoreDefs.
         [Δ ||-<l> t[σ] ≅ u[σ'] : A[σ] | validTy VA wfΔ Vσσ']
     }.
 
+  Definition termValidity {Γ l} {t A : term}
+    {VΓ : [VR| ||-v Γ]}
+    {VA : typeValidity Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*)} : Type :=
+    @termEqValidity Γ l t t A VΓ VA.
+
+  Definition validTmExt {Γ l} {t A : term}
+    {VΓ : [VR| ||-v Γ]}
+    {VA : typeValidity Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*)}
+    (Vt : @termValidity Γ l t A VΓ VA)
+   : forall {Δ : context} (wfΔ : [|- Δ ]) {σ σ' : nat -> term}
+        (Vσσ' : [ Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ]),
+        [Δ ||-<l> t[σ] ≅ t[σ'] : A[σ] | validTy VA wfΔ Vσσ' ] :=
+      fun _ =>  Vt.(validTmEq).
+
+
   Record tmEqValidity {Γ l} {t u A : term} {VΓ : [||-v Γ]} : Type :=
     {
       Vty  : [Γ ||-v< l > A | VΓ] ;
@@ -195,13 +201,13 @@ Section MoreDefs.
   Record redValidity {Γ} {t u A : term} {VΓ : [||-v Γ]} : Type :=
     {
       validRed : forall {Δ} (wfΔ : [|- Δ]) {σ σ'} (Vσσ' : [Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ]),
-        [Δ |- t[σ] :⤳*: u[σ] : A[σ]]
+        [Δ |- t[σ] ⤳* u[σ] : A[σ]]
     }.
 End MoreDefs.
 
 Arguments termValidity : clear implicits.
 Arguments termValidity {_ _ _ _ _ _ _ _ _}.
-Arguments Build_termValidity {_ _ _ _ _ _ _ _ _}.
+(* Arguments Build_termValidity {_ _ _ _ _ _ _ _ _}. *)
 
 Arguments typeEqValidity : clear implicits.
 Arguments typeEqValidity {_ _ _ _ _ _ _ _ _}.
@@ -223,7 +229,8 @@ Notation "[ Γ ||-v< l > t : A | VΓ | VA ]"     := (termValidity Γ l t A VΓ V
 Notation "[ Γ ||-v< l > A ≅ B | VΓ | VA ]"     := (typeEqValidity Γ l A B VΓ VA) (at level 0, Γ, l, A, B, VΓ, VA at level 50).
 Notation "[ Γ ||-v< l > t ≅ u : A | VΓ | VA ]" := (termEqValidity Γ l t u A VΓ VA) (at level 0, Γ, l, t, u, A, VΓ, VA at level 50).
 Notation "[ Γ ||-v< l > t ≅ u : A | VΓ ]"      := (tmEqValidity Γ l t u A VΓ) (at level 0, Γ, l, t, u, A, VΓ at level 50).
-Notation "[ Γ ||-v t :⤳*: u : A | VΓ ]"      := (redValidity Γ t u A VΓ) (at level 0, Γ, t, u, A, VΓ at level 50).
+(* Notation "[ Γ ||-v t :⤳*: u : A | VΓ ]"      := (redValidity Γ t u A VΓ) (at level 0, Γ, t, u, A, VΓ at level 50). *)
+Notation "[ Γ ||-v t ⤳* u : A | VΓ ]"      := (redValidity Γ t u A VΓ) (at level 0, Γ, t, u, A, VΓ at level 50).
 
 Section Inductions.
   Context `{ta : tag} `{WfContext ta} `{WfType ta} `{Typing ta}
@@ -285,14 +292,15 @@ Ltac instValid vσ :=
   | [H : typeValidity _ _ _ _ |- _] =>
     try (let X := fresh "R" H in pose (X := validTy H wfΔ vσ));
     try (let X := fresh "RE" H in pose (X := validTyExt H wfΔ vσ)) ;
+    try (let X := fresh "RSym" H in pose (X := validTy H wfΔ (urefl vσ))) ; (* should only do that if vσ : [.. |- σ ≅ σ' : ...] with σ != σ' *)
     block H
   | [H : termValidity _ _ _ _ _ _ |- _] =>
     let X := fresh "R" H in
     try pose (X := validTmExt H wfΔ vσ) ;
     block H
   | [H : typeEqValidity _ _ _ _ _ _ |- _] =>
-    let X := fresh "R" H in
-    try pose (X := validTyEq H wfΔ vσ) ;
+    try (let X := fresh "R" H in pose (X := validTyEq H wfΔ vσ)) ;
+    try (let X := fresh "RSym" H in pose (X := LRTyEqRedRight _ (validTyEq H wfΔ vσ))) ;
     block H
   | [H : termEqValidity _ _ _ _ _ _ _ |- _] =>
     let X := fresh "R" H in

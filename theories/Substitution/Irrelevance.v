@@ -252,6 +252,16 @@ Proof.
   Unshelve. 1,6-8:tea. now eapply urefl.
 Qed.
 
+#[global]
+Instance validTmEqSymmetric {Γ l A} (VΓ : [||-v Γ]) (VA : [Γ ||-v<l> A | VΓ]) :
+  Symmetric (fun t u => [Γ ||-v<l> t ≅ u : _ | VΓ | VA]).
+Proof. intros x y; eapply symValidTmEq. Qed.
+
+#[global]
+Instance validTmEqTransitive {Γ l A} (VΓ : [||-v Γ]) (VA : [Γ ||-v<l> A | VΓ]) :
+  Transitive (fun t u => [Γ ||-v<l> t ≅ u : _ | VΓ | VA]).
+Proof. intros x y z. eapply transValidTmEq. Qed.
+
 (* Lemma irrelevanceSubstExt {Γ} (VΓ : [||-v Γ]) {σ σ' Δ} (wfΔ : [|- Δ]) :
   σ =1 σ' -> [Δ ||-v σ : Γ | VΓ | wfΔ] -> [Δ ||-v σ' : Γ | VΓ | wfΔ].
 Proof.

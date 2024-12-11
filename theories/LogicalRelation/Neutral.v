@@ -375,6 +375,10 @@ Proof.
   intros; now eapply reflectness.
 Qed.
 
+Lemma neNfTermEq {Γ l A n n'} (RA : [Γ ||-<l> A]) : [Γ ||-NeNf n ≅ n' : A] -> [RA | Γ ||- n ≅ n' : A].
+Proof.  intros []; now eapply neuTermEq. Qed.
+
+
 Lemma var0conv {l Γ A A'} (RA : [Γ ,, A ||-<l> A']) :
   [Γ,, A |- A⟨↑⟩ ≅ A'] ->
   [Γ |- A] ->

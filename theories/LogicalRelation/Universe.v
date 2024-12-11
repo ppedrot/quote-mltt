@@ -8,9 +8,14 @@ Set Printing Universes.
 Section UniverseReducibility.
   Context `{GenericTypingProperties}.
 
+  Lemma redUOneCtx {Γ} : [|- Γ] -> [Γ ||-U<one> U].
+  Proof.
+    intros ; econstructor; [easy| gen_typing|eapply redtywf_refl; gen_typing].
+  Defined.
+
   Lemma redUOne {Γ l A} : [Γ ||-<l> A] -> [Γ ||-U<one> U].
   Proof.
-    intros ?%escape; econstructor; [easy| gen_typing|eapply redtywf_refl; gen_typing].
+    intros ?%escape; eapply redUOneCtx; gen_typing.
   Qed.
 
   Lemma UnivEq'@{i j k l} {Γ A B l} (rU : [ LogRel@{i j k l} l | Γ ||- U ]) (rA : [ LogRel@{i j k l} l | Γ ||- A ≅ B : U | rU])
