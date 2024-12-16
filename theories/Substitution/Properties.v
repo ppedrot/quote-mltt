@@ -291,6 +291,40 @@ Proof.
   now eapply substEq_wk.
 Qed.
 
+Lemma subst_rel t : t[tRel] = t.
+Proof. now bsimpl. Qed.
+
+Lemma validTyWf {Γ A l} (VΓ : [||-v Γ]) : [_ ||-v<l> A | VΓ ] -> [Γ |- A].
+Proof.
+  intros h; generalize (validTy h _ (idSubstS VΓ)); rewrite subst_rel.
+  eapply escape.
+Qed.
+
+Lemma validWf {Γ} (VΓ: [||-v Γ]) :  [|- Γ].
+Proof.
+  induction Γ, VΓ using validity_rect.
+  gen_typing.
+  eapply wfc_cons; tea; now eapply validTyWf.
+Qed.
+
+(* Lemma compSubstS {Γ} (VΓ : [||-v Γ])  :
+  forall Δ (VΔ : [||-v Δ])
+    {σ σ'} (Vσσ' : [_ ||-v σ ≅ σ' : _ | VΓ | validWf VΔ])
+    Ξ (wfΞ : [|- Ξ])
+    {τ τ'} (Vττ' : [_ ||-v τ ≅ τ' : _ | VΔ | wfΞ]),
+    [_ ||-v  σ >> subst_term τ ≅ σ' >> subst_term τ' : _ | VΓ | wfΞ].
+Proof.
+  induction Γ, VΓ using validity_rect.
+  1: intros; constructor.
+  intros ; unshelve econstructor.
+  - eapply irrelevanceSubstEqExt.
+    3:{ eapply IHVΓ; [eapply eqTail, Vσσ'|]; tea.  }
+    1,2: intros ?; reflexivity.
+  - cbn.  unfold funcomp. cbv. bsimpl. substify. asimpl.
+
+  intros Δ VΔ; induction Δ, VΔ using validity_rect. unshelve econstructor. *)
+
+
 
 
 

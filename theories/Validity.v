@@ -268,14 +268,14 @@ Section Inductions.
     pattern Γ, VΓ. apply validity_rect.
     - reflexivity.
     - intros; do 3 eexists; reflexivity.
-  Qed.
+  Defined.
 
   Lemma invValidityEmpty (VΓ : [||-v ε]) : VΓ = validEmpty.
-  Proof. apply (invValidity VΓ). Qed.
+  Proof. apply (invValidity VΓ). Defined.
 
   Lemma invValiditySnoc {Γ A} (VΓ₀ : [||-v Γ ,, A ]) :
       ∑ l (VΓ : [||-v Γ]) (VA : [Γ ||-v< l > A | VΓ]), VΓ₀ = validSnoc VΓ VA.
-  Proof. apply (invValidity VΓ₀). Qed.
+  Proof. apply (invValidity VΓ₀). Defined.
 
 End Inductions.
 

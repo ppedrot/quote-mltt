@@ -142,8 +142,8 @@ Proof.
   - intros ???? [??]. eapply VAext.
 Qed.
 
-Lemma irrelevanceTyEq {Γ l A B} (VΓ VΓ' : [||-v Γ]) (VA : [Γ ||-v<l> A | VΓ]) (VA' : [Γ||-v<l> A | VΓ']) :
-  [Γ ||-v< l > A ≅ B | VΓ | VA] -> [Γ ||-v< l > A ≅ B | VΓ' | VA'].
+Lemma irrelevanceTyEq {Γ l l' A B} (VΓ VΓ' : [||-v Γ]) (VA : [Γ ||-v<l> A | VΓ]) (VA' : [Γ||-v<l'> A | VΓ']) :
+  [Γ ||-v< l > A ≅ B | VΓ | VA] -> [Γ ||-v< l' > A ≅ B | VΓ' | VA'].
 Proof.
   intros [h]; constructor; intros.
   irrelevanceRefl.
@@ -157,17 +157,17 @@ Proof.
   intros ->; now eapply irrelevanceTyEq.
 Qed.
 
-Lemma symValidTyEq {Γ l A B} {VΓ : [||-v Γ]} {VA : [Γ ||-v<l> A | VΓ]} (VB : [Γ ||-v<l> B | VΓ]) :
-  [Γ ||-v<l> A ≅ B | VΓ | VA] -> [Γ ||-v<l> B ≅ A | VΓ | VB].
+Lemma symValidTyEq {Γ l l' A B} {VΓ : [||-v Γ]} {VA : [Γ ||-v<l> A | VΓ]} (VB : [Γ ||-v<l'> B | VΓ]) :
+  [Γ ||-v<l> A ≅ B | VΓ | VA] -> [Γ ||-v<l'> B ≅ A | VΓ | VB].
 Proof.
   intros; constructor; intros.
   eapply LRTyEqSym; now eapply validTyEq.
   Unshelve. 1:tea. now symmetry.
 Qed.
 
-Lemma transValidTyEq {Γ l A B C} {VΓ : [||-v Γ]}
-  {VA : [Γ ||-v<l> A | VΓ]} {VB : [Γ ||-v<l> B | VΓ]} :
-  [Γ ||-v<l> A ≅ B | VΓ | VA] -> [Γ ||-v<l> B ≅ C | VΓ | VB] -> [Γ ||-v<l> A ≅ C | VΓ | VA].
+Lemma transValidTyEq {Γ l l' A B C} {VΓ : [||-v Γ]}
+  {VA : [Γ ||-v<l> A | VΓ]} {VB : [Γ ||-v<l'> B | VΓ]} :
+  [Γ ||-v<l> A ≅ B | VΓ | VA] -> [Γ ||-v<l'> B ≅ C | VΓ | VB] -> [Γ ||-v<l> A ≅ C | VΓ | VA].
 Proof.
   constructor; intros; eapply LRTransEq; now eapply validTyEq.
   Unshelve. 1: tea. now eapply urefl.
