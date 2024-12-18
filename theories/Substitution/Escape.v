@@ -57,4 +57,12 @@ Proof.
   now eapply reducibleTmEq.
 Qed.
 
+Lemma escapeTm {Γ l A t u} (VΓ : [||-v Γ]) (VA : [Γ ||-v<l> A | VΓ]) :
+  [Γ ||-v<l> t ≅ u : A | VΓ | VA] -> [Γ |- t : A].
+Proof.
+  intros; unshelve eapply escapeTerm; tea.
+  1: now eapply reducibleTy.
+  now eapply reducibleTmEq.
+Qed.
+
 End Escape.
