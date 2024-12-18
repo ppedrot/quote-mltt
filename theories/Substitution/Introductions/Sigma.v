@@ -727,6 +727,42 @@ Section PairRed.
     split; [eapply lreflValidTm|]; now eapply pairSndValid0.
   Qed.
 
+  Lemma pairCongValid {Γ A A' B B' a a' b b' l}
+    (VΓ : [||-v Γ])
+    (VA : [ Γ ||-v<l> A | VΓ ])
+    (VA' : [ Γ ||-v<l> A ≅ A' | VΓ | VA])
+    (VB : [ Γ ,, A ||-v<l> B | validSnoc VΓ VA ])
+    (VBB' : [ Γ ,, A ||-v<l> B ≅ B' | validSnoc VΓ VA | VB])
+    (VΣ := SigValid VΓ VA VB)
+    (Va : [Γ ||-v<l> a ≅ a' : A | VΓ | VA])
+    (VBa := substS VB Va)
+    (Vb : [Γ ||-v<l> b ≅ b' : B[a..] | VΓ | VBa]) :
+    [Γ ||-v<l> tPair A B a b ≅ tPair A' B' a' b' : _ | VΓ | VΣ].
+  Proof.
+    constructor; intros; rewrite 2!subst_pair.
+    assert [_ ||-v<l> tSig A B ≅ tSig A' B' | VΓ | VΣ].
+    1:{
+      eapply SigCong; tea.
+      eapply convCtx1; tea; now eapply ureflValidTy.
+    }
+    instValid Vσσ'; instValid (liftSubstEq' VA Vσσ').
+    irrelevance0; [now rewrite subst_sig|].
+    eapply pairCongRed0; tea.
+    + irrelevance.
+    +
+      pose proof (lreflValidTm _ Vb).
+      unshelve epose proof (Rafst := symValidTmEq (pairFstValid0 VΓ VA VB (lreflValidTm _ Va) _)).
+      2: irrValid.
+      pose proof (RBaBfst := substSEq (reflValidTy VA) (reflValidTy VB) Rafst).
+      pose proof (validTyEq RBaBfst _ (lrefl Vσσ')).
+      rewrite <-subst_pair, subst_fst, up_subst_single'; irrelevance.
+    + irrelevance.
+    Unshelve.
+    1: now eapply ureflValidTy.
+    1:  rewrite <-subst_sig; now apply invLRΣ.
+    now rewrite up_subst_single'.
+  Qed.
+
   Lemma pairValid {Γ A B a b l}
     (VΓ : [||-v Γ])
     (VA : [ Γ ||-v<l> A | VΓ ])
@@ -737,20 +773,10 @@ Section PairRed.
     (Vb : [Γ ||-v<l> b : B[a..] | VΓ | VBa]) :
     [Γ ||-v<l> tPair A B a b : _ | VΓ | VΣ].
   Proof.
-    constructor; intros; rewrite 2!subst_pair.
-    instValid Vσσ'; instValid (liftSubstEq' VA Vσσ').
-    irrelevance0; [now rewrite subst_sig|].
-    eapply pairCongRed0; tea.
-    + irrelevance.
-    + rewrite <-subst_pair, subst_fst, up_subst_single'; irrelevance0; [now rewrite up_subst_single'|].
-      eapply (validTyEq (substSEq (reflValidTy VA) (reflValidTy VB) (symValidTmEq (pairFstValid0 VΓ VA VB Va Vb))) _ (lrefl Vσσ')).
-    + irrelevance.
-    Unshelve.
-    1:  rewrite <-subst_sig; now apply invLRΣ.
-    now rewrite up_subst_single'.
+    eapply pairCongValid; tea; now eapply reflValidTy.
   Qed.
 
-  Lemma sigEtaValid {Γ A B p p' l}
+  Lemma sigEtaEqValid {Γ A B p p' l}
     (VΓ : [||-v Γ])
     (VA : [ Γ ||-v<l> A | VΓ ])
     (VB : [ Γ ,, A ||-v<l> B | validSnoc VΓ VA])
@@ -773,6 +799,23 @@ Section PairRed.
     2: rewrite <- subst_sig; now apply invLRΣ.
     1: tea.
     now rewrite subst_fst, up_subst_single'.
+  Qed.
+
+
+  Lemma sigEtaValid {Γ A B p l}
+    (VΓ : [||-v Γ])
+    (VA : [ Γ ||-v<l> A | VΓ ])
+    (VB : [ Γ ,, A ||-v<l> B | validSnoc VΓ VA])
+    (VΣ := SigValid VΓ VA VB)
+    (Vp : [Γ ||-v<l> p : _ | VΓ | VΣ]) :
+    [Γ ||-v<l> tPair A B (tFst p) (tSnd p) ≅ p : _ | VΓ | VΣ].
+  Proof.
+    pose (Vfst := fstValid _ _ _ Vp).
+    pose (Vsnd := sndValid _ _ _ Vp).
+    pose proof (pairFstValid0 _ _ _ Vfst Vsnd).
+    pose proof (pairSndValid0 _ _ _ Vfst Vsnd).
+    pose proof (pairValid _ _ _ Vfst Vsnd).
+    unshelve eapply sigEtaEqValid; tea; try irrValid.
   Qed.
 
 End PairRed.

@@ -3,7 +3,7 @@ From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakenin
   GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Induction Escape Reflexivity Neutral Weakening Irrelevance Application Reduction Transitivity NormalRed EqRedRight InstKripke.
 From LogRel.Substitution Require Import Irrelevance Properties SingleSubst Reflexivity Conversion Reduction.
-From LogRel.Substitution.Introductions Require Import Pi.
+From LogRel.Substitution.Introductions Require Import Pi Application Var.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
@@ -104,10 +104,8 @@ Lemma lamCongValid {F' G'}
   (VFF' : [Γ ||-v<l> F ≅ F' | VΓ | VF])
   (VG' : [Γ ,, F ||-v<l> G' | VΓF])
   (VGG' : [Γ ,, F ||-v<l> G ≅ G' | VΓF | VG])
-
-{t t'} (Vtt' : [Γ ,, F ||-v<l> t ≅ t' : G | VΓF | VG])
-   :
-    [Γ ||-v<l> tLambda F t ≅ tLambda F' t' : tProd F G | VΓ | VΠFG ].
+  {t t'} (Vtt' : [Γ ,, F ||-v<l> t ≅ t' : G | VΓF | VG]) :
+  [Γ ||-v<l> tLambda F t ≅ tLambda F' t' : tProd F G | VΓ | VΠFG ].
 Proof.
   econstructor; intros. cbn -[PiValid].
   normRedΠ R; refold.
@@ -161,7 +159,14 @@ Proof.
     + erewrite <- 2!wk1_ren_on; eapply convtm_meta_conv; [| | reflexivity].
       1: eapply escapeEqTerm, r.
       now rewrite <- eq_id_subst_scons.
-  Qed.
+Qed.
+
+Lemma lamValid
+  {t t'} (Vtt' : [Γ ,, F ||-v<l> t ≅ t' : G | VΓF | VG]) :
+  [Γ ||-v<l> tLambda F t : tProd F G | VΓ | VΠFG ].
+Proof.
+  eapply lamCongValid; tea; first [eapply reflValidTy | now eapply lreflValidTm].
+Qed.
 
 
 Lemma singleSubst_subst_eq t a σ : t[a..][σ] = t[up_term_term σ][a[σ]..].
@@ -282,4 +287,61 @@ Proof.
   + irrelevance.
 Qed.
 
+Lemma upren_subst_rel0 t : t[(tRel 0)]⇑ = t.
+Proof. bsimpl; rewrite scons_eta'; now bsimpl. Qed.
+
+Lemma etaExpandValid {f} (ρ := @wk1 Γ F)
+  (Vf : [Γ ||-v<l> f : tProd F G | VΓ | VΠFG ]) :
+  [Γ ,, F ||-v<l> eta_expand f : G | VΓF | VG].
+Proof.
+  unshelve epose (VF' := wkValidTy ρ _ _ VF); tea.
+  unshelve epose (wkValidTy ρ _ _ VΠFG); tea.
+  unshelve epose (wkValidTm ρ _ _ _ Vf); tea.
+  eapply irrelevanceTm'.
+  2: eapply appValid; erewrite <-wk1_ren_on; irrValid.
+  refold; unfold ρ; bsimpl; apply upren_subst_rel0.
+  Unshelve. all: refold; tea.
+  pose (var0Valid _ VF); irrValid.
+Qed.
+
 End LambdaValid.
+
+Section EtaValid.
+Context `{GenericTypingProperties}.
+
+Context {Γ F G l}
+  {VΓ : [||-v Γ]}
+  (VF : [Γ ||-v<l> F | VΓ])
+  (VΓF := validSnoc VΓ VF)
+  (VG : [Γ ,, F ||-v<l> G | VΓF])
+  (VΠFG := PiValid VΓ VF VG).
+
+
+Lemma subst_rel0 t : t⟨↑⟩[(tRel 0)..] = t.
+Proof. now bsimpl. Qed.
+
+Lemma etaValid {f} (ρ := @wk1 Γ F)
+  (Vf : [Γ ||-v<l> f : tProd F G | VΓ | VΠFG ]) :
+  [Γ ||-v<l> (tLambda F (eta_expand f)) ≅ f : tProd F G | VΓ | VΠFG].
+Proof.
+  assert [||-v Γ,, F] by now eapply validSnoc.
+  unshelve epose (wkValidTm ρ _ _ _ Vf); tea.
+  unshelve epose (VF' := wkValidTy ρ _ _ VF); tea.
+  unshelve epose (VG' := wkValidTy (wk_up F ρ) _ _ VG).
+  1:now eapply validSnoc.
+  unshelve epose (wkValidTy ρ _ _ VΠFG); tea.
+  eapply etaeqValid; tea.
+  1: now eapply lamValid, etaExpandValid.
+  unshelve epose (x := betaValid VF'  VG' (t:=(eta_expand f⟨ρ⟩)) (a:=(tRel 0)) _ _).
+  3: eapply irrelevanceTmEq'; cycle 1.
+  + eapply etaExpandValid; irrValid.
+  + pose (var0Valid _ VF); irrValid.
+  + cbn -[wk1] in x |- *.
+    rewrite subst_rel0 in x.
+    replace f⟨↑⟩⟨upRen_term_term (wk1 F)⟩ with f⟨ρ⟩⟨↑⟩.
+    2: clear; unfold ρ; now bsimpl.
+    apply x.
+  + rewrite wk_up_wk1_ren_on; bsimpl; apply upren_subst_rel0.
+Qed.
+
+End EtaValid.
