@@ -9,14 +9,14 @@ authors: ["Meven Lennon-Bertrand <Meven.Bertrand@univ-nantes.fr>"
           "Pierre-Marie Pédrot <pierre-marie.pedrot@inria.fr>"
 ]
 homepage: "https://github.com/CoqHott/logrel-coq"
-description: "A formalisation of meta-theory for a dependent type system, in Coq"
+synopsis:"A formalisation of meta-theory for a dependent type system, in Coq"
 license: "MIT"
 depends: [
   "coq" { >= "8.20" & < "8.21~" }
   "coq-smpl"
   "coq-equations" { >= "1.3" }
-  # "coq-autosubst-ocaml" {>= "1.1"}
-  "coq-metacoq-template" {>= "1.3.1+8.19"}
+  "coq-autosubst-ocaml" {>= "1.1"}
+  "coq-metacoq-template" {>= "1.3.1"}
 ]
 build: [
   [make]

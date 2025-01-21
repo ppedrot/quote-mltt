@@ -204,7 +204,7 @@ Proof.
 exact (scons (tRel var_zero) (funcomp (ren_term shift) sigma)).
 Defined.
 
-Fixpoint subst_term (sigma_term : nat -> term) (s : term) {struct s} :
+Fixpoint subst_term (sigma_term : nat -> term) (s : term) {struct s} : 
 term :=
   match s with
   | tRel s0 => sigma_term s0
@@ -1054,17 +1054,17 @@ Qed.
 Class Up_term X Y :=
     up_term : X -> Y.
 
-#[global]Instance Subst_term : (Subst1 _ _ _) := @subst_term.
+#[global] Instance Subst_term : (Subst1 _ _ _) := @subst_term.
 
-#[global]Instance Up_term_term : (Up_term _ _) := @up_term_term.
+#[global] Instance Up_term_term : (Up_term _ _) := @up_term_term.
 
-#[global]Instance Ren_term : (Ren1 _ _ _) := @ren_term.
+#[global] Instance Ren_term : (Ren1 _ _ _) := @ren_term.
 
 #[global]
 Instance VarInstance_term : (Var _ _) := @tRel.
 
 (* Notation "[ sigma_term ]" := (subst_term sigma_term)
-  ( at level 1, left associativity, only printing) : fscope. *)
+( at level 1, left associativity, only printing)  : fscope. *)
 
 Notation "s [ sigma_term ]" := (subst_term sigma_term s)
 ( at level 7, left associativity, only printing)  : subst_scope.
@@ -1132,7 +1132,7 @@ Tactic Notation "auto_unfold" "in" "*" := repeat
                                            unfold VarInstance_term, Var, ids,
                                             Ren_term, Ren1, ren1,
                                             Up_term_term, Up_term, up_term,
-                                            Subst_term, Subst1, subst1
+                                            Subst_term, Subst1, subst1 
                                             in *.
 
 Ltac asimpl' := repeat (first
@@ -1179,9 +1179,9 @@ Module Extra.
 
 Import Core.
 
-#[global]Hint Opaque subst_term: rewrite.
+#[global] Hint Opaque subst_term: rewrite.
 
-#[global]Hint Opaque ren_term: rewrite.
+#[global] Hint Opaque ren_term: rewrite.
 
 End Extra.
 
