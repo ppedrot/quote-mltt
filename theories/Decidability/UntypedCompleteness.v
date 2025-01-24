@@ -1,14 +1,9 @@
 (** * LogRel.Decidability.UntypedCompleteness: the inductive predicates imply the implementation answer positively. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
+From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
 From LogRel.Algorithmic Require Import BundledAlgorithmicTyping AlgorithmicConvProperties AlgorithmicTypingProperties UntypedAlgorithmicConversion.
-
-(* To get the right easy tactic, should be fixed otherwise *)
-From LogRel Require Import Utils.
-Check fixme.
-
 From LogRel.Decidability Require Import Functions UntypedFunctions Soundness UntypedSoundness Completeness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 

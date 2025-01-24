@@ -71,7 +71,6 @@ theories/Fundamental.v
 
 theories/AlgorithmicTyping.v
 theories/Algorithmic/UntypedAlgorithmicConversion.v
-theories/Algorithmic/PremisePreserve.v
 theories/Algorithmic/BundledAlgorithmicTyping.v
 theories/Algorithmic/AlgorithmicConvProperties.v
 theories/Algorithmic/AlgorithmicTypingProperties.v

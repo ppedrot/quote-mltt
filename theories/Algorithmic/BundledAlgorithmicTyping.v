@@ -1,594 +1,9 @@
 (** * LogRel.BundledAlgorithmicTyping: algorithmic typing bundled with its pre-conditions, and a tailored induction principle. *)
 
-From LogRel Require Import PremisePreserve.
-From MetaCoq.Utils Require Import bytestring.
-From MetaCoq.Template Require Import Loader.
-
-Open Scope bs.
-Open Scope bool_scope.
-
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
 
 Import DeclarativeTypingProperties AlgorithmicTypingData.
-
-
-Section Invariants.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
-
-
-  Unset MetaCoq Strict Unquote Universe Mode.
-
-  MetaCoq Quote Definition conv_ty_precond :=
-  (fun Γ A B => [Γ |-[de] A] × [Γ |-[de] B]).
-
-  MetaCoq Quote Definition conv_neu_precond :=
-  (fun Γ (A : term) t u =>
-    [× well_typed (ta := de) Γ t & well_typed (ta := de) Γ u]).
-
-  MetaCoq Quote Definition conv_tm_precond :=
-  (fun Γ A t u => ([Γ |-[de] t : A]) × ([Γ |-[de] u : A])).
-
-  #[local] Definition pre_cond (hyp : Ast.term) : Ast.term :=
-  match hyp with
-    | Ast.tApp c l =>
-        if ((c ?= <% ConvTypeAlg %>) || (c ?= <% ConvTypeRedAlg %>))
-          then Ast.tApp conv_ty_precond l
-        else if ((c ?= <% ConvNeuAlg %>) || (c ?= <% ConvNeuRedAlg %>))
-          then Ast.tApp conv_neu_precond l
-        else if ((c ?= <% ConvTermAlg %>) || (c ?= <% ConvTermRedAlg %>))
-          then Ast.tApp conv_tm_precond l
-        else hyp
-    | _ => hyp
-  end.
-
-  MetaCoq Quote Definition conv_ty_postcond :=
-  (fun Γ A B => [Γ |-[de] A ≅ B]).
-
-  MetaCoq Quote Definition conv_neu_postcond :=
-  (fun Γ A m n => 
-    [× ([Γ |-[de] m ≅ n : A]),
-    (forall (T : term), [Γ |-[de] m : T] -> [Γ |-[de] A ≅ T]) &
-    (forall (T : term), [Γ |-[de] n : T] -> [Γ |-[de] A ≅ T])]).
-    
-    
-  MetaCoq Quote Definition conv_tm_postcond :=
-  (fun Γ A t u => [Γ |-[de] t ≅ u : A]).
-
-  #[local] Definition post_cond (hyp : Ast.term) : Ast.term :=
-  match hyp with
-    | Ast.tApp c l =>
-        if ((c ?= <% ConvTypeAlg %>) || (c ?= <% ConvTypeRedAlg %>))
-          then Ast.tApp conv_ty_postcond l
-        else if ((c ?= <% ConvNeuAlg %>) || (c ?= <% ConvNeuRedAlg %>))
-          then Ast.tApp conv_neu_postcond l
-        else if ((c ?= <% ConvTermAlg %>) || (c ?= <% ConvTermRedAlg %>))
-          then Ast.tApp conv_tm_postcond l
-        else hyp
-    | _ => hyp
-  end.
-
-  Lemma typeConvRed_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "typeConvRed").
-  Proof.
-    intros * HA HB [].
-    eapply subject_reduction_type, reddecl_conv in HA, HB ; tea.
-    split ; boundary.
-  Qed.
-
-  Lemma typeConvRed_concl : $run (constructor_concl_preserve pre_cond post_cond "typeConvRed").
-  Proof.
-    intros * HA HB IHA' [? ?].
-    eapply subject_reduction_type, reddecl_conv in HA, HB ; tea.
-    do 2 etransitivity ; tea.
-    all: now econstructor.
-  Qed.
-
-  Lemma typePiCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "typePiCongAlg").
-  Proof.
-    now intros * [[]%prod_ty_inv []%prod_ty_inv].
-  Qed.
-
-  Lemma typePiCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "typePiCongAlg").
-  Proof.
-    intros * ? [[]%prod_ty_inv []%prod_ty_inv].
-    split ; [gen_typing|..].
-    now eapply stability1.
-  Qed.
-  
-  Lemma typePiCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "typePiCongAlg").
-  Proof.
-    intros * ?? _.
-    econstructor ; tea.
-    boundary.
-  Qed.
-
-  Lemma typeSigCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "typeSigCongAlg").
-  Proof.
-    now intros * [[]%sig_ty_inv []%sig_ty_inv].
-  Qed.
-
-  Lemma typeSigCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "typeSigCongAlg").
-  Proof.
-    intros * ? [[]%sig_ty_inv []%sig_ty_inv].
-    split ; [gen_typing|..].
-    now eapply stability1.
-  Qed.
-  
-  Lemma typeSigCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "typeSigCongAlg").
-  Proof.
-    intros * ?? _.
-    econstructor ; tea.
-    boundary.
-  Qed.
-
-  Lemma typeIdCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "typeIdCongAlg").
-  Proof.
-    now intros * [[]%id_ty_inv []%id_ty_inv].
-  Qed.
-  
-  Lemma typeIdCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "typeIdCongAlg").
-  Proof.
-    intros * ? [[]%id_ty_inv []%id_ty_inv].
-    split ; [assumption|now econstructor].
-  Qed.
-
-  Lemma typeIdCongAlg_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "typeIdCongAlg").
-  Proof.
-    intros * ?? [[]%id_ty_inv []%id_ty_inv].
-    split ; [assumption|now econstructor].
-  Qed.
-
-  Lemma typeIdCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "typeIdCongAlg").
-  Proof.
-    intros * ??? [[]%id_ty_inv []%id_ty_inv].
-    now econstructor.
-  Qed.
-
-
-  Lemma typeNeuConvAlg_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "typeNeuConvAlg").
-  Proof.
-    intros * _ ?? [?%neutral_ty_inv ?%neutral_ty_inv] ; tea.
-    now split ; eexists.
-  Qed.
-
-  Lemma typeNeuConvAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "typeNeuConvAlg").
-  Proof.
-    intros * ?? [? HM] [?%neutral_ty_inv] ; tea.
-    do 2 econstructor ; tea.
-    now eapply HM.
-  Qed.
-
-  Lemma neuVarConvAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "neuVarConvAlg").
-  Proof.
-    intros * Hin [_ []].
-    split.
-    - do 2 constructor ; gen_typing.
-    - intros T Hty.
-      eapply termGen' in Hty as [? [[? [->]] ?]].
-      eapply in_ctx_inj in Hin ; tea ; subst.
-      eassumption.
-    - intros T Hty.
-      eapply termGen' in Hty as [? [[? [->]] ?]].
-      eapply in_ctx_inj in Hin ; tea ; subst.
-      eassumption.
-  Qed.
-
-  Lemma neuAppCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuAppCongAlg").
-  Proof.
-    intros * _ _ [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    split ; now eexists.
-  Qed.
-
-  Lemma neuAppCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "neuAppCongAlg").
-  Proof.
-    intros * [? Hm Hn] [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    eapply prod_ty_inj in Hm as [] ; tea.
-    eapply prod_ty_inj in Hn as [] ; tea.
-    split ; now econstructor.
-  Qed.
-
-  Lemma neuAppCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "neuAppCongAlg").
-  Proof.
-    intros * [? Hm Hn] ? [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    split.
-    + econstructor ; gen_typing.
-    + intros ? Happ.
-      eapply termGen' in Happ as [? [(?&?&[-> Htym']) ?]].
-      eapply prod_ty_inj in Hm as [] ; tea.
-      etransitivity ; [..|eassumption].
-      eapply typing_subst1 ; tea.
-      now econstructor.
-    + intros ? Happ.
-      eapply termGen' in Happ as [? [(?&?&[-> Htym']) ?]].
-      eapply prod_ty_inj in Hn as [] ; tea.
-      etransitivity ; [..|eassumption].
-      eapply typing_subst1.
-      2: eassumption.
-      econstructor ; tea.
-      now symmetry.
-  Qed.
-
-  Lemma neuNatElimCong_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuNatElimCong").
-  Proof.
-    intros * [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split ; now eexists.
-  Qed.
-
-  Lemma neuNatElimCong_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "neuNatElimCong").
-  Proof.
-    intros * [? Hn Hn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    now split.
-  Qed.
-
-  Lemma neuNatElimCong_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "neuNatElimCong").
-  Proof.
-    intros * [? Hn Hn'] HP [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split.
-    1: eassumption.
-    econstructor ; tea.
-    symmetry.
-    eapply typing_subst1 ; tea.
-    gen_typing.
-  Qed.
-
-  Lemma neuNatElimCong_prem3 : $run (constructor_premise_preserve pre_cond post_cond 3 "neuNatElimCong").
-  Proof.
-    intros * [? Hn Hn'] HP _ [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split.
-    1: eassumption.
-    econstructor ; tea.
-    symmetry.
-    eapply elimSuccHypTy_conv.
-    all: gen_typing.
-  Qed.
-
-  Lemma neuNatElimCong_concl : $run (constructor_concl_preserve pre_cond post_cond "neuNatElimCong").
-  Proof.
-    intros * [? Hn Hn'] HP ? ? [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split.
-    + now econstructor.
-    + now intros ?[? [[->]]]%termGen'.
-    + intros ?[? [[->]]]%termGen'.
-      etransitivity.
-      1: eapply typing_subst1.
-      all: eassumption.
-  Qed.
-
-  Lemma neuEmptyElimCong_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuEmptyElimCong").
-  Proof.
-    intros * [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split ; now eexists.
-  Qed.
-
-  Lemma neuEmptyElimCong_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "neuEmptyElimCong").
-  Proof.
-    intros * [? Hn Hn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    now split.
-  Qed.
-
-  Lemma neuEmptyElimCong_concl : $run (constructor_concl_preserve pre_cond post_cond "neuEmptyElimCong").
-  Proof.
-    intros * [? Hn Hn'] HP [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split.
-    + now econstructor.
-    + now intros ?[? [[->]]]%termGen'.
-    + intros ?[? [[->]]]%termGen'.
-      etransitivity.
-      1: eapply typing_subst1.
-      all: eassumption.
-  Qed.
-
-  Lemma neuFstCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuFstCongAlg").
-  Proof.
-    intros * _ _ [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    split ; now eexists.
-  Qed.
-
-  Lemma neuFstCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "neuFstCongAlg").
-  Proof.
-    intros * [? Hm Hn] [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    split.
-    + now econstructor.
-    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
-      eapply sig_ty_inj in Hm as [].
-      2: eassumption.
-      now etransitivity.
-    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
-      eapply sig_ty_inj in Hn as [].
-      2: eassumption.
-      now etransitivity.
-  Qed.
-
-  Lemma neuSndCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuSndCongAlg").
-  Proof.
-    intros * _ _ [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    split ; now eexists.
-  Qed.
-
-  Lemma neuSndCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "neuSndCongAlg").
-  Proof.
-    intros * [? Hm Hn] [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
-    split.
-    + now econstructor.
-    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
-      eapply sig_ty_inj in Hm as [].
-      2: eassumption.
-      etransitivity; tea.
-      eapply typing_subst1; tea ; do 2 econstructor.
-      boundary.
-    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
-      eapply sig_ty_inj in Hn as [].
-      2: eassumption.
-      etransitivity; tea.
-      eapply typing_subst1; tea.
-      now econstructor.
-  Qed.
-
-  Lemma neuIdElimCong_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuIdElimCong").
-  Proof.
-    intros * _ * _ * _ * [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
-    split ; now eexists.
-  Qed.
-
-  Lemma neuIdElimCong_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "neuIdElimCong").
-  Proof.
-    intros * [? Hn Hn'] [[Hwn Hwn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']]]%dup.
-    split.
-    1: eassumption.
-    epose proof (idElimConv Hwn Hwn') as (?&?&?&[]) ; tea.
-    1: eapply TypeRefl ; refold ; boundary.
-    1: constructor.
-    eapply stability; tea.
-    eapply idElimMotiveCtxConv; tea.
-    1: eapply ctx_refl ; boundary.
-    2: econstructor ; tea.
-    all: now symmetry.
-  Qed.
-
-  Lemma neuIdElimCong_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "neuIdElimCong").
-  Proof.
-    intros * [? Hn Hn'] HP [[Hwn Hwn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']]]%dup.
-    split.
-    1: eassumption.
-    epose proof (idElimConv Hwn Hwn') as (?&?&?&[]) ; tea.
-    1: eapply TypeRefl ; refold ; boundary.
-    1: constructor.
-    econstructor ; tea.
-    symmetry.
-    eapply typing_subst2 ; tea.
-    1: boundary.
-    cbn; rewrite 2!wk1_ren_on, 2!shift_one_eq; now econstructor.
-  Qed.
-
-  Lemma neuIdElimCong_concl : $run (constructor_concl_preserve pre_cond post_cond "neuIdElimCong").
-  Proof.
-    intros * [? Hn Hn'] HP Hr [[Hwn Hwn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']]]%dup.
-    epose proof (idElimConv Hwn Hwn') as (?&?&?&[He]) ; tea.
-    1: eapply TypeRefl ; refold ; boundary.
-    1: constructor.
-    inversion_clear He.
-    split.
-    + econstructor ; tea.
-      econstructor ; tea.
-      symmetry.
-      now econstructor.
-    + now intros ?[? [[->]]]%termGen'.
-    + intros ?[? [[->]]]%termGen'.
-      etransitivity.
-      2: eassumption.
-      eapply typing_subst2 ; tea.
-      1: boundary.
-      econstructor ; tea.
-      symmetry.
-      cbn; rewrite 2!wk1_ren_on, 2!shift_one_eq.
-      now constructor.
-  Qed.
-
-  Lemma neuConvRed_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "neuConvRed").
-  Proof.
-    easy.
-  Qed.
-
-  Lemma neuConvRed_concl : $run (constructor_concl_preserve pre_cond post_cond "neuConvRed").
-  Proof.
-    eintros * [] ?%subject_reduction_type%reddecl_conv ? [].
-    2: boundary.
-    split.
-    - now econstructor.
-    - intros.
-      etransitivity.
-      2: eauto.
-      now symmetry.
-    - intros.
-      etransitivity.
-      2: eauto.
-      now symmetry.
-  Qed.
-
-  Lemma termConvRed_prem3 : $run (constructor_premise_preserve pre_cond post_cond 3 "termConvRed").
-  Proof.
-    eintros * HA Ht Hu [].
-    eapply subject_reduction_type, reddecl_conv in HA.
-    2: boundary.
-    eapply subject_reduction in Ht ; tea.
-    eapply subject_reduction in Hu ; tea.
-    split.
-    all: econstructor ; tea.
-    all: boundary.
-  Qed.
-
-  Lemma termConvRed_concl : $run (constructor_concl_preserve pre_cond post_cond "termConvRed").
-  Proof.
-    eintros * HA Ht Hu ? [].
-    eapply subject_reduction_type, reddecl_conv in HA.
-    2: boundary.
-    eapply subject_reduction, RedConvTeC in Ht ; tea.
-    eapply subject_reduction, RedConvTeC in Hu ; tea.
-    etransitivity ; tea.
-    etransitivity.
-    1: now econstructor.
-    now symmetry.
-  Qed.
-
-  Lemma termPiCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "termPiCongAlg").
-  Proof.
-    intros * [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
-    now split.
-  Qed.
-
-  Lemma termPiCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "termPiCongAlg").
-  Proof.
-    intros * ? [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
-    split.
-    1: eassumption.
-    eapply stability1 ; tea.
-    now constructor.
-  Qed.
-
-  Lemma termPiCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termPiCongAlg").
-  Proof.
-    intros.
-    constructor ; tea.
-    boundary.
-  Qed.
-
-  Lemma termSuccCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "termSuccCongAlg").
-  Proof.
-    now intros * [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
-  Qed.
-  
-  Lemma termSuccCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termSuccCongAlg").
-  Proof.
-    now constructor.
-  Qed.
-
-  Lemma termFunConvAlg_prem2: $run (constructor_premise_preserve pre_cond post_cond 2 "termFunConvAlg").
-  Proof.
-    intros * ?? [?%typing_eta' ?%typing_eta'].
-    now split.
-  Qed.
-
-  Lemma termFunConvAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termFunConvAlg").
-  Proof.
-    intros * ?? ? [].
-    etransitivity; [|now eapply TermFunEta].
-    etransitivity; [symmetry; now eapply TermFunEta|].
-    econstructor ; tea.
-    2-3: constructor.
-    all: boundary.
-  Qed.
-
-  Lemma termSigCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "termSigCongAlg").
-  Proof.
-    intros * [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
-    now split.
-  Qed.
-
-  Lemma termSigCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "termSigCongAlg").
-  Proof.
-    intros * ? [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
-    split.
-    1: eassumption.
-    eapply stability1 ; tea.
-    now constructor.
-  Qed.
-
-  Lemma termSigCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termSigCongAlg").
-  Proof.
-    intros.
-    constructor ; tea.
-    boundary.
-  Qed.
-
-  Lemma termPairConvAlg_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "termPairConvAlg").
-  Proof.
-    intros * ?? [].
-    split.
-    all: now econstructor.
-  Qed.
-
-  Lemma termPairConvAlg_prem3 : $run (constructor_premise_preserve pre_cond post_cond 3 "termPairConvAlg").
-  Proof.
-    intros * ?? ? [Hp ].
-    split.
-    1: now econstructor.
-    econstructor.
-    1: now econstructor.
-    eapply typing_subst1.
-    1: now symmetry.
-    constructor.
-    now eapply boundary, sig_ty_inv in Hp as [].
-  Qed.
-
-  Lemma termPairConvAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termPairConvAlg").
-  Proof.
-    intros * ?? ? ? [Hp].
-    etransitivity; [|now eapply TermPairEta].
-    etransitivity; [symmetry; now eapply TermPairEta|].
-    eapply boundary, sig_ty_inv in Hp as [].
-    econstructor ; tea.
-    all: constructor ; boundary.
-  Qed.
-
-  Lemma termIdCongAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "termIdCongAlg").
-  Proof.
-    now intros * [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
-  Qed.
-  
-  Lemma termIdCongAlg_prem1 : $run (constructor_premise_preserve pre_cond post_cond 1 "termIdCongAlg").
-  Proof.
-    intros * ? [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
-    split.
-    1: assumption.
-    econstructor ; tea.
-    now constructor. 
-  Qed.
-
-  Lemma termIdCongAlg_prem2 : $run (constructor_premise_preserve pre_cond post_cond 2 "termIdCongAlg").
-  Proof.
-    intros * ?? [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
-    split.
-    1: assumption.
-    econstructor ; tea.
-    now constructor. 
-  Qed.
-
-  Lemma termIdCongAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termIdCongAlg").
-  Proof.
-    intros * ??? [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
-    now econstructor.
-  Qed.
-
-  Lemma termIdReflCong_concl : $run (constructor_concl_preserve pre_cond post_cond "termIdReflCong").
-  Proof.
-    intros * [[?[[-> ??] []%id_ty_inj]]%termGen' [?[[-> ??] []%id_ty_inj]]%termGen'].
-    assert [Γ |-[de] A ≅ A'] by
-        (etransitivity ; tea ; now symmetry).
-    econstructor.
-    1: econstructor.
-    3: econstructor.
-    + eassumption. 
-    + etransitivity ; tea.
-      symmetry.
-      now econstructor.
-    + now symmetry.
-    + eassumption.
-    + eassumption.
-  Qed.
-
-  Lemma termNeuConvAlg_prem0 : $run (constructor_premise_preserve pre_cond post_cond 0 "termNeuConvAlg").
-  Proof.
-    intros * _ ? [].
-    split ; now eexists.
-  Qed.
-
-  Lemma termNeuConvAlg_concl : $run (constructor_concl_preserve pre_cond post_cond "termNeuConvAlg").
-  Proof.
-    intros * [] ? [].
-    now econstructor.
-  Qed.
-
-End Invariants.
 
 
 (** ** Definition of bundled algorithmic typing *)
@@ -617,6 +32,7 @@ is stable by arbitrary conversion. *)
 
 (** In the case of a context, there is no judgement, only a pre-condition, as algorithmic
 typing never re-checks a context. *)
+
 Record WfContextBun Γ :=
 {
   bn_wf_ctx : [|-[de] Γ] ;
@@ -866,6 +282,791 @@ Module BundledIntermediateData.
 End BundledIntermediateData.
 
 Set Universe Polymorphism.
+
+
+(** ** Invariants of algorithmic typing (aka McBride discipline):
+  for each rule,
+  - assuming pre-conditions to the conclusion and post-conditions of previous premises
+    implies the pre-condition of a premise;
+  - assuming pre-conditions to the conclusion and post-conditions of all premises
+    implies the post-condition of the conclusion.
+
+  This is so regular that the statements used to be generated using meta-programming.
+  This is not the case anymore to avoid a nasty dependency on MetaCoq which caused
+  proof engineering problems in places, but might be added again in the future.
+    
+  These lemmas are proven one by one rather than "inlined" in a proof of soundness
+  because they appear again and again, when working with the untyped algorithm, and
+  the functions.
+
+*)
+
+Section Invariants.
+  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+
+  Lemma typeConvRed_prem2 (Γ : context) (A A' B B' : term) :
+    [A ⤳* A'] ->
+    [B ⤳* B'] ->
+    [Γ |-[ de ] A] × [Γ |-[ de ] B] ->
+    [Γ |-[ de ] A'] × [Γ |-[ de ] B'].
+  Proof.
+    intros * HA HB [].
+    eapply subject_reduction_type, reddecl_conv in HA, HB ; tea.
+    split ; boundary.
+  Qed.
+
+  Lemma typeConvRed_concl (Γ : context) (A A' B B' : term) :
+    [A ⤳* A'] ->
+    [B ⤳* B'] ->
+    [Γ |-[ de ] A' ≅ B'] ->
+    [Γ |-[ de ] A] × [Γ |-[ de ] B] ->
+    [Γ |-[ de ] A ≅ B].
+  Proof.
+    intros * HA HB IHA' [? ?].
+    eapply subject_reduction_type, reddecl_conv in HA, HB ; tea.
+    do 2 etransitivity ; tea.
+    all: now econstructor.
+  Qed.
+
+  Lemma typePiCongAlg_prem0 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] tProd A B] × [Γ |-[ de ] tProd A' B'] ->
+    [Γ |-[ de ] A] × [Γ |-[ de ] A'].
+  Proof.
+    now intros * [[]%prod_ty_inv []%prod_ty_inv].
+  Qed.
+
+  Lemma typePiCongAlg_prem1 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ |-[ de ] tProd A B] × [Γ |-[ de ] tProd A' B'] ->
+    [Γ,, A |-[ de ] B] × [Γ,, A |-[ de ] B'].
+  Proof.
+    intros * ? [[]%prod_ty_inv []%prod_ty_inv].
+    split ; [gen_typing|..].
+    now eapply stability1.
+  Qed.
+  
+  Lemma typePiCongAlg_concl (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ,, A |-[ de ] B ≅ B'] ->
+    [Γ |-[ de ] tProd A B] × [Γ |-[ de ] tProd A' B'] ->
+    [Γ |-[ de ] tProd A B ≅ tProd A' B'].
+  Proof.
+    intros * ?? _.
+    econstructor ; tea.
+    boundary.
+  Qed.
+
+  Lemma typeSigCongAlg_prem0 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] tSig A B] × [Γ |-[ de ] tSig A' B'] ->
+    [Γ |-[ de ] A] × [Γ |-[ de ] A'].
+  Proof.
+    now intros * [[]%sig_ty_inv []%sig_ty_inv].
+  Qed.
+
+  Lemma typeSigCongAlg_prem1 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ |-[ de ] tSig A B] × [Γ |-[ de ] tSig A' B'] ->
+    [Γ,, A |-[ de ] B] × [Γ,, A |-[ de ] B'].
+  Proof.
+    intros * ? [[]%sig_ty_inv []%sig_ty_inv].
+    split ; [gen_typing|..].
+    now eapply stability1.
+  Qed.
+  
+  Lemma typeSigCongAlg_concl (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ,, A |-[ de ] B ≅ B'] ->
+    [Γ |-[ de ] tSig A B] × [Γ |-[ de ] tSig A' B'] ->
+    [Γ |-[ de ] tSig A B ≅ tSig A' B'].
+  Proof.
+    intros * ?? _.
+    econstructor ; tea.
+    boundary.
+  Qed.
+
+  Lemma typeIdCongAlg_prem0 (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] tId A x y] × [Γ |-[ de ] tId A' x' y'] ->
+    [Γ |-[ de ] A] × [Γ |-[ de ] A'].
+  Proof.
+    now intros * [[]%id_ty_inv []%id_ty_inv].
+  Qed.
+  
+  Lemma typeIdCongAlg_prem1 (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ |-[ de ] tId A x y] × [Γ |-[ de ] tId A' x' y'] ->
+    [Γ |-[ de ] x : A] × [Γ |-[ de ] x' : A].
+  Proof.
+    intros * ? [[]%id_ty_inv []%id_ty_inv].
+    split ; [assumption|now econstructor].
+  Qed.
+
+  Lemma typeIdCongAlg_prem2 (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ |-[ de ] x ≅ x' : A] ->
+    [Γ |-[ de ] tId A x y] × [Γ |-[ de ] tId A' x' y'] ->
+    [Γ |-[ de ] y : A] × [Γ |-[ de ] y' : A].
+  Proof.
+    intros * ?? [[]%id_ty_inv []%id_ty_inv].
+    split ; [assumption|now econstructor].
+  Qed.
+
+  Lemma typeIdCongAlg_concl (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] A ≅ A'] ->
+    [Γ |-[ de ] x ≅ x' : A] ->
+    [Γ |-[ de ] y ≅ y' : A] ->
+    [Γ |-[ de ] tId A x y] × [Γ |-[ de ] tId A' x' y'] ->
+    [Γ |-[ de ] tId A x y ≅ tId A' x' y'].
+  Proof.
+    intros * ??? [[]%id_ty_inv []%id_ty_inv].
+    now econstructor.
+  Qed.
+
+
+  Lemma typeNeuConvAlg_prem2 (Γ : context) (M N : term) :
+    whne M -> whne N ->
+    [Γ |-[ de ] M] × [Γ |-[ de ] N] ->
+    well_typed (ta := de) Γ M × well_typed (ta := de) Γ N.
+  Proof.
+    intros * ?? [?%neutral_ty_inv ?%neutral_ty_inv] ; tea.
+    now split ; eexists.
+  Qed.
+
+  Lemma typeNeuConvAlg_concl (Γ : context) (M N T : term) :
+    whne M ->
+    whne N ->
+    [× [Γ |-[ de ] M ≅ N : T], forall T' : term, [Γ |-[ de ] M : T'] -> [Γ |-[ de ] T ≅ T']
+      & forall T' : term, [Γ |-[ de ] N : T'] -> [Γ |-[ de ] T ≅ T']] ->
+    [Γ |-[ de ] M] × [Γ |-[ de ] N] -> [Γ |-[ de ] M ≅ N].
+  Proof.
+    intros * ?? [? HM] [?%neutral_ty_inv] ; tea.
+    do 2 econstructor ; tea.
+    now eapply HM.
+  Qed.
+
+  Lemma neuVarConvAlg_concl (Γ : context) (n : nat) (decl : term) :
+    in_ctx Γ n decl ->
+    well_typed (ta := de) Γ (tRel n) × well_typed (ta := de) Γ (tRel n) ->
+    [× [Γ |-[ de ] tRel n ≅ tRel n : decl],
+      forall T : term, [Γ |-[ de ] tRel n : T] -> [Γ |-[ de ] decl ≅ T]
+      & forall T : term, [Γ |-[ de ] tRel n : T] -> [Γ |-[ de ] decl ≅ T]].
+  Proof.
+    intros * Hin [_ []].
+    split.
+    - do 2 constructor ; gen_typing.
+    - intros T Hty.
+      eapply termGen' in Hty as [? [[? [->]] ?]].
+      eapply in_ctx_inj in Hin ; tea ; subst.
+      eassumption.
+    - intros T Hty.
+      eapply termGen' in Hty as [? [[? [->]] ?]].
+      eapply in_ctx_inj in Hin ; tea ; subst.
+      eassumption.
+  Qed.
+
+  Lemma neuAppCongAlg_prem0 (Γ : context) (m n t u : term) :
+    well_typed (ta := de) Γ (tApp m t) × well_typed (ta := de) Γ (tApp n u) ->
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n.
+  Proof.
+    intros * [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    split ; now eexists.
+  Qed.
+
+  Lemma neuAppCongAlg_prem1 (Γ : context) (m n t u A B : term) :
+    [× [Γ |-[ de ] m ≅ n : tProd A B],
+      forall T : term, [Γ |-[ de ] m : T] -> [Γ |-[ de ] tProd A B ≅ T]
+      & forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tProd A B ≅ T]] ->
+    well_typed (ta := de) Γ (tApp m t) × well_typed (ta := de) Γ (tApp n u) ->
+    [Γ |-[ de ] t : A] × [Γ |-[ de ] u : A].
+  Proof.
+    intros * [? Hm Hn] [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    eapply prod_ty_inj in Hm as [] ; tea.
+    eapply prod_ty_inj in Hn as [] ; tea.
+    split ; now econstructor.
+  Qed.
+
+  Lemma neuAppCongAlg_concl (Γ : context) (m n t u A B : term) :
+    [× [Γ |-[ de ] m ≅ n : tProd A B],
+      forall T : term, [Γ |-[ de ] m : T] -> [Γ |-[ de ] tProd A B ≅ T]
+      & forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tProd A B ≅ T]] ->
+    [Γ |-[ de ] t ≅ u : A] ->
+    well_typed (ta := de) Γ (tApp m t) × well_typed (ta := de) Γ (tApp n u) ->
+    [× [Γ |-[ de ] tApp m t ≅ tApp n u : B[t..]],
+      forall T : term, [Γ |-[ de ] tApp m t : T] -> [Γ |-[ de ] B[t..] ≅ T]
+      & forall T : term, [Γ |-[ de ] tApp n u : T] -> [Γ |-[ de ] B[t..] ≅ T]].
+  Proof.
+    intros * [? Hm Hn] ? [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    split.
+    + econstructor ; gen_typing.
+    + intros ? Happ.
+      eapply termGen' in Happ as [? [(?&?&[-> Htym']) ?]].
+      eapply prod_ty_inj in Hm as [] ; tea.
+      etransitivity ; [..|eassumption].
+      eapply typing_subst1 ; tea.
+      now econstructor.
+    + intros ? Happ.
+      eapply termGen' in Happ as [? [(?&?&[-> Htym']) ?]].
+      eapply prod_ty_inj in Hn as [] ; tea.
+      etransitivity ; [..|eassumption].
+      eapply typing_subst1.
+      2: eassumption.
+      econstructor ; tea.
+      now symmetry.
+  Qed.
+
+  Lemma neuNatElimCong_prem0  (Γ : context) (n n' P P' hz hz' hs hs' : term) :
+    well_typed (ta := de) Γ (tNatElim P hz hs n) ×
+      well_typed (ta := de) Γ (tNatElim P' hz' hs' n') ->
+    well_typed (ta := de) Γ n × well_typed (ta := de) Γ n'.
+  Proof.
+    intros * [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split ; now eexists.
+  Qed.
+
+  Lemma neuNatElimCong_prem1 (Γ : context) (n n' P P' hz hz' hs hs' : term) :
+    [× [Γ |-[ de ] n ≅ n' : tNat], forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tNat ≅ T]
+      & forall T : term, [Γ |-[ de ] n' : T] -> [Γ |-[ de ] tNat ≅ T]] ->
+    well_typed (ta := de) Γ (tNatElim P hz hs n) ×
+      well_typed (ta := de) Γ (tNatElim P' hz' hs' n') ->
+    [Γ,, tNat |-[ de ] P] × [Γ,, tNat |-[ de ] P'].
+  Proof.
+    intros * [? Hn Hn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    now split.
+  Qed.
+
+  Lemma neuNatElimCong_prem2 (Γ : context) (n n' P P' hz hz' hs hs' : term) :
+    [× [Γ |-[ de ] n ≅ n' : tNat], forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tNat ≅ T]
+      & forall T : term, [Γ |-[ de ] n' : T] -> [Γ |-[ de ] tNat ≅ T]] ->
+    [Γ,, tNat |-[ de ] P ≅ P'] ->
+    well_typed (ta := de) Γ (tNatElim P hz hs n) ×
+      well_typed (ta := de) Γ (tNatElim P' hz' hs' n') ->
+    [Γ |-[ de ] hz : P[tZero..]] × [Γ |-[ de ] hz' : P[tZero..]].
+  Proof.
+    intros * [? Hn Hn'] HP [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split.
+    1: eassumption.
+    econstructor ; tea.
+    symmetry.
+    eapply typing_subst1 ; tea.
+    gen_typing.
+  Qed.
+
+  Lemma neuNatElimCong_prem3 (Γ : context) (n n' P P' hz hz' hs hs' : term) :
+    [× [Γ |-[ de ] n ≅ n' : tNat], forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tNat ≅ T]
+      & forall T : term, [Γ |-[ de ] n' : T] -> [Γ |-[ de ] tNat ≅ T]] ->
+    [Γ,, tNat |-[ de ] P ≅ P'] ->
+    [Γ |-[ de ] hz ≅ hz' : P[tZero..]] ->
+    well_typed (ta := de) Γ (tNatElim P hz hs n) ×
+      well_typed (ta := de) Γ (tNatElim P' hz' hs' n') ->
+    [Γ |-[ de ] hs : elimSuccHypTy P] × [Γ |-[ de ] hs' : elimSuccHypTy P].
+  Proof.
+    intros * [? Hn Hn'] HP _ [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split.
+    1: eassumption.
+    econstructor ; tea.
+    symmetry.
+    eapply elimSuccHypTy_conv.
+    all: gen_typing.
+  Qed.
+
+  Lemma neuNatElimCong_concl (Γ : context) (n n' P P' hz hz' hs hs' : term) :
+    [× [Γ |-[ de ] n ≅ n' : tNat], forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tNat ≅ T]
+      & forall T : term, [Γ |-[ de ] n' : T] -> [Γ |-[ de ] tNat ≅ T]] ->
+    [Γ,, tNat |-[ de ] P ≅ P'] ->
+    [Γ |-[ de ] hz ≅ hz' : P[tZero..]] ->
+    [Γ |-[ de ] hs ≅ hs' : elimSuccHypTy P] ->
+    well_typed (ta := de) Γ (tNatElim P hz hs n) ×
+      well_typed (ta := de) Γ (tNatElim P' hz' hs' n') ->
+    [× [Γ |-[ de ] tNatElim P hz hs n ≅ tNatElim P' hz' hs' n' : P[n..]],
+      forall T : term, [Γ |-[ de ] tNatElim P hz hs n : T] -> [Γ |-[ de ] P[n..] ≅ T]
+      & forall T : term, [Γ |-[ de ] tNatElim P' hz' hs' n' : T] -> [Γ |-[ de ] P[n..] ≅ T]].
+  Proof.
+    intros * [? Hn Hn'] HP ? ? [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split.
+    + now econstructor.
+    + now intros ?[? [[->]]]%termGen'.
+    + intros ?[? [[->]]]%termGen'.
+      etransitivity.
+      1: eapply typing_subst1.
+      all: eassumption.
+  Qed.
+
+  Lemma neuEmptyElimCong_prem0 (Γ : context) (P P' e e' : term) :
+    well_typed (ta := de) Γ (tEmptyElim P e) × well_typed (ta := de) Γ (tEmptyElim P' e') ->
+    well_typed (ta := de) Γ e × well_typed (ta := de) Γ e'.
+  Proof.
+    intros * [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split ; now eexists.
+  Qed.
+
+  Lemma neuEmptyElimCong_prem1 (Γ : context) (P P' e e' : term) :
+    [× [Γ |-[ de ] e ≅ e' : tEmpty], forall T : term, [Γ |-[ de ] e : T] -> [Γ |-[ de ] tEmpty ≅ T]
+      & forall T : term, [Γ |-[ de ] e' : T] -> [Γ |-[ de ] tEmpty ≅ T]] ->
+    well_typed (ta := de) Γ (tEmptyElim P e) × well_typed (ta := de) Γ (tEmptyElim P' e') ->
+    [Γ,, tEmpty |-[ de ] P] × [Γ,, tEmpty |-[ de ] P'].
+  Proof.
+    intros * [? Hn Hn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    now split.
+  Qed.
+
+  Lemma neuEmptyElimCong_concl (Γ : context) (P P' e e' : term) :
+    [× [Γ |-[ de ] e ≅ e' : tEmpty], forall T : term, [Γ |-[ de ] e : T] -> [Γ |-[ de ] tEmpty ≅ T]
+      & forall T : term, [Γ |-[ de ] e' : T] -> [Γ |-[ de ] tEmpty ≅ T]] ->
+    [Γ,, tEmpty |-[ de ] P ≅ P'] ->
+    well_typed (ta := de) Γ (tEmptyElim P e) × well_typed (ta := de) Γ (tEmptyElim P' e') ->
+    [× [Γ |-[ de ] tEmptyElim P e ≅ tEmptyElim P' e' : P[e..]],
+      forall T : term, [Γ |-[ de ] tEmptyElim P e : T] -> [Γ |-[ de ] P[e..] ≅ T]
+      & forall T : term, [Γ |-[ de ] tEmptyElim P' e' : T] -> [Γ |-[ de ] P[e..] ≅ T]].
+  Proof.
+    intros * [? Hn Hn'] HP [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split.
+    + now econstructor.
+    + now intros ?[? [[->]]]%termGen'.
+    + intros ?[? [[->]]]%termGen'.
+      etransitivity.
+      1: eapply typing_subst1.
+      all: eassumption.
+  Qed.
+
+  Lemma neuFstCongAlg_prem0 (Γ : context) (m n : term) :
+    well_typed (ta := de) Γ (tFst m) × well_typed (ta := de) Γ (tFst n) ->
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n.
+  Proof.
+    intros * [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    split ; now eexists.
+  Qed.
+
+  Lemma neuFstCongAlg_concl (Γ : context) (m n A B : term) :
+    [× [Γ |-[ de ] m ≅ n : tSig A B],
+      forall T : term, [Γ |-[ de ] m : T] -> [Γ |-[ de ] tSig A B ≅ T]
+      & forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tSig A B ≅ T]] ->
+    well_typed (ta := de) Γ (tFst m) × well_typed (ta := de) Γ (tFst n) ->
+    [× [Γ |-[ de ] tFst m ≅ tFst n : A],
+      forall T : term, [Γ |-[ de ] tFst m : T] -> [Γ |-[ de ] A ≅ T]
+      & forall T : term, [Γ |-[ de ] tFst n : T] -> [Γ |-[ de ] A ≅ T]].
+  Proof.
+    intros * [? Hm Hn] [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    split.
+    + now econstructor.
+    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
+      eapply sig_ty_inj in Hm as [].
+      2: eassumption.
+      now etransitivity.
+    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
+      eapply sig_ty_inj in Hn as [].
+      2: eassumption.
+      now etransitivity.
+  Qed.
+
+  Lemma neuSndCongAlg_prem0 (Γ : context) (m n : term) :
+    well_typed (ta := de) Γ (tSnd m) × well_typed (ta := de) Γ (tSnd n) ->
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n.
+  Proof.
+    intros * [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    split ; now eexists.
+  Qed.
+
+  Lemma neuSndCongAlg_concl  (Γ : context) (m n A B : term) :
+    [× [Γ |-[ de ] m ≅ n : tSig A B],
+      forall T : term, [Γ |-[ de ] m : T] -> [Γ |-[ de ] tSig A B ≅ T]
+      & forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] tSig A B ≅ T]] ->
+    well_typed (ta := de) Γ (tSnd m) × well_typed (ta := de) Γ (tSnd n) ->
+    [× [Γ |-[ de ] tSnd m ≅ tSnd n : B[(tFst m)..]],
+      forall T : term, [Γ |-[ de ] tSnd m : T] -> [Γ |-[ de ] B[(tFst m)..] ≅ T]
+      & forall T : term, [Γ |-[ de ] tSnd n : T] -> [Γ |-[ de ] B[(tFst m)..] ≅ T]].
+  Proof.
+    intros * [? Hm Hn] [[? (?&(?&?&[->])&?)%termGen'] [? (?&(?&?&[->])&?)%termGen']].
+    split.
+    + now econstructor.
+    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
+      eapply sig_ty_inj in Hm as [].
+      2: eassumption.
+      etransitivity; tea.
+      eapply typing_subst1; tea ; do 2 econstructor.
+      boundary.
+    + intros ? ?%termGen' ; cbn in * ; prod_hyp_splitter ; subst.
+      eapply sig_ty_inj in Hn as [].
+      2: eassumption.
+      etransitivity; tea.
+      eapply typing_subst1; tea.
+      now econstructor.
+  Qed.
+
+  Lemma neuIdElimCong_prem0 (Γ : context) (A A' x x' P P' hr hr' y y' e e' : term) :
+    well_typed (ta := de) Γ (tIdElim A x P hr y e) ×
+      well_typed (ta := de) Γ (tIdElim A' x' P' hr' y' e') ->
+    well_typed (ta := de) Γ e × well_typed (ta := de) Γ e'.
+  Proof.
+    intros * [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']].
+    split ; now eexists.
+  Qed.
+
+  Lemma neuIdElimCong_prem1 (Γ : context) (A A' A'' x x' x'' P P' hr hr' y y' y'' e e' : term) :
+    [× [Γ |-[ de ] e ≅ e' : tId A'' x'' y''],
+      forall T : term, [Γ |-[ de ] e : T] -> [Γ |-[ de ] tId A'' x'' y'' ≅ T]
+      & forall T : term, [Γ |-[ de ] e' : T] -> [Γ |-[ de ] tId A'' x'' y'' ≅ T]] ->
+    well_typed (ta := de) Γ (tIdElim A x P hr y e) ×
+      well_typed (ta := de) Γ (tIdElim A' x' P' hr' y' e') ->
+    [(Γ,, A),, tId A⟨wk1 (Γ := Γ) A⟩ x⟨wk1 (Γ := Γ) A⟩ (tRel 0) |-[ de ] P]
+    × [(Γ,, A),, tId A⟨wk1 (Γ := Γ) A⟩ x⟨wk1 (Γ := Γ) A⟩ (tRel 0) |-[ de ] P'].
+  Proof.
+    intros * [? Hn Hn'] [[Hwn Hwn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']]]%dup.
+    split.
+    1: eassumption.
+    epose proof (idElimConv Hwn Hwn') as (?&?&?&[]) ; tea.
+    1: eapply TypeRefl ; refold ; boundary.
+    1: constructor.
+    eapply stability; tea.
+    eapply idElimMotiveCtxConv; tea.
+    1: eapply ctx_refl ; boundary.
+    2: econstructor ; tea.
+    all: now symmetry.
+  Qed.
+
+  Lemma neuIdElimCong_prem2 (Γ : context) (A A' A'' x x' x'' P P' hr hr' y y' y'' e e' : term) :
+    [× [Γ |-[ de ] e ≅ e' : tId A'' x'' y''],
+      forall T : term, [Γ |-[ de ] e : T] -> [Γ |-[ de ] tId A'' x'' y'' ≅ T]
+      & forall T : term, [Γ |-[ de ] e' : T] -> [Γ |-[ de ] tId A'' x'' y'' ≅ T]] ->
+    [(Γ,, A),, tId A⟨wk1 (Γ := Γ) A⟩ x⟨wk1 (Γ := Γ) A⟩ (tRel 0) |-[ de ] P ≅ P'] ->
+    well_typed (ta := de) Γ (tIdElim A x P hr y e) ×
+      well_typed (ta := de) Γ (tIdElim A' x' P' hr' y' e') ->
+    [Γ |-[ de ] hr : P[tRefl A x .: x..]] × [Γ |-[ de ] hr' : P[tRefl A x .: x..]].
+  Proof.
+    intros * [? Hn Hn'] HP [[Hwn Hwn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']]]%dup.
+    split.
+    1: eassumption.
+    epose proof (idElimConv Hwn Hwn') as (?&?&?&[]) ; tea.
+    1: eapply TypeRefl ; refold ; boundary.
+    1: constructor.
+    econstructor ; tea.
+    symmetry.
+    eapply typing_subst2 ; tea.
+    1: boundary.
+    cbn; rewrite 2!wk1_ren_on, 2!shift_one_eq; now econstructor.
+  Qed.
+
+  Lemma neuIdElimCong_concl (Γ : context) (A A' A'' x x' x'' P P' hr hr' y y' y'' e e' : term) :
+    [× [Γ |-[ de ] e ≅ e' : tId A'' x'' y''],
+      forall T : term, [Γ |-[ de ] e : T] -> [Γ |-[ de ] tId A'' x'' y'' ≅ T]
+      & forall T : term, [Γ |-[ de ] e' : T] -> [Γ |-[ de ] tId A'' x'' y'' ≅ T]] ->
+    [(Γ,, A),, tId A⟨wk1 (Γ := Γ) A⟩ x⟨wk1 (Γ := Γ) A⟩ (tRel 0) |-[ de ] P ≅ P'] ->
+    [Γ |-[ de ] hr ≅ hr' : P[tRefl A x .: x..]] ->
+    well_typed (ta := de) Γ (tIdElim A x P hr y e) ×
+      well_typed (ta := de) Γ (tIdElim A' x' P' hr' y' e') ->
+    [× [Γ |-[ de ] tIdElim A x P hr y e ≅ tIdElim A' x' P' hr' y' e' : P[e .: y..]],
+      forall T : term, [Γ |-[ de ] tIdElim A x P hr y e : T] -> [Γ |-[ de ] P[e .: y..] ≅ T]
+      & forall T : term,
+        [Γ |-[ de ] tIdElim A' x' P' hr' y' e' : T] -> [Γ |-[ de ] P[e .: y..] ≅ T]].
+  Proof.
+    intros * [? Hn Hn'] HP Hr [[Hwn Hwn'] [[? (?&[->]&?)%termGen'] [? (?&[->]&?)%termGen']]]%dup.
+    epose proof (idElimConv Hwn Hwn') as (?&?&?&[He]) ; tea.
+    1: eapply TypeRefl ; refold ; boundary.
+    1: constructor.
+    inversion_clear He.
+    split.
+    + econstructor ; tea.
+      econstructor ; tea.
+      symmetry.
+      now econstructor.
+    + now intros ?[? [[->]]]%termGen'.
+    + intros ?[? [[->]]]%termGen'.
+      etransitivity.
+      2: eassumption.
+      eapply typing_subst2 ; tea.
+      1: boundary.
+      econstructor ; tea.
+      symmetry.
+      cbn; rewrite 2!wk1_ren_on, 2!shift_one_eq.
+      now constructor.
+  Qed.
+
+  Lemma neuConvRed_prem0 (Γ : context) (m n : term) :
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n ->
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n.
+  Proof.
+    easy.
+  Qed.
+
+  Lemma neuConvRed_concl (Γ : context) (m n A A' : term) :
+    [× [Γ |-[ de ] m ≅ n : A], forall T : term, [Γ |-[ de ] m : T] -> [Γ |-[ de ] A ≅ T]
+      & forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] A ≅ T]] ->
+    [A ⤳* A'] ->
+    whnf A' ->
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n ->
+    [× [Γ |-[ de ] m ≅ n : A'], forall T : term, [Γ |-[ de ] m : T] -> [Γ |-[ de ] A' ≅ T]
+      & forall T : term, [Γ |-[ de ] n : T] -> [Γ |-[ de ] A' ≅ T]].
+  Proof.
+    eintros * [] ?%subject_reduction_type%reddecl_conv ? [].
+    2: boundary.
+    split.
+    - now econstructor.
+    - intros.
+      etransitivity.
+      2: eauto.
+      now symmetry.
+    - intros.
+      etransitivity.
+      2: eauto.
+      now symmetry.
+  Qed.
+
+  Lemma termConvRed_prem3 (Γ : context) (t t' u u' A A' : term) :
+    [A ⤳* A'] ->
+    [t ⤳* t'] ->
+    [u ⤳* u'] ->
+    [Γ |-[ de ] t : A] × [Γ |-[ de ] u : A] -> [Γ |-[ de ] t' : A'] × [Γ |-[ de ] u' : A'].
+  Proof.
+    eintros * HA Ht Hu [].
+    eapply subject_reduction_type, reddecl_conv in HA.
+    2: boundary.
+    eapply subject_reduction in Ht ; tea.
+    eapply subject_reduction in Hu ; tea.
+    split.
+    all: econstructor ; tea.
+    all: boundary.
+  Qed.
+
+  Lemma termConvRed_concl (Γ : context) (t t' u u' A A' : term) :
+    [A ⤳* A'] ->
+    [t ⤳* t'] ->
+    [u ⤳* u'] ->
+    [Γ |-[ de ] t' ≅ u' : A'] -> [Γ |-[ de ] t : A] × [Γ |-[ de ] u : A] -> [Γ |-[ de ] t ≅ u : A].
+  Proof.
+    eintros * HA Ht Hu ? [].
+    eapply subject_reduction_type, reddecl_conv in HA.
+    2: boundary.
+    eapply subject_reduction, RedConvTeC in Ht ; tea.
+    eapply subject_reduction, RedConvTeC in Hu ; tea.
+    etransitivity ; tea.
+    etransitivity.
+    1: now econstructor.
+    now symmetry.
+  Qed.
+
+  Lemma termPiCongAlg_prem0 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] tProd A B : U] × [Γ |-[ de ] tProd A' B' : U] ->
+    [Γ |-[ de ] A : U] × [Γ |-[ de ] A' : U].
+  Proof.
+    intros * [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
+    now split.
+  Qed.
+
+  Lemma termPiCongAlg_prem1 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ |-[ de ] tProd A B : U] × [Γ |-[ de ] tProd A' B' : U] ->
+    [Γ,, A |-[ de ] B : U] × [Γ,, A |-[ de ] B' : U].
+  Proof.
+    intros * ? [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
+    split.
+    1: eassumption.
+    eapply stability1 ; tea.
+    now constructor.
+  Qed.
+
+  Lemma termPiCongAlg_concl (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ,, A |-[ de ] B ≅ B' : U] ->
+    [Γ |-[ de ] tProd A B : U] × [Γ |-[ de ] tProd A' B' : U] ->
+    [Γ |-[ de ] tProd A B ≅ tProd A' B' : U].
+  Proof.
+    intros.
+    constructor ; tea.
+    boundary.
+  Qed.
+
+  Lemma termSuccCongAlg_prem0 (Γ : context) (t t' : term) :
+    [Γ |-[ de ] tSucc t : tNat] × [Γ |-[ de ] tSucc t' : tNat] ->
+    [Γ |-[ de ] t : tNat] × [Γ |-[ de ] t' : tNat].
+  Proof.
+    now intros * [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
+  Qed.
+  
+  Lemma termSuccCongAlg_concl (Γ : context) (t t' : term) :
+    [Γ |-[ de ] t ≅ t' : tNat] ->
+    [Γ |-[ de ] tSucc t : tNat] × [Γ |-[ de ] tSucc t' : tNat] ->
+    [Γ |-[ de ] tSucc t ≅ tSucc t' : tNat].
+  Proof.
+    now constructor.
+  Qed.
+
+  Lemma termFunConvAlg_prem2 (Γ : context) (f g A B : term) :
+    whnf f ->
+    whnf g ->
+    [Γ |-[ de ] f : tProd A B] × [Γ |-[ de ] g : tProd A B] ->
+    [Γ,, A |-[ de ] tApp f⟨↑⟩ (tRel 0) : B] × [Γ,, A |-[ de ] tApp g⟨↑⟩ (tRel 0) : B].
+  Proof.
+    intros * ?? [?%typing_eta' ?%typing_eta'].
+    now split.
+  Qed.
+
+  Lemma termFunConvAlg_concl (Γ : context) (f g A B : term) :
+    whnf f ->
+    whnf g ->
+    [Γ,, A |-[ de ] tApp f⟨↑⟩ (tRel 0) ≅ tApp g⟨↑⟩ (tRel 0) : B] ->
+    [Γ |-[ de ] f : tProd A B] × [Γ |-[ de ] g : tProd A B] -> [Γ |-[ de ] f ≅ g : tProd A B].
+  Proof.
+    intros * ?? ? [].
+    etransitivity; [|now eapply TermFunEta].
+    etransitivity; [symmetry; now eapply TermFunEta|].
+    econstructor ; tea.
+    2-3: constructor.
+    all: boundary.
+  Qed.
+
+  Lemma termSigCongAlg_prem0 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] tSig A B : U] × [Γ |-[ de ] tSig A' B' : U] ->
+    [Γ |-[ de ] A : U] × [Γ |-[ de ] A' : U].
+  Proof.
+    intros * [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
+    now split.
+  Qed.
+
+  Lemma termSigCongAlg_prem1 (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ |-[ de ] tSig A B : U] × [Γ |-[ de ] tSig A' B' : U] ->
+    [Γ,, A |-[ de ] B : U] × [Γ,, A |-[ de ] B' : U].
+  Proof.
+    intros * ? [[? [[->] _]]%termGen' [? [[->] _]]%termGen'].
+    split.
+    1: eassumption.
+    eapply stability1 ; tea.
+    now constructor.
+  Qed.
+
+  Lemma termSigCongAlg_concl (Γ : context) (A B A' B' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ,, A |-[ de ] B ≅ B' : U] ->
+    [Γ |-[ de ] tSig A B : U] × [Γ |-[ de ] tSig A' B' : U] ->
+    [Γ |-[ de ] tSig A B ≅ tSig A' B' : U].
+  Proof.
+    intros.
+    constructor ; tea.
+    boundary.
+  Qed.
+
+  Lemma termPairConvAlg_prem2 (Γ : context) (p q A B : term) :
+    whnf p ->
+    whnf q ->
+    [Γ |-[ de ] p : tSig A B] × [Γ |-[ de ] q : tSig A B] ->
+    [Γ |-[ de ] tFst p : A] × [Γ |-[ de ] tFst q : A].
+  Proof.
+    intros * ?? [].
+    split.
+    all: now econstructor.
+  Qed.
+
+  Lemma termPairConvAlg_prem3 (Γ : context) (p q A B : term) :
+    whnf p ->
+    whnf q ->
+    [Γ |-[ de ] tFst p ≅ tFst q : A] ->
+    [Γ |-[ de ] p : tSig A B] × [Γ |-[ de ] q : tSig A B] ->
+    [Γ |-[ de ] tSnd p : B[(tFst p)..]] × [Γ |-[ de ] tSnd q : B[(tFst p)..]].
+  Proof.
+    intros * ?? ? [Hp ].
+    split.
+    1: now econstructor.
+    econstructor.
+    1: now econstructor.
+    eapply typing_subst1.
+    1: now symmetry.
+    constructor.
+    now eapply boundary, sig_ty_inv in Hp as [].
+  Qed.
+
+  Lemma termPairConvAlg_concl (Γ : context) (p q A B : term) :
+    whnf p ->
+    whnf q ->
+    [Γ |-[ de ] tFst p ≅ tFst q : A] ->
+    [Γ |-[ de ] tSnd p ≅ tSnd q : B[(tFst p)..]] ->
+    [Γ |-[ de ] p : tSig A B] × [Γ |-[ de ] q : tSig A B] -> [Γ |-[ de ] p ≅ q : tSig A B].
+  Proof.
+    intros * ?? ? ? [Hp].
+    etransitivity; [|now eapply TermPairEta].
+    etransitivity; [symmetry; now eapply TermPairEta|].
+    eapply boundary, sig_ty_inv in Hp as [].
+    econstructor ; tea.
+    all: constructor ; boundary.
+  Qed.
+
+  Lemma termIdCongAlg_prem0 (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] tId A x y : U] × [Γ |-[ de ] tId A' x' y' : U] ->
+    [Γ |-[ de ] A : U] × [Γ |-[ de ] A' : U].
+  Proof.
+    now intros * [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
+  Qed.
+  
+  Lemma termIdCongAlg_prem1 (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ |-[ de ] tId A x y : U] × [Γ |-[ de ] tId A' x' y' : U] ->
+    [Γ |-[ de ] x : A] × [Γ |-[ de ] x' : A].
+  Proof.
+    intros * ? [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
+    split.
+    1: assumption.
+    econstructor ; tea.
+    now constructor. 
+  Qed.
+
+  Lemma termIdCongAlg_prem2  (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ |-[ de ] x ≅ x' : A] ->
+    [Γ |-[ de ] tId A x y : U] × [Γ |-[ de ] tId A' x' y' : U] ->
+    [Γ |-[ de ] y : A] × [Γ |-[ de ] y' : A].
+  Proof.
+    intros * ?? [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
+    split.
+    1: assumption.
+    econstructor ; tea.
+    now constructor. 
+  Qed.
+
+  Lemma termIdCongAlg_concl (Γ : context) (A A' x x' y y' : term) :
+    [Γ |-[ de ] A ≅ A' : U] ->
+    [Γ |-[ de ] x ≅ x' : A] ->
+    [Γ |-[ de ] y ≅ y' : A] ->
+    [Γ |-[ de ] tId A x y : U] × [Γ |-[ de ] tId A' x' y' : U] ->
+    [Γ |-[ de ] tId A x y ≅ tId A' x' y' : U].
+  Proof.
+    intros * ??? [(?&[->]&?)%termGen' (?&[->]&?)%termGen'].
+    now econstructor.
+  Qed.
+
+  Lemma termIdReflCong_concl (Γ : context) (A A' A'' x x' y y' : term) :
+    [Γ |-[ de ] tRefl A x : tId A'' y y'] × [Γ |-[ de ] tRefl A' x' : tId A'' y y'] ->
+    [Γ |-[ de ] tRefl A x ≅ tRefl A' x' : tId A'' y y'].
+  Proof.
+    intros * [[?[[-> ??] []%id_ty_inj]]%termGen' [?[[-> ??] []%id_ty_inj]]%termGen'].
+    assert [Γ |-[de] A ≅ A'] by
+        (etransitivity ; tea ; now symmetry).
+    econstructor.
+    1: econstructor.
+    3: econstructor.
+    + eassumption. 
+    + etransitivity ; tea.
+      symmetry.
+      now econstructor.
+    + now symmetry.
+    + eassumption.
+    + eassumption.
+  Qed.
+
+  Lemma termNeuConvAlg_prem0 (Γ : context) (m n P : term) :
+    [Γ |-[ de ] m : P] × [Γ |-[ de ] n : P] ->
+    well_typed (ta := de) Γ m × well_typed (ta := de) Γ n.
+  Proof.
+    intros * [].
+    split ; now eexists.
+  Qed.
+
+  Lemma termNeuConvAlg_concl (Γ : context) (m n T P : term) :
+    [× [Γ |-[ de ] m ≅ n : T], forall T' : term, [Γ |-[ de ] m : T'] -> [Γ |-[ de ] T ≅ T']
+      & forall T' : term, [Γ |-[ de ] n : T'] -> [Γ |-[ de ] T ≅ T']] ->
+    isPosType P -> [Γ |-[ de ] m : P] × [Γ |-[ de ] n : P] -> [Γ |-[ de ] m ≅ n : P].
+  Proof.
+    intros * [] ? [].
+    now econstructor.
+  Qed.
+
+End Invariants.
 
 (** ** Induction principle for bundled algorithmic conversion *)
 

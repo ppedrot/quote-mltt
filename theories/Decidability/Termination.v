@@ -496,7 +496,8 @@ Section TypingTerminates.
 
   Lemma well_founded_lt_state : well_founded lt_state.
   Proof.
-    all: repeat (constructor ; intros [] ; cbn ; try auto).
+    intros [].
+    all: do 3 (constructor ; intros [] ; cbn ; try easy).
   Qed.
 
   #[local]Definition R_aux := lexprod term typing_state term_subterm lt_state.

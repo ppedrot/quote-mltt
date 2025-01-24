@@ -1,11 +1,5 @@
 (** * LogRel.UntypedAlgorithmicConversion: alternative definition of algorithmic conversion. *)
 
-From LogRel Require Import PremisePreserve.
-From MetaCoq.Utils Require Import bytestring.
-From MetaCoq.Template Require Import Loader.
-
-Open Scope bs.
-
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
 From LogRel Require Import Sections.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj NeutralConvProperties.
