@@ -1,8 +1,8 @@
 (** * LogRel.Decidability.UnytpedFunctions: implementation of untyped conversion. *)
 From Coq Require Import Nat Lia.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All.
 From PartialFun Require Import Monad PartialFun MonadExn.
+From LogRel Require Import Utils BasicAst AutoSubst.Extra Context.
 From LogRel.Decidability Require Import Functions.
 
 Import MonadNotations.

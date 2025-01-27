@@ -1,8 +1,7 @@
 (** * LogRel.AlgorithmicConvProperties: properties of algorithmic conversion. *)
-From LogRel Require Import Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
+From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
 From LogRel.Algorithmic Require Import BundledAlgorithmicTyping.
-From LogRel Require Import Utils.
 
 Import DeclarativeTypingProperties AlgorithmicTypingData.
 
@@ -2018,26 +2017,3 @@ Module IntermediateTypingProperties.
     GenericTypingProperties bni _ _ _ _ _ _ _ _ _ _ := {}.
 
 End IntermediateTypingProperties.
-
-(** ** Consequence: Completeness of algorithmic conversion  *)
-
-(** We use the intermediate instance derived above, and the fundamental lemma. *)
-
-Import BundledIntermediateData IntermediateTypingProperties.
-From LogRel.TypingProperties Require Import LogRelConsequences.
-
-#[local] Existing Instances TypingSubstLogRel RedCompleteLogRel TypeConstructorsInjLogRel ConvCompleteLogRel.
-
-#[deprecated(note="use the ConvComplete class instead")]Lemma algo_conv_complete Γ A B :
-  [Γ |-[de] A ≅ B] ->
-  [Γ |-[al] A ≅ B].
-Proof.
-  now eintros []%(ty_conv_compl (ta' := bni)).
-Qed.
-
-#[deprecated(note="use the ConvComplete class instead")]Lemma algo_conv_tm_complete Γ A t u :
-  [Γ |-[de] t ≅ u : A] ->
-  [Γ |-[al] t ≅ u : A].
-Proof.
-  now eintros []%(tm_conv_compl (ta' := bni)).
-Qed.
