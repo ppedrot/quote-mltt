@@ -267,7 +267,8 @@ Section UConvStr.
 End UConvStr.
 
 Section NeutralConversion.
-  Context `{!TypingSubst (ta := de)} `{!TypeConstructorsInj (ta := de)} `{!TypeReductionComplete (ta := de)}.
+  Context `{!TypingSubst (ta := de)} `{!TypeConstructorsInj (ta := de)} `{!TypeReductionComplete (ta := de)} `{!ConvComplete (ta := de) (ta' := al)}.
+
 
   Import AlgorithmicTypingData.
 
@@ -282,7 +283,7 @@ Section NeutralConversion.
   Proof.
     intros * ???? [[]%algo_conv_wh Hconv]%dup ? ; tea.
     eapply algo_conv_sound in Hconv as [[Hconv]%dup] ; tea.
-    eapply algo_conv_tm_complete, algo_conv_conv in Hconv ; cycle 1.
+    eapply tm_conv_compl, algo_conv_conv in Hconv ; cycle 1.
     - eapply ctx_refl ; boundary.
     - eassumption.
     - boundary.
@@ -654,6 +655,7 @@ Section Soundness.
     `{!TypingSubst (ta := de)}
     `{!TypeConstructorsInj (ta := de)}
     `{!TypeReductionComplete (ta := de)}
+    `{!ConvComplete (ta := de) (ta' := al)}
     `{!Normalisation (ta := de)}.
 
   Let PEq (t u : term) :=
@@ -1020,7 +1022,8 @@ Section Completeness.
   Context
     `{!TypingSubst (ta := de)}
     `{!TypeConstructorsInj (ta := de)}
-    `{!TypeReductionComplete (ta := de)}.
+    `{!TypeReductionComplete (ta := de)}
+    `{!ConvComplete (ta := de) (ta' := al)}.
 
   Lemma whne_app_inv f g :
   [tApp f⟨↑⟩ (tRel 0) ~ tApp g⟨↑⟩ (tRel 0)] ->

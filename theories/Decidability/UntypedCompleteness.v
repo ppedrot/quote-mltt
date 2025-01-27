@@ -9,18 +9,20 @@ From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
 
-Import DeclarativeTypingProperties.
+Import DeclarativeTypingProperties AlgorithmicTypingData.
 
 Section ConversionComplete.
   Context
     `{!TypingSubst (ta := de)}
     `{!TypeConstructorsInj (ta := de)}
     `{!TypeReductionComplete (ta := de)}
+    `{!ConvComplete (ta := de) (ta' := al)}
     `{!Normalisation (ta := de)}.
-  Check fixme.
   (* We are using normalisation, because we need soundness of untyped conversion,
     which is currently obtained by going through typed algo conversion, but the
-    implication untyped algo -> typed algo relies on normalisation. *)
+    implication untyped algo -> typed algo relies on normalisation.
+    If we proved soundness of untyped algorithmic conversion directly, we would
+    only need completeness. *)
 
 Let PEq (t u : term) :=
   (forall Γ, [Γ |-[de] t] × [Γ |-[de] u] -> graph _uconv (tm_state,t,u) ok) ×
