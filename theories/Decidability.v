@@ -10,6 +10,8 @@ From PartialFun Require Import Monad PartialFun MonadExn.
 Import AlgorithmicTypingProperties DeclarativeTypingProperties.
 Set Universe Polymorphism.
 
+Import IntermediateTypingProperties BundledTypingData.
+
 #[local]Existing Instance TypingSubstLogRel.
 #[local]Existing Instance RedCompleteLogRel.
 #[local]Existing Instance TypeConstructorsInjLogRel.
@@ -37,7 +39,7 @@ Next Obligation.
   intros.
   apply typing_terminates ; tea.
   - apply implem_tconv_sound.
-  - apply tconv_terminates. 
+  - now intros ; eapply tconv_terminates.
 Qed.
 Next Obligation.
   intros * e ; cbn in *.
@@ -58,7 +60,10 @@ Next Obligation.
     eapply orec_graph_functional in Hgraph ; tea.
     assert (ok = exception e0) as [=] by (etransitivity ; eassumption).
   }
+
+  change [Γ |-[de] t : T] in Hty.
   eapply (tm_compl (ta' := bn)) in Hty as [].
+
   apply typing_complete.
   1: now apply implem_conv_complete.
   constructor ; tea.

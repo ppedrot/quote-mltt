@@ -397,30 +397,16 @@ End AlgorithmicTypingProperties.
 
 (** ** Consequences *)
 
-Import AlgorithmicTypingProperties.
-
-(** *** Completeness of algorithmic typing *)
-
-Import BundledTypingData AlgorithmicTypingProperties.
-
-From LogRel.TypingProperties Require Import LogRelConsequences.
-#[local] Existing Instances TypingSubstLogRel RedCompleteLogRel TypeConstructorsInjLogRel ConvCompleteLogRel TypingCompleteLogRel.
-
-#[deprecated(note="use the TypingComplete class instead")]Corollary algo_typing_complete Γ A t :
-  [Γ |-[de] t : A] ->
-  [Γ |-[bn] t : A].
-Proof.
-  now eintros ?%(tm_compl (ta' := bn)).
-Qed.
+Import AlgorithmicTypingData AlgorithmicTypingProperties.
 
 (** *** Uniqueness of types *)
 
-Lemma type_uniqueness Γ A A' t :
+Lemma type_uniqueness `{! TypingComplete (ta := de) (ta' := bn)} Γ A A' t :
   [Γ |-[de] t : A] ->
   [Γ |-[de] t : A'] ->
   [Γ |-[de] A ≅ A'].
 Proof.
-  intros [?? Hinf]%algo_typing_complete [?? Hinf']%algo_typing_complete.
+  intros [?? Hinf]%tm_compl [?? Hinf']%tm_compl.
   eapply algo_typing_det in Hinf.
   2: eassumption.
   subst.
