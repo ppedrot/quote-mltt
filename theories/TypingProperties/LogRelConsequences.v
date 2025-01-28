@@ -4,6 +4,7 @@ From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProp
 
 From LogRel Require Import LogicalRelation Fundamental.
 From LogRel.LogicalRelation Require Import Escape Irrelevance Transitivity Neutral Induction NormalRed.
+From LogRel.LogicalRelation.Introductions Require Import Poly.
 From LogRel.Validity Require Import Validity Escape Poly Irrelevance.
 
 (** ** Stability of typing under substitution *)
