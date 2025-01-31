@@ -1,7 +1,7 @@
 (** * LogRel.LogicalRelation.InstKripke: combinators to instantiate Kripke-style quantifications *)
 From Coq Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
-From LogRel.LogicalRelation Require Import Induction  Escape Reflexivity Neutral Weakening Irrelevance Application Reduction Transitivity NormalRed EqRedRight.
+From LogRel.LogicalRelation Require Import Induction  Escape Reflexivity Neutral Weakening Irrelevance Reduction Transitivity NormalRed EqRedRight.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.

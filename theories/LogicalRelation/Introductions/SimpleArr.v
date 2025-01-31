@@ -1,5 +1,6 @@
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Irrelevance Weakening Neutral Escape Reflexivity NormalRed Reduction Transitivity Application.
+From LogRel.LogicalRelation.Introductions Require Import Poly Pi.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
@@ -24,14 +25,8 @@ Section SimpleArrow.
 
   Lemma ArrRedTy0 {Γ l A B} : [Γ ||-<l> A] -> [Γ ||-<l> B] -> [Γ ||-Π<l> arr A B].
   Proof.
-    intros RA RB; escape.
-    unshelve econstructor; [exact A| exact B⟨↑⟩|..]; tea.
-    - eapply redtywf_refl.
-      now eapply wft_simple_arr.
-    - now unshelve eapply escapeEq, reflLRTyEq.
-    - eapply convty_simple_arr; tea.
-      all: now unshelve eapply escapeEq, reflLRTyEq.
-    - now eapply shiftPolyRed.
+    intros RA RB.
+    now apply LRPiPoly0, shiftPolyRed.
   Qed.
 
   Lemma ArrRedTy {Γ l A B} : [Γ ||-<l> A] -> [Γ ||-<l> B] -> [Γ ||-<l> arr A B].
