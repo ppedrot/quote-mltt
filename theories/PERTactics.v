@@ -168,15 +168,15 @@ End UF.
 
 Module PER.
 
-Ltac2 lrfl c := constr:(lrefl $c).
-Ltac2 urfl c := constr:(urefl $c).
-Ltac2 trans c1 c2 := constr:(transitivity $c1 $c2).
-Ltac2 symm c := constr:(symmetry $c).
+Ltac2 lrfl c := preterm:(lrefl $preterm:c).
+Ltac2 urfl c := preterm:(urefl $preterm:c).
+Ltac2 trans c1 c2 := preterm:(transitivity $preterm:c1 $preterm:c2).
+Ltac2 symm c := preterm:(symmetry $preterm:c).
 
 Ltac2 Type st := {
   mutable pts_id_bimap : (ident, UF.elt) BiMap.t ;
-  mutable id_qrefl : (ident, constr) FMap.t ;
-  mutable id_to_wits : (UF.witness, constr) FMap.t ;
+  mutable id_qrefl : (ident, preterm) FMap.t ;
+  mutable id_to_wits : (UF.witness, preterm) FMap.t ;
   st : UF.st ;
 }.
 
@@ -186,11 +186,11 @@ Ltac2 id_of_pt (x : st) (h : ident) : UF.elt :=
 Ltac2 pt_of_id (x : st) (pt : UF.elt) : ident :=
   BiMap.assoc_inv_dflt Int.equal (@foo) pt (x.(pts_id_bimap)).
 
-Ltac2 qrefl_of_id (x : st) (i : UF.witness) : constr :=
-  Option.default (constr:(I)) (FMap.find_opt i (x.(id_to_wits))).
+Ltac2 qrefl_of_id (x : st) (i : UF.witness) : preterm :=
+  Option.get (FMap.find_opt i (x.(id_to_wits))).
 
-Ltac2 witness_of_id (x : st) (i : UF.witness) : constr :=
-  Option.default (constr:(I)) (FMap.find_opt i (x.(id_to_wits))).
+Ltac2 witness_of_id (x : st) (i : UF.witness) : preterm :=
+  Option.get (FMap.find_opt i (x.(id_to_wits))).
 
 Ltac2 make n := {
   pts_id_bimap := BiMap.empty ;
@@ -216,7 +216,7 @@ Ltac2 add_pt_cstr (x : st) (c : constr) : ident :=
     h
   end.
 
-Ltac2 add_qrefl (x : st) (h : ident) (pf : constr) :=
+Ltac2 add_qrefl (x : st) (h : ident) (pf : preterm) :=
   if FMap.mem h (x.(id_qrefl)) then () else x.(id_qrefl) := FMap.add h pf (x.(id_qrefl)).
 
 
@@ -257,7 +257,9 @@ Ltac2 get_witness (x : st) h1 h2 :=
   match BiMap.assoc Ident.equal h1 (x.(pts_id_bimap)),
     BiMap.assoc Ident.equal h2 (x.(pts_id_bimap)) with
   | Some k1, Some k2 =>
-    Option.map (build_witness x h1) (UF.conv (x.(st)) k1 k2)
+    let postprocess w := Constr.pretype (build_witness x h1 w) in
+    Option.map postprocess (UF.conv (x.(st)) k1 k2)
+    (* Option.map postprocess (Control.time (Some "Conv:") (fun () => UF.conv (x.(st)) k1 k2)) *)
   | _, _ => None
   end.
 
@@ -266,12 +268,12 @@ Ltac2 get_witness_cstr st (cx, cy) :=
     Option.bind (get_pt_cstr st cy) (fun hy =>
       get_witness st hx hy)).
 
-Ltac2 repr (x : st) (c : constr) : (constr * constr) option :=
+Ltac2 repr (x : st) (c : constr) : (constr * preterm) option :=
   Option.bind (get_pt_cstr x c) (fun h =>
     let (hr, w) := UF.root (x.(st)) (id_of_pt x h) in
     Some (Control.hyp (pt_of_id x hr), build_witness x h w)).
 
-Ltac2 add_rel (st : st) (f : ident  -> constr -> (constr * constr * constr) list)  (hyp : ident * constr option * constr) : unit :=
+Ltac2 add_rel (st : st) (f : ident  -> constr -> (constr * constr * preterm) list)  (hyp : ident * constr option * constr) : unit :=
   let (hpf, _, c) := hyp in
   List.iter (fun (a,b, pf) => add_witness st a b pf) (f hpf c).
 
@@ -292,7 +294,7 @@ Ltac2 solve_with extractor matcher n :=
   end.
 
 Ltac2 lift_matcher matcher h c :=
-  match matcher c with | None => [] | Some (cx, cy) => [cx, cy, Control.hyp h] end.
+  match matcher c with | None => [] | Some (cx, cy) => [cx, cy, let c := Control.hyp h in preterm:($c)] end.
 
 Ltac2 solve0 n :=
   match! goal with
