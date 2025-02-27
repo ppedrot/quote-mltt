@@ -186,8 +186,8 @@ Ltac2 id_of_pt (x : st) (h : ident) : UF.elt :=
 Ltac2 pt_of_id (x : st) (pt : UF.elt) : ident :=
   BiMap.assoc_inv_dflt Int.equal (@foo) pt (x.(pts_id_bimap)).
 
-Ltac2 qrefl_of_id (x : st) (i : UF.witness) : preterm :=
-  Option.get (FMap.find_opt i (x.(id_to_wits))).
+(* Ltac2 qrefl_of_id (x : st) (i : ident) : preterm :=
+  Option.get (FMap.find_opt i (x.(id_qrefl))). *)
 
 Ltac2 witness_of_id (x : st) (i : UF.witness) : preterm :=
   Option.get (FMap.find_opt i (x.(id_to_wits))).
@@ -272,6 +272,10 @@ Ltac2 repr (x : st) (c : constr) : (constr * preterm) option :=
   Option.bind (get_pt_cstr x c) (fun h =>
     let (hr, w) := UF.root (x.(st)) (id_of_pt x h) in
     Some (Control.hyp (pt_of_id x hr), build_witness x h w)).
+
+Ltac2 qrefl st (c : constr) :=
+  Option.map Constr.pretype (Option.bind (get_pt_cstr st c) (fun i =>
+    FMap.find_opt i (st.(id_qrefl)))).
 
 Ltac2 add_rel (st : st) (f : ident  -> constr -> (constr * constr * preterm) list)  (hyp : ident * constr option * constr) : unit :=
   let (hpf, _, c) := hyp in

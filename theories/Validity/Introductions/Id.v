@@ -222,15 +222,10 @@ Context `{GenericTypingProperties}.
       1: now eapply lrefl.
       eapply substIdElimMotive.
       2: eapply lrefl, irrValidTy; tea; now eapply lrefl.
-      3: eapply reflValid.
-      all: try irrValid.
-      Unshelve. 5: irrValid.
-      3: unfold idElimMotiveCtxEqStmt; unshelve eapply validSnoc; [|now eapply lrefl, validSnoc|].
-      3: eapply irrValidTyRfl, idElimMotiveCtxIdValid.
-      2: tea.
       1,2: irrValid.
-      eapply IdValid; irrValid.
-      Unshelve. all: irrValid.
+      eapply reflValid; irrValid.
+      Unshelve. 1,3,4: irrValid.
+      unfold idElimMotiveCtxEqStmt; irrValid.
   Qed.
 
 End Id.

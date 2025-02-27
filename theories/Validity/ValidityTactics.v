@@ -95,24 +95,60 @@ Ltac2 valid_tm_rel st h c :=
 Ltac2 fail s := Control.throw (Tactic_failure (Some (Message.of_string s))).
 
 Ltac2 solve_ctx st g g' :=
-  match PER.get_witness_cstr st (g, g') with
+  let witness := match Constr.is_evar g, Constr.is_evar g' with
+    | true, true => fail "Only evars"
+    | true, false => Std.unify g g' ; PER.qrefl st g'
+    | false, true => Std.unify g g' ; PER.qrefl st g
+    | false, false => PER.get_witness_cstr st (g, g')
+  end in
+  match witness with
   | Some w => Control.refine (fun _ => w)
   | None => fail "Contexts are not convertibles"
   end.
 
-Ltac2 solve_ty st g _g' vg _l a a' :=
-  let (g0, wgg0) := Option.get_bt (PER.repr st g) in
-  match PER.get_witness_cstr st (pair g0 a, pair g0 a') with
+Ltac2 solve_ty st g g' vg _l a a' :=
+  match Constr.is_evar g, Constr.is_evar g' with
+    | true, true => fail "Only evars (context)"
+    | true, false => Std.unify g g'
+    | false, true => Std.unify g g'
+    | false, false => ()
+  end ;
+  let (g0, wgg0) := Option.get (PER.repr st g) in
+  let witness := match Constr.is_evar a, Constr.is_evar a' with
+    | true, true => fail "Only evars (types)"
+    | true, false => Std.unify a a' ; PER.qrefl st (pair g0 a')
+    | false, true => Std.unify a a' ; PER.qrefl st (pair g0 a)
+    | false, false => PER.get_witness_cstr st (pair g0 a, pair g0 a')
+  end in
+  match witness with
   | Some w =>
     let wgg0 := Constr.pretype wgg0 in
     Control.refine (fun _ => constr:(irrValidTy (VΓ1:=$vg) (symmetry $wgg0) (dsnd $w)))
   | None => fail "Types are not convertibles"
   end.
 
-Ltac2 solve_tm st g _g' vg a _a' va _l t t' :=
+Ltac2 solve_tm st g g' vg a a' va _l t t' :=
+  match Constr.is_evar g, Constr.is_evar g' with
+    | true, true => fail "Only evars (context)"
+    | true, false => Std.unify g g'
+    | false, true => Std.unify g g'
+    | false, false => ()
+  end ;
   let (g0, wgg0) := Option.get_bt (PER.repr st g) in
+  match Constr.is_evar a, Constr.is_evar a' with
+    | true, true => fail "Only evars (types)"
+    | true, false => Std.unify a a'
+    | false, true => Std.unify a a'
+    | false, false => ()
+  end ;
   let (ga0, waa0) := Option.get_bt (PER.repr st (pair g0 a)) in
-  match PER.get_witness_cstr st (pair ga0 t, pair ga0 t') with
+  let witness := match Constr.is_evar t, Constr.is_evar t' with
+    | true, true => fail "Only evars (types)"
+    | true, false => Std.unify t t' ; PER.qrefl st (pair ga0 t')
+    | false, true => Std.unify t t' ; PER.qrefl st (pair ga0 t)
+    | false, false => PER.get_witness_cstr st (pair ga0 t, pair ga0 t')
+  end in
+  match witness with
   | Some w =>
     let waa0 := Constr.pretype waa0 in
     let wgg0 := Constr.pretype wgg0 in

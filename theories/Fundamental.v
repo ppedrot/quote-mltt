@@ -392,9 +392,7 @@ Section Fundamental.
   Proof.
     intros * [? VP0] [VΓ0] [] []; opector; tea.
     1: unshelve (eapply lrefl, substS; irrValid); eapply natValid.
-    eapply irrValidTm.
-    2: unshelve (eapply natElimCongValid; try irrValid).
-    Unshelve.  all: first [exact Γ| exact one| eassumption| irrValid].
+    unshelve (eapply irrValidTm; [|eapply natElimCongValid]; irrValid); irrValid.
   Qed.
 
   Lemma FundTmEqNatElimZero : forall (Γ : context) (P hz hs : term),
