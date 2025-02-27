@@ -102,7 +102,7 @@ Ltac2 solve_ctx st g g' :=
     | false, false => PER.get_witness_cstr st (g, g')
   end in
   match witness with
-  | Some w => Control.refine (fun _ => w)
+  | Some w => Control.refine (fun _ => Constr.pretype w)
   | None => fail "Contexts are not convertibles"
   end.
 
@@ -122,8 +122,7 @@ Ltac2 solve_ty st g g' vg _l a a' :=
   end in
   match witness with
   | Some w =>
-    let wgg0 := Constr.pretype wgg0 in
-    Control.refine (fun _ => constr:(irrValidTy (VΓ1:=$vg) (symmetry $wgg0) (dsnd $w)))
+    Control.refine (fun _ => Constr.pretype preterm:(irrValidTy (VΓ1:=$vg) (symmetry $preterm:wgg0) (dsnd $preterm:w)))
   | None => fail "Types are not convertibles"
   end.
 
@@ -134,14 +133,14 @@ Ltac2 solve_tm st g g' vg a a' va _l t t' :=
     | false, true => Std.unify g g'
     | false, false => ()
   end ;
-  let (g0, wgg0) := Option.get_bt (PER.repr st g) in
+  let (g0, wgg0) := Option.get (PER.repr st g) in
   match Constr.is_evar a, Constr.is_evar a' with
     | true, true => fail "Only evars (types)"
     | true, false => Std.unify a a'
     | false, true => Std.unify a a'
     | false, false => ()
   end ;
-  let (ga0, waa0) := Option.get_bt (PER.repr st (pair g0 a)) in
+  let (ga0, waa0) := Option.get (PER.repr st (pair g0 a)) in
   let witness := match Constr.is_evar t, Constr.is_evar t' with
     | true, true => fail "Only evars (types)"
     | true, false => Std.unify t t' ; PER.qrefl st (pair ga0 t')
@@ -150,20 +149,27 @@ Ltac2 solve_tm st g g' vg a a' va _l t t' :=
   end in
   match witness with
   | Some w =>
-    let waa0 := Constr.pretype waa0 in
-    let wgg0 := Constr.pretype wgg0 in
     Control.refine (fun _ =>
-      constr:(
-        let va0a := convValidTy _ (symmetry $wgg0) (dsnd (symmetry $waa0)) in
-        irrValidTm (VΓ1:=$vg) (symmetry $wgg0) _ $va va0a (dsnd $w)))
+      Constr.pretype preterm:(
+        let va0a := convValidTy _ (symmetry $preterm:wgg0) (dsnd (symmetry $preterm:waa0)) in
+        irrValidTm (VΓ1:=$vg) (symmetry $preterm:wgg0) _ $va va0a (dsnd $preterm:w)))
   | None => fail "Terms are not convertibles"
   end.
 
-Ltac2 solve_any st g :=
+Ltac2 solve_any get_st g :=
   lazy_match! g with
-  | VAdequate VR ?g ?g' => solve_ctx st g g'
-  | typeValidity ?g ?g' (VAd.pack ?vg) ?l ?a ?a' => solve_ty st g g' vg l a a'
-  | termEqValidity ?g ?g' ?l ?a ?a' ?vg ?va ?t ?t' => solve_tm st g g' vg a a' va l t t'
+  | VAdequate VR ?g ?g' =>
+    let st := get_st () in
+    solve_ctx st g g'
+    (* Control.time (Some "solveCtx:") (fun () => solve_ctx st g g') *)
+  | typeValidity ?g ?g' (VAd.pack ?vg) ?l ?a ?a' =>
+    let st := get_st () in
+    solve_ty st g g' vg l a a'
+    (* Control.time (Some "solveTy:") (fun () => solve_ty st g g' vg l a a') *)
+  | termEqValidity ?g ?g' ?l ?a ?a' ?vg ?va ?t ?t' =>
+    let st := get_st () in
+    solve_tm st g g' vg a a' va l t t'
+    (* Control.time (Some "solveTm:") (fun () => solve_tm st g g' vg a a' va l t t') *)
   | _ => fail "Term does not match"
   end.
 
@@ -173,7 +179,8 @@ Ltac2 init n :=
   List.iter (PER.add_rel st (valid_ty_rel st)) (Control.hyps ()) ;
   List.iter (PER.add_rel st (valid_tm_rel st)) (Control.hyps ()) ; st.
 
-Ltac2 irrValid () := let st := init 42 in solve_any st (Control.goal ()).
+Ltac2 irrValid () :=
+  solve_any (fun () => init 42) (Control.goal ()).
 
 Ltac irrValid := ltac2:(Control.enter irrValid).
 

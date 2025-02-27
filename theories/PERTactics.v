@@ -257,7 +257,7 @@ Ltac2 get_witness (x : st) h1 h2 :=
   match BiMap.assoc Ident.equal h1 (x.(pts_id_bimap)),
     BiMap.assoc Ident.equal h2 (x.(pts_id_bimap)) with
   | Some k1, Some k2 =>
-    let postprocess w := Constr.pretype (build_witness x h1 w) in
+    let postprocess w := (* Constr.pretype *) (build_witness x h1 w) in
     Option.map postprocess (UF.conv (x.(st)) k1 k2)
     (* Option.map postprocess (Control.time (Some "Conv:") (fun () => UF.conv (x.(st)) k1 k2)) *)
   | _, _ => None
@@ -274,7 +274,7 @@ Ltac2 repr (x : st) (c : constr) : (constr * preterm) option :=
     Some (Control.hyp (pt_of_id x hr), build_witness x h w)).
 
 Ltac2 qrefl st (c : constr) :=
-  Option.map Constr.pretype (Option.bind (get_pt_cstr st c) (fun i =>
+  (* Option.map Constr.pretype *) (Option.bind (get_pt_cstr st c) (fun i =>
     FMap.find_opt i (st.(id_qrefl)))).
 
 Ltac2 add_rel (st : st) (f : ident  -> constr -> (constr * constr * preterm) list)  (hyp : ident * constr option * constr) : unit :=
@@ -284,7 +284,7 @@ Ltac2 add_rel (st : st) (f : ident  -> constr -> (constr * constr * preterm) lis
 Ltac2 init_with extractor (n : int) : constr * constr -> constr option :=
   let st := make n in
   List.iter (add_rel st extractor) (Control.hyps ()) ;
-  get_witness_cstr st.
+  fun cs => Option.map Constr.pretype (get_witness_cstr st cs).
 
 Ltac2 solve_with extractor matcher n :=
   let solver := init_with extractor n in
