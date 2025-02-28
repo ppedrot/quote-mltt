@@ -73,7 +73,6 @@ End FundTmEq.
 Export FundTmEq(FundTmEq,Build_FundTmEq).
 
 
-(* TODO: Unused ? *)
 Module FundSubst.
   Record FundSubst `{GenericTypingProperties}
     {Γ Δ : context} {wfΓ : [|- Γ]} {σ : nat -> term}
@@ -86,7 +85,6 @@ End FundSubst.
 
 Export FundSubst(FundSubst,Build_FundSubst).
 
-(* TODO: Unused ? *)
 Module FundSubstConv.
   Record FundSubstConv `{GenericTypingProperties}
     {Γ Δ : context} {wfΓ : [|- Γ]} {σ σ' : nat -> term}
@@ -246,7 +244,7 @@ Section Fundamental.
     intros * [] [] [].
     (* assert (VA' : [Γ ||-v<one> A | VΓ]) by now eapply univValid. *)
     assert (VAB : [Γ ||-v<one> A ≅ B | VΓ ]) by now unshelve (eapply univValid; irrValid).
-    econstructor. eapply PiCongTm; tea; irrValid.
+    econstructor. eapply PiValidU; tea; irrValid.
     Unshelve. all: irrValid.
   Qed.
 
@@ -330,7 +328,7 @@ Section Fundamental.
   Lemma FundTmNat : forall Γ : context, FundCon Γ -> FundTm Γ U tNat.
   Proof.
     intros ??; unshelve econstructor; tea.
-    2: eapply natTermValid.
+    2: eapply natValidU.
   Qed.
 
   Lemma FundTmZero : forall Γ : context, FundCon Γ -> FundTm Γ tNat tZero.
@@ -364,7 +362,7 @@ Section Fundamental.
   Lemma FundTmEmpty : forall Γ : context, FundCon Γ -> FundTm Γ U tEmpty.
   Proof.
     intros ??; unshelve econstructor; tea.
-    2: eapply emptyTermValid.
+    2: eapply emptyValidU.
   Qed.
 
   Lemma FundTmEmptyElim : forall (Γ : context) (P n : term),
@@ -445,7 +443,7 @@ Section Fundamental.
     FundTm (Γ,, A) U B -> FundTm Γ U (tSig A B).
   Proof.
     intros * [] []; unshelve econstructor.
-    3:eapply SigCongValidU; irrValid.
+    3:eapply SigValidU; irrValid.
     tea.
     Unshelve. 1: now eapply univValid. irrValid.
   Qed.
@@ -496,7 +494,7 @@ Section Fundamental.
     FundTmEq (Γ,, A) U B B' -> FundTmEq Γ U (tSig A B) (tSig A' B').
   Proof.
     intros * [] [] []; unshelve econstructor.
-    3: eapply SigCongValidU ; tea; try irrValid.
+    3: eapply SigValidU ; tea; try irrValid.
     tea.
     Unshelve.
     + unshelve (eapply univValid; irrValid); irrValid.

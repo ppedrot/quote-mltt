@@ -1,6 +1,6 @@
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import  Properties Introductions.Application.
-From LogRel.Validity Require Import Validity Irrelevance Properties Pi.
+From LogRel.Validity Require Import Validity Irrelevance Properties Pi ValidityTactics.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
@@ -34,9 +34,8 @@ Lemma appcongValid' {Γ Γ' F F' G G' C C' t u a b l}
   [Γ ||-v<l> tApp t a ≅ tApp u b : C | VΓ | VC].
 Proof.
   eapply irrValidTm, appcongValid; tea.
-  (* TODO: apply per irrelevance tactics *)
-  rewrite <-eqC; eapply lrefl; eapply irrValidTy; tea; now eapply lrefl.
-  Unshelve. 1: now eapply lrefl. tea.
+  rewrite <-eqC; irrValid.
+  Unshelve. all: irrValid.
 Qed.
 
 Lemma appValid {Γ F G t u l}

@@ -67,11 +67,6 @@ Context `{GenericTypingProperties}.
     erewrite wk1_irr; now eapply wk1ValidTm.
   Qed.
 
-  (* Lemma idElimMotiveCtxIdCongValid {Γ Γ' l A A' x x'}
-    (VΓ : [||-v Γ ≅ Γ'])
-    (VA : [_ ||-v<l> A ≅ A' | VΓ | VA])
-    (Vxx' : [_ ||-v<l> x ≅ x' : _ | _ | VA])
-    [_ ||-v<l> _ ≅ tId A'⟨@wk1 Γ A'⟩ x'⟨@wk1 Γ A'⟩ (tRel 0) | validSnoc VΓ VA | VId]. *)
 
   Definition idElimMotiveCtxEqStmt Γ Γ' A A' x x' :=
     [||-v (Γ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0)) ≅ (Γ',, A' ,, tId A'⟨@wk1 Γ' A'⟩ x'⟨@wk1 Γ' A'⟩ (tRel 0))].

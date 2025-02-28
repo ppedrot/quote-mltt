@@ -457,6 +457,3 @@ Proof. now asimpl. Qed.
 
 Lemma liftSubstComm Γ F G t σ : G[t]⇑[σ] = G[t[σ] .: @wk1 Γ F >> σ].
 Proof. now bsimpl. Qed.
-
-
-(* TODO: where should these go ? They don't have anything to do with Weakenings *)

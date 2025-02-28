@@ -1,4 +1,5 @@
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation LogicalRelation.Properties.
+From Equations Require Import Equations.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -158,15 +159,6 @@ Section MoreDefs.
     : [||-v Γ ,, A ≅ Γ' ,, A'] :=
     Build_VAdequate (snocVPack Γ Γ' VΓ A A' l VA) (VRSnoc VΓ VΓ VA).
 
-  (* Definition typeEqValidity@{i j k l} {Γ l} {A B : term}
-    {VΓ : [VR@{i j k l}| ||-v Γ]}
-    {VA : typeValidity@{k i j k l} Γ VΓ l A (*[Γ ||-v<l> A |VΓ]*)} : Type :=
-    {
-      validTyEq : forall {Δ} (wfΔ : [|- Δ])
-        {σ σ'} (Vσσ' : [Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ]),
-        [Δ ||-<l> A[σ] ≅ B[σ'] | validTy VA wfΔ Vσσ']
-    }. *)
-
   Record termEqValidity@{i j k l} {Γ Γ' l} {A A' : term}
     {VΓ : [VR@{i j k l}| ||-v Γ ≅ Γ']}
     {VA : typeValidity@{k i j k l} Γ Γ' VΓ l A A' (*[Γ ||-v<l> A |VΓ]*)} {t u} : Type :=
@@ -176,28 +168,10 @@ Section MoreDefs.
         [Δ ||-<l> t[σ] ≅ u[σ'] : A[σ] | validTyExt VA wfΔ Vσσ']
     }.
 
-  #[deprecated(note="use termEqValidity")]
-  Definition termValidity {Γ l} {t A : term}
-    {VΓ : [VR| ||-v Γ]}
-    {VA : typeValidity Γ _ VΓ l A A (*[Γ ||-v<l> A |VΓ]*)} : Type :=
-    @termEqValidity Γ _ l A A VΓ VA t t.
-
-  #[deprecated(note="use validTmExt")]
-  Definition validTmEq {Γ l} {t A : term}
-    {VΓ : [VR| ||-v Γ]}
-    {VA : typeValidity Γ _ VΓ l A A (*[Γ ||-v<l> A |VΓ]*)}
-    (Vt : @termValidity Γ l t A VΓ VA)
-   : forall {Δ : context} (wfΔ : [|- Δ ]) {σ σ' : nat -> term}
-        (Vσσ' : [ Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ ]),
-        [Δ ||-<l> t[σ] ≅ t[σ'] : A[σ] | validTyExt VA wfΔ Vσσ' ] :=
-      fun _ =>  Vt.(validTmExt).
-
 
   Record tmEqValidity {Γ Γ' l} {t t' A A' : term} {VΓ : [||-v Γ ≅ Γ']} : Type :=
     {
       Vty  : [Γ ||-v< l > A ≅ A' | VΓ] ;
-      (* Vlhs : @termValidity Γ l t A VΓ Vty ;
-      Vrhs : @termValidity Γ l u A VΓ Vty ; *)
       Veq  : @termEqValidity Γ Γ' l A A' VΓ Vty t t'
     }.
 
@@ -207,11 +181,6 @@ Section MoreDefs.
         [Δ |- t[σ] ⤳* u[σ] : A[σ]]
     }.
 End MoreDefs.
-
-Arguments termValidity : clear implicits.
-Arguments termValidity {_ _ _ _ _ _ _ _ _}.
-(* Arguments Build_termValidity {_ _ _ _ _ _ _ _ _}. *)
-
 
 Arguments termEqValidity : clear implicits.
 Arguments termEqValidity {_ _ _ _ _ _ _ _ _}.
@@ -228,7 +197,6 @@ Arguments Build_redValidity {_ _ _ _ _ _ _ _ _}.
 Notation "[ Γ ||-v< l > t : A | VΓ | VA ]"     := (termEqValidity Γ _ l A _ VΓ VA t t) (at level 0, Γ, l, t, A, VΓ, VA at level 50).
 Notation "[ Γ ||-v< l > t ≅ u : A | VΓ | VA ]" := (termEqValidity Γ _ l A _ VΓ VA t u) (at level 0, Γ, l, t, u, A, VΓ, VA at level 50).
 Notation "[ Γ ||-v< l > t ≅ u : A | VΓ ]"      := (tmEqValidity Γ _ l t u A _ VΓ) (at level 0, Γ, l, t, u, A, VΓ at level 50).
-(* Notation "[ Γ ||-v t :⤳*: u : A | VΓ ]"      := (redValidity Γ t u A VΓ) (at level 0, Γ, t, u, A, VΓ at level 50). *)
 Notation "[ Γ ||-v t ⤳* u : A | VΓ ]"      := (redValidity Γ _ t u A VΓ) (at level 0, Γ, t, u, A, VΓ at level 50).
 
 Section Inductions.
@@ -258,11 +226,9 @@ Section Inductions.
   Defined.
 
   Import EqNotations.
-  From Equations Require Import Equations.
-  Derive NoConfusion EqDec for sort.
-  Derive NoConfusion EqDec for term.
 
-  Example check_uip_context : UIP context. Proof. typeclasses eauto. Qed.
+
+  (* Example check_uip_context : UIP context. Proof. typeclasses eauto. Qed. *)
 
   Lemma invValidity {Γ Γ'} (VΓ : [||-v Γ ≅ Γ']) :
     match Γ as Γ return forall Γ', [||-v Γ ≅ Γ'] -> Type with

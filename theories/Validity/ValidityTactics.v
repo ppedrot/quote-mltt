@@ -13,7 +13,7 @@ Instance packed_valid_tyPER `{GenericTypingProperties} l : PER (packed_valid_ty 
   packed_ciper_per.
 
 Definition mkVty `{GenericTypingProperties} {l Γ Γ' A A'} {VΓ : [||-v Γ ≅ Γ']} (VA : [_ ||-v<l> A ≅ A' | VΓ]) :
-  packed_valid_ty l ⟪Γ, A⟫  ⟪Γ', A'⟫ := ⦇ VΓ ; VA ⦈.
+  packed_valid_ty l (& Γ, A)  (& Γ', A') := (& VΓ ; VA ).
 
 
 Definition packed_valid_tm `{GenericTypingProperties} l :=
@@ -30,13 +30,12 @@ Defined.
 Instance packed_valid_tmPER `{GenericTypingProperties} l : PER (packed_valid_tm l) :=
   packed_ciper_per.
 
-
 Definition mkVtm `{GenericTypingProperties} {l Γ Γ' A A' t t'} {VΓ : [||-v Γ ≅ Γ']} {VA : [_ ||-v<l> A ≅ A' | VΓ]} (Vt : [_ ||-v<l> t ≅ t' : _ | VΓ | VA]) :
-  packed_valid_tm l ⟪⟪ Γ, A⟫, t⟫ ⟪⟪ Γ', A'⟫, t'⟫ := ⦇ mkVty VA; Vt ⦈.
+  packed_valid_tm l (&(& Γ, A), t) (&(& Γ', A'), t') := (& mkVty VA; Vt ).
 
 Ltac2 mkvty c := preterm:(mkVty $preterm:c).
 Ltac2 mkvtm c := preterm:(mkVtm $preterm:c).
-Ltac2 pair a b := constr:(⟪$a, $b⟫).
+Ltac2 pair a b := constr:((& $a, $b)).
 
 
 Ltac2 pose_proof c :=

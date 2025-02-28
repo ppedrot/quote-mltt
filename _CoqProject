@@ -65,6 +65,9 @@ theories/LogicalRelation/Introductions/Poly.v
 theories/LogicalRelation/Introductions/Pi.v
 theories/LogicalRelation/Introductions/Application.v
 theories/LogicalRelation/Introductions/SimpleArr.v
+theories/LogicalRelation/Introductions/Nat.v
+theories/LogicalRelation/Introductions/Empty.v
+theories/LogicalRelation/Introductions/Sigma.v
 theories/LogicalRelation/Introductions/Id.v
 
 theories/Validity/Validity.v

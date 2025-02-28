@@ -1258,6 +1258,26 @@ Section GenericConsequences.
       now bsimpl.
   Qed.
 
+  Lemma ty_app_ren {Γ Δ A f a dom cod} (ρ : Δ ≤ Γ) :
+    [Γ |- f : A] -> [Γ |- A ≅ tProd dom cod] -> [Δ |- a : dom⟨ρ⟩] -> [Δ |- tApp f⟨ρ⟩ a : cod[a .: ρ >> tRel]].
+  Proof.
+    intros; erewrite subst1_ren_wk_up.
+    unshelve eapply ty_app. 3: eassumption.
+    rewrite wk_prod; gtyping.
+  Qed.
+
+  Lemma convneu_app_ren {Γ Δ A f g a b dom cod} (ρ : Δ ≤ Γ) :
+    [Γ |- f ~ g : A] ->
+    [Γ |- A ≅ tProd dom cod] ->
+    [Δ |- a ≅ b : dom⟨ρ⟩] ->
+    [Δ |- tApp f⟨ρ⟩ a ~ tApp g⟨ρ⟩ b : cod[a .: ρ >> tRel]].
+  Proof.
+    intros; erewrite subst1_ren_wk_up.
+    unshelve eapply convneu_app. 3: eassumption.
+    rewrite wk_prod; gtyping.
+  Qed.
+
+
 
   (** *** Lifting determinism properties from untyped reduction to typed reduction. *)
 
@@ -1334,6 +1354,15 @@ Section GenericConsequences.
   Lemma whredtm_ty_det {Γ t A} (whrty : [Γ |- t ↘ ]) (whrtm : [Γ |- t ↘  A]) : whrty.(tyred_whnf) = whrtm.(tmred_whnf).
   Proof. eapply whred_det; gtyping. Qed.
 
+  Lemma whredty_whnf {Γ A} (whA : [Γ |- A ↘ ]) : whnf A -> A = whA.(tyred_whnf).
+  Proof.
+    destruct whA; cbn; now eapply redtywf_whnf.
+  Qed.
+
+  Lemma whredtm_whnf {Γ A t} (wht : [Γ |- t ↘ A ]) : whnf t -> t = wht.(tmred_whnf).
+  Proof.
+    destruct wht; cbn; now eapply redtmwf_whnf.
+  Qed.
 
   Lemma isWfFun_isFun : forall Γ A B t, isWfFun Γ A B t -> isFun t.
   Proof.

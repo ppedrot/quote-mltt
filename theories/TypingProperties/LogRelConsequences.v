@@ -4,11 +4,8 @@ From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProp
 
 From LogRel Require Import LogicalRelation Fundamental.
 From LogRel.LogicalRelation Require Import Properties.
-From LogRel.LogicalRelation.Introductions Require Import Universe. (* Poly. *)
+From LogRel.LogicalRelation.Introductions Require Import Universe Nat Empty.
 From LogRel.Validity Require Import Validity Irrelevance Properties ValidityTactics.
- (*Poly*)
-(* TODO: move what's necessary to reducibility *)
-From LogRel.Validity.Introductions Require Import Empty.
 
 From Equations Require Import Equations.
 
@@ -90,18 +87,6 @@ Section TypeConstructors.
     symmetry in Hconv.
     now eapply _red_ty_complete_l in Hconv.
   Qed.
-
-  (* TODO: move to GenTypings *)
-  Lemma whredty_whnf {Γ A} (whA : [Γ |- A ↘ ]) : whnf A -> A = whA.(tyred_whnf).
-  Proof.
-    destruct whA; cbn; now eapply redtywf_whnf.
-  Qed.
-
-  Lemma whredtm_whnf {Γ A t} (wht : [Γ |- t ↘ A ]) : whnf t -> t = wht.(tmred_whnf).
-  Proof.
-    destruct wht; cbn; now eapply redtmwf_whnf.
-  Qed.
-
 
   Lemma type_hd_view_irr {Γ T0 T0' T1 T1'}
     (nfT0 : isType T0) (nfT0' : isType T0') (nfT1 : isType T1) (nfT1' : isType T1') :

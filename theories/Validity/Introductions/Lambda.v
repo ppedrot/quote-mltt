@@ -51,7 +51,6 @@ Lemma lamPiRedTm
   {Γ Γ' F F' G G' l}
   {VΓ : [||-v Γ ≅ Γ']}
   {VF : [Γ ||-v<l> F ≅ F' | VΓ]}
-  (* (VΓF : [||-v Γ ,, F ≅ Γ' ,, F']) *)
   (VΓF := validSnoc VΓ VF)
   {VG : [Γ ,, F ||-v<l> G ≅ G' | VΓF]}
   {t t'} (Vtt' : [Γ ,, F ||-v<l> t ≅ t' : G | VΓF | VG])
@@ -221,7 +220,6 @@ Lemma ηeqEqTermConvNf {σ Δ f} (ρ := @wk1 Γ F)
   (wfΔ : [|- Δ]) (Vσ : [Δ ||-v σ : Γ | VΓ| wfΔ])
   (RΠFG := normRedΠ (validTyExt VΠFG wfΔ Vσ))
   (Rf : [Δ ||-<l> f[σ] : (tProd F G)[σ] | LRPi' RΠFG ]) :
-  (* (Rf0 : PiRedTm RΠFG (f[σ])) : *)
   [Δ ,, F[σ] |- tApp f⟨ρ⟩[up_term_term σ] (tRel 0) ≅ tApp Rf.(PiRedTmEq.redR).(PiRedTmEq.nf)⟨↑⟩ (tRel 0) : G[up_term_term σ]].
 Proof.
   refold.

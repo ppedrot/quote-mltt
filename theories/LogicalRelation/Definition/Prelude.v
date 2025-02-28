@@ -77,8 +77,6 @@ Export LRAd(LRAdequate,Build_LRAdequate).
 Coercion LRAd.pack : LRAdequate >-> LRPack.
 Coercion LRAd.adequate : LRAdequate >-> LRPackAdequate.
 
-(* TODO : update these for LRAdequate *)
-
 Notation "[ R | Γ ||- A ≅ B ]"              := (@LRAdequate Γ R A B).
 Notation "[ R | Γ ||- t ≅ u : A | RA ]" := (RA.(@LRAd.pack Γ R A _).(LRPack.eqTm) t u).
 Notation "[ R | Γ ||- t ≅ u : A ≅ B | RA ]" := (RA.(@LRAd.pack Γ R A B).(LRPack.eqTm) t u).

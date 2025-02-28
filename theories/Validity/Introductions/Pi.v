@@ -51,7 +51,7 @@ Section PiValidity.
   Qed.
 
 
-  Lemma PiCongTm {Γ Γ' F F' G G'}
+  Lemma PiValidU {Γ Γ' F F' G G'}
     (VΓ : [||-v Γ ≅ Γ'])
     (VF : [ Γ ||-v< one > F ≅ F' | VΓ ])
     (VΓF := validSnoc VΓ VF)
@@ -66,7 +66,6 @@ Section PiValidity.
     pose proof (univValid zero VGU) as VG0.
     pose (v := validSnoc VΓ (urefl VF)).
     assert [_ ||-v<one> G ≅ G' : _ | _ | UValid v] by irrValid.
-    (* unshelve epose proof (irrValidTm (VΓ1:=validSnoc VΓ (urefl VF)) (validSnoc (lrefl VΓ) (irrValidTy (lrefl VΓ) VF)) _ (UValid _) (UValid _) VGU). *)
     pose proof (Vuσ := liftSubst' VF Vσ).
     pose proof (Vuσ' := liftSubst' (urefl VF) (urefl Vσ)).
     instValid Vuσ'.
@@ -77,16 +76,6 @@ Section PiValidity.
     enough (h : [ Δ ||-< zero > (tProd F G)[σ] ≅ (tProd F' G')[σ']]) by exact (cumLR h).
     eapply validTyExt; tea; unshelve eapply PiValid; tea.
     eapply convValidTy; exact VG0.
-  Qed.
-
-  Lemma PiValidU {Γ F G} (VΓ : [||-v Γ])
-    (VF : [ Γ ||-v< one > F | VΓ ])
-    (VU : [ Γ ,, F ||-v< one > U | validSnoc VΓ VF ])
-    (VFU : [ Γ ||-v< one > F : U | VΓ | UValid VΓ ])
-    (VGU : [ Γ ,, F ||-v< one > G : U | validSnoc VΓ VF | VU ]) :
-    [ Γ ||-v< one > tProd F G : U | VΓ | UValid VΓ ].
-  Proof.
-    now eapply lrefl, PiCongTm.
   Qed.
 
 End PiValidity.

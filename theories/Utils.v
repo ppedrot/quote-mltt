@@ -271,7 +271,7 @@ Record nprod {A B : Type} := npair { nfst : A ; nsnd : B }.
 Arguments nprod : clear implicits.
 Arguments npair {_ _} _ _.
 Notation "x <&> y" := (nprod x y) (at level 80, right associativity).
-Notation "⟪ x , .. , y , z ⟫" := (npair x .. (npair y z) ..) : core_scope.
+Notation "'(&' x , .. , y , z )" := (npair x .. (npair y z) ..) : core_scope.
 
 #[projections(primitive)]
 Record sum {A : Type} {B : A -> Type} :=
@@ -283,7 +283,7 @@ Notation "'∑&' x .. y , p" := (sum _ (fun x => .. (sum _ (fun y => p%type)) ..
   (at level 200, x binder, right associativity,
    format "'[' '∑&'  '/  ' x  ..  y ,  '/  ' p ']'")
   : type_scope.
-Notation "⦇ x ; .. ; y ; z ⦈" := (dpair x .. (dpair y z) ..) : core_scope.
+Notation "'(&' x ; .. ; y ; z )" := (dpair x .. (dpair y z) ..) : core_scope.
 
 
 (** Indexed partial-equivalence relation (IPER) over a PER *)

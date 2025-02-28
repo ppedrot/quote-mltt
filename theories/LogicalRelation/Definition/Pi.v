@@ -25,10 +25,8 @@ Inductive isLRFun `{ta : tag} `{WfContext ta}
 | LamLRFun : forall A' t : term,
     [Γ |- A'] ->
     [Γ |-  ΠA.(PiRedTyPack.domL) ≅ A'] ->
-  (* (forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]) (domRed:= ΠA.(PolyRedPack.shpRed) ρ h),
-      [domRed | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ A'⟨ρ⟩]) -> *)
-  (forall {Δ a b} (ρ : Δ ≤ Γ) (h : [ |- Δ ])
-    (ha : [ ΠA.(PolyRedPack.shpRed) ρ h | Δ ||- a ≅ b : ΠA.(PiRedTyPack.domL)⟨ρ⟩ ]),
+    (forall {Δ a b} (ρ : Δ ≤ Γ) (h : [ |- Δ ])
+      (ha : [ ΠA.(PolyRedPack.shpRed) ρ h | Δ ||- a ≅ b : ΠA.(PiRedTyPack.domL)⟨ρ⟩ ]),
       [ΠA.(PolyRedPack.posRed) ρ h ha | Δ ||- t[a .: (ρ >> tRel)] ≅ t[b .: (ρ >> tRel)] : ΠA.(PiRedTyPack.codL)[a .: (ρ >> tRel)]]) ->
   isLRFun ΠA (tLambda A' t)
 | NeLRFun : forall f : term, [Γ |- f ~ f : PiRedTyPack.outTy ΠA] -> isLRFun ΠA f.
@@ -53,7 +51,6 @@ Module PiRedTmEq.
     nf : term;
     red : [ Γ |- t :⤳*: nf : outTy ΠA ];
     isfun : isLRFun ΠA nf;
-    (* app {Δ a b} : appRed ΠA nf nf Δ a b; *)
   }.
 
   Arguments PiRedTm {_ _ _ _ _ _ _ _ _ _ _ _}.
@@ -66,13 +63,6 @@ Module PiRedTmEq.
     1: gtyping.
     constructor; now eapply convneu_whne.
   Defined.
-
-  (* Lemma whnf `{GenericTypingProperties} {Γ A B} {ΠA : PiRedTy Γ A B} {t} : forall (red : PiRedTm ΠA t),
-    whnf (nf red).
-  Proof.
-    intros [? ? isfun]; simpl; destruct isfun; constructor; tea.
-    now eapply convneu_whne.
-  Qed. *)
 
   Record PiRedTmEq `{ta : tag} `{WfContext ta}
     `{WfType ta} `{ConvType ta} `{RedType ta}

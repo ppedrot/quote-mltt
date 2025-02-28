@@ -1,4 +1,4 @@
-(** * LogRel.LogicalRelation.Definition.Nat : Definition of the logical relation for TODO *)
+(** * LogRel.LogicalRelation.Definition.Nat : Definition of the logical relation for nat *)
 From Coq Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 From LogRel.LogicalRelation.Definition Require Import Prelude Ne.

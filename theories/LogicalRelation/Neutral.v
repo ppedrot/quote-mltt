@@ -29,27 +29,6 @@ Set Printing Primitive Projection Parameters.
 #[deprecated(note="use neu")]
 Let neuEq {l Γ A B} := @neu l Γ A B.
 
-(* TODO MOVE ME *)
-Lemma ty_app_ren {Γ Δ A f a dom cod} (ρ : Δ ≤ Γ) :
-  [Γ |- f : A] -> [Γ |- A ≅ tProd dom cod] -> [Δ |- a : dom⟨ρ⟩] -> [Δ |- tApp f⟨ρ⟩ a : cod[a .: ρ >> tRel]].
-Proof.
-  intros; erewrite subst1_ren_wk_up.
-  unshelve eapply ty_app. 3: eassumption.
-  rewrite wk_prod; gtyping.
-Qed.
-
-(* TODO MOVE ME *)
-Lemma convneu_app_ren {Γ Δ A f g a b dom cod} (ρ : Δ ≤ Γ) :
-  [Γ |- f ~ g : A] ->
-  [Γ |- A ≅ tProd dom cod] ->
-  [Δ |- a ≅ b : dom⟨ρ⟩] ->
-  [Δ |- tApp f⟨ρ⟩ a ~ tApp g⟨ρ⟩ b : cod[a .: ρ >> tRel]].
-Proof.
-  intros; erewrite subst1_ren_wk_up.
-  unshelve eapply convneu_app. 3: eassumption.
-  rewrite wk_prod; gtyping.
-Qed.
-
 Definition reflect {l Γ A B} (RA : [Γ ||-<l> A ≅ B]) :=
  forall n n',
     [Γ |- n : A] ->

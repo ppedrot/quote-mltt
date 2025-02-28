@@ -41,7 +41,7 @@ Qed.
 
 Module URedTy.
 
-  Record URedTy `{ta : tag} `{!WfType ta} `{!RedType ta} `{H : WfContext ta} {l} {Γ : context} {A B : term}
+  Record URedTy `{ta : tag} `{!WfType ta} `{!RedType ta} {l} {Γ : context} {A B : term}
   : Set := {
     level  : TypeLevel;
     lt  : level << l;
@@ -49,7 +49,7 @@ Module URedTy.
     redR : [ Γ |- B  :⤳*: U ] ;
   }.
 
-  Arguments URedTy {_ _ _ _}.
+  Arguments URedTy {_ _ _}.
 
   Definition wfCtx  `{WfContextProperties}  {l} {Γ : context} {A B : term} : URedTy l Γ A B -> [|- Γ].
   Proof. intros []; timeout 1 gen_typing. Qed.
@@ -107,9 +107,7 @@ Qed.
 
 Module URedTm.
 
-  (* TODO: clean required typeclasses *)
-  Record URedTm `{ta : tag} `{WfContext ta} `{WfType ta}
-    `{Typing ta} `{ConvTerm ta} `{RedType ta} `{RedTerm ta}
+  Record URedTm `{ta : tag} `{Typing ta} `{RedTerm ta}
     {level : TypeLevel} {Γ : context} {t : term}
   : Set := {
     te : term;
@@ -117,15 +115,14 @@ Module URedTm.
     type : isType te;
   }.
 
-  Arguments URedTm {_ _ _ _ _ _ _}.
+  Arguments URedTm {_ _ _}.
 
-  Definition whred `{ta : tag} `{WfContext ta} `{WfType ta}
-    `{Typing ta} `{ConvTerm ta} `{RedType ta} `{RedTerm ta}
+  Definition whred `{ta : tag} `{Typing ta} `{RedTerm ta}
     {l} {Γ : context} {t: term} :
     URedTm l Γ t -> [Γ |- t ↘  U].
   Proof. intros []; gtyping. Defined.
 
-  Record URedTmEq@{i j} `{ta : tag} `{WfContext ta} `{WfType ta}
+  Record URedTmEq@{i j} `{ta : tag} `{WfType ta}
     `{Typing ta} `{ConvTerm ta} `{RedType ta} `{RedTerm ta}
     {l} {rec : forall {l'}, l' << l -> RedRel@{i j}}
     {Γ : context} {A B : term} {R : [Γ ||-U<l> A ≅ B]} {t u}
@@ -136,7 +133,7 @@ Module URedTm.
       relEq : [ rec R.(URedTy.lt) | Γ ||- t ≅ u ] ;
   }.
 
-  Arguments URedTmEq {_ _ _ _ _ _ _ _ } rec.
+  Arguments URedTmEq {_ _ _ _ _ _ _ } rec.
 
   Definition whredL `{ta : tag} `{WfContext ta} `{WfType ta}
     `{Typing ta} `{ConvTerm ta} `{RedType ta} `{RedTerm ta}
