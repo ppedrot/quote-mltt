@@ -38,6 +38,13 @@ Ltac2 mkvty c := preterm:(mkVty $preterm:c).
 Ltac2 mkvtm c := preterm:(mkVtm $preterm:c).
 Ltac2 pair a b := constr:(⟪$a, $b⟫).
 
+
+Ltac2 pose_proof c :=
+  let h := Fresh.in_goal @pprf in
+  Std.assert (Std.AssertValue h c);
+  Control.hyp h.
+
+
 Ltac2 valid_ctx_matcher ty pfopt :=
   lazy_match! ty with
   | VAdequate VR ?g ?g' => Some (g, g'), pfopt
@@ -63,7 +70,7 @@ Ltac2 valid_ty_rel st h c :=
   match valid_ty_matcher c (Some (Control.hyp h)) with
   | Some (g, _g', vg, a, a', _l), Some va =>
     let (g0, wgg0) := Option.get (PER.repr st g) in
-    let va0 := mkvty preterm:(irrValidTy (VΓ0:=$vg) (VΓ1:=urefl $preterm:wgg0) $preterm:wgg0 $va) in
+    let va0 := mkvty preterm:(let wgg0 := $preterm:wgg0 in irrValidTy (VΓ0:=$vg) (VΓ1:=urefl wgg0) wgg0 $va) in
     [pair g0 a, pair g0 a',  va0 ]
   | _, _ => []
   end.
@@ -86,8 +93,11 @@ Ltac2 valid_tm_rel st h c :=
     let (g0, wgg0) := Option.get_bt (PER.repr st g) in
     (* let va0 := mkvty constr:(irrValidTy (VΓ0:=$vg) (VΓ1:=urefl $wgg0) $wgg0 $va) in *)
     let (ga0, waa0) := Option.get_bt (PER.repr st (pair g0 a)) in
-    let vaa0 := preterm:(convValidTy' _ $preterm:wgg0 (dsnd $preterm:waa0)) in
-    let vt0 := mkvtm preterm:(irrValidTm $preterm:wgg0 $va (ureflValidTy $preterm:vaa0) $preterm:vaa0 $h) in
+    let vt0 := mkvtm preterm:(
+      let wgg0 := $preterm:wgg0 in
+      let vaa0 := convValidTy' _ wgg0 (dsnd $preterm:waa0) in
+      irrValidTm wgg0 $va (ureflValidTy vaa0) vaa0 $h)
+    in
     [pair ga0 t, pair ga0 t', vt0]
   | _ => []
   end.
@@ -102,7 +112,10 @@ Ltac2 solve_ctx st g g' :=
     | false, false => PER.get_witness_cstr st (g, g')
   end in
   match witness with
-  | Some w => Control.refine (fun _ => Constr.pretype w)
+  | Some w =>
+    (* Control.time (Some "pretype:") (fun () =>  *)
+      Control.refine (fun _ => Constr.pretype w)
+    (* ) *)
   | None => fail "Contexts are not convertibles"
   end.
 
@@ -122,7 +135,11 @@ Ltac2 solve_ty st g g' vg _l a a' :=
   end in
   match witness with
   | Some w =>
-    Control.refine (fun _ => Constr.pretype preterm:(irrValidTy (VΓ1:=$vg) (symmetry $preterm:wgg0) (dsnd $preterm:w)))
+    (* Control.time (Some "pretype:") (fun () => *)
+      let wgg0 := pose_proof (Constr.pretype wgg0) in
+      let w := pose_proof (Constr.pretype w) in
+      Control.refine (fun _ => constr:(irrValidTy (VΓ1:=$vg) (symmetry $wgg0) (dsnd $w)))
+    (* ) *)
   | None => fail "Types are not convertibles"
   end.
 
@@ -149,10 +166,13 @@ Ltac2 solve_tm st g g' vg a a' va _l t t' :=
   end in
   match witness with
   | Some w =>
-    Control.refine (fun _ =>
-      Constr.pretype preterm:(
-        let va0a := convValidTy _ (symmetry $preterm:wgg0) (dsnd (symmetry $preterm:waa0)) in
-        irrValidTm (VΓ1:=$vg) (symmetry $preterm:wgg0) _ $va va0a (dsnd $preterm:w)))
+    (* Control.time (Some "pretype:") (fun () => *)
+      let wgg0 := pose_proof (Constr.pretype wgg0) in
+      let waa0 := pose_proof (Constr.pretype waa0) in
+      let va0a := pose_proof constr:(convValidTy _ (symmetry $wgg0) (dsnd (symmetry $waa0))) in
+      let w := pose_proof (Constr.pretype w) in
+      Control.refine (fun _ => constr:(irrValidTm (VΓ1:=$vg) (symmetry $wgg0) _ $va $va0a (dsnd $w)))
+    (* ) *)
   | None => fail "Terms are not convertibles"
   end.
 
@@ -175,9 +195,12 @@ Ltac2 solve_any get_st g :=
 
 Ltac2 init n :=
   let st := PER.make n in
-  List.iter (PER.add_rel st valid_ctx_rel) (Control.hyps ()) ;
+  List.iter (PER.add_rel st valid_ctx_rel) (Control.hyps ());
   List.iter (PER.add_rel st (valid_ty_rel st)) (Control.hyps ()) ;
   List.iter (PER.add_rel st (valid_tm_rel st)) (Control.hyps ()) ; st.
+  (* Control.time (Some "Init stage 1:") (fun () => List.iter (PER.add_rel st valid_ctx_rel) (Control.hyps ()));
+  Control.time (Some "Init stage 2:") (fun () => List.iter (PER.add_rel st (valid_ty_rel st)) (Control.hyps ())) ;
+  Control.time (Some "Init stage 3:") (fun () => List.iter (PER.add_rel st (valid_tm_rel st)) (Control.hyps ())) ; st. *)
 
 Ltac2 irrValid () :=
   solve_any (fun () => init 42) (Control.goal ()).
