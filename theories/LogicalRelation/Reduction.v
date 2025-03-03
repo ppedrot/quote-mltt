@@ -80,17 +80,6 @@ Proof.
   now eapply red_redtmwf_trans.
 Defined.
 
-(* Lemma eqAppLRefl {Γ l A B u v} (ΠA : [Γ ||-Π<l> A ≅ B]):
-  (forall Δ a b, PiRedTmEq.appRed ΠA u v Δ a b) ->
-  (forall Δ a b, PiRedTmEq.appRed ΠA u u Δ a b).
-Proof.
-  cbn; intros eqApp; etransitivity.
-  1: eapply eqApp.
-  symmetry; eapply irrLRConv.
-  2: unshelve eapply eqApp; tea; now eapply urefl.
-  eapply (kripkeLRlrefl (PolyRed.posRed ΠA)); now symmetry.
-Qed. *)
-
 Lemma redSubstLeftTmEq {Γ A B t u v l} (RA : [Γ ||-<l> A ≅ B]) :
   [Γ ||-<l> u ≅ v : A | RA] ->
   [Γ |- t ⤳* u : A ] ->

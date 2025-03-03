@@ -1,7 +1,6 @@
 (** * LogRel.Fundamental: declarative typing implies the logical relation for any generic instance. *)
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Properties.
-(* From LogRel.LogicalRelation.Introductions Require Import Universe. *)
 From LogRel.Validity Require Import Validity Irrelevance Properties ValidityTactics.
 From LogRel.Validity.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id.
 

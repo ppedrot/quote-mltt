@@ -5,11 +5,6 @@ From LogRel.LogicalRelation Require Import Properties.
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 
-(* Lemma subst_wk_id_tail Γ P t : P[t .: @wk_id Γ >> tRel] = P[t..].
-Proof. setoid_rewrite id_ren; now bsimpl. Qed. *)
-(* eq_subst_scons *)
-
-
 Section PolyValidity.
 
   Context `{GenericTypingProperties}.

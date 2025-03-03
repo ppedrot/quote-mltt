@@ -34,12 +34,6 @@ Section PolyRed.
       posRed [Δ a b] (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
           [ (shpRed ρ h) |  Δ ||- a ≅ b : shp⟨ρ⟩] ->
           [ LogRel@{i j k l} l | Δ ||- pos[a .: (ρ >> tRel)] ≅ pos'[b .: (ρ >> tRel)]] ;
-      (* posExt
-        [Δ a b]
-        (ρ : Δ ≤ Γ)
-        (h :  [ |- Δ ])
-        (hab : [ (shpRed ρ h) | Δ ||- a ≅ b : shp⟨ρ⟩]) :
-        [ (posRed ρ h hab) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ] *)
     }.
 
   Definition from@{i j k l} {PA : PolyRedPack@{k} Γ shp shp' pos pos'}
@@ -274,9 +268,6 @@ Section IdRedTy.
     rhsRed : [ tyRed | Γ ||- rhsL ≅ rhsR : _ ] ;
     (* Bake in PER property for reducible conversion at ty  to cut dependency cycles *)
     tyPER : PER tyRed.(LRPack.eqTm) ;
-    (* tyKripke : forall {Δ} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]), [LogRel@{i j k l} l| Δ ||- tyL⟨ρ⟩ ≅ tyR⟨ρ⟩ ] ;
-    tyKripkeTmEq : forall {Δ Ξ} (ρ : Δ ≤ Γ) (ρ' : Ξ ≤ Γ) (ρ'' : Ξ ≤ Δ) (wfΔ : [|-Δ]) (wfΞ : [|-Ξ]) t u,
-      ρ' =1 ρ'' ∘w ρ -> [tyKripke ρ wfΔ | _ ||- t ≅ u : _] -> [tyKripke ρ' wfΞ | _ ||- t⟨ρ''⟩ ≅ u⟨ρ''⟩ : _]; *)
   }.
 
 
@@ -286,31 +277,25 @@ Section IdRedTy.
   Proof.
     unshelve econstructor; try (exact IA.(IdRedTyPack.redL) + exact IA.(IdRedTyPack.redR)).
     - econstructor; apply IAad.
-    (* - intros; econstructor; (unshelve now eapply IAad); tea. *)
     - exact IA.(IdRedTyPack.eq).
     - exact IA.(IdRedTyPack.lhsRed).
     - exact IA.(IdRedTyPack.rhsRed).
     - exact IA.(IdRedTyPack.tyPER).
-    (* - intros; now eapply IA.(IdRedTyPack.tyKripkeTmEq). *)
   Defined.
 
   Definition toPack@{i j k l} {Γ l A B} (IA : @IdRedTy@{i j k l} Γ l A B) : IdRedTyPack@{k} Γ A B.
   Proof.
     unshelve econstructor; try (exact IA.(IdRedTy.redL) + exact IA.(IdRedTy.redR)).
     - apply IA.(tyRed).
-    (* - intros; now apply IA.(tyKripke). *)
     - exact IA.(eq).
     - exact IA.(lhsRed).
     - exact IA.(rhsRed).
     - exact IA.(IdRedTy.tyPER).
-    (* - intros; now eapply IA.(IdRedTy.tyKripkeTmEq). *)
   Defined.
 
   Definition to@{i j k l} {Γ l A B} (IA : @IdRedTy@{i j k l} Γ l A B) : IdRedTyAdequate@{k l} (LogRel@{i j k l} l) (toPack IA).
   Proof.
-    econstructor;
-     apply IA.(tyRed).
-     (* [apply IA.(tyRed)| intros; apply IA.(tyKripke)]. *)
+    econstructor; apply IA.(tyRed).
   Defined.
 
   Lemma beta_pack@{i j k l} {Γ l A B} {IA : IdRedTyPack@{k} Γ A B} (IAad : IdRedTyAdequate@{k l} (LogRel@{i j k l} l) IA) :
@@ -345,6 +330,7 @@ Arguments IdRedTy {_ _ _ _ _ _ _ _ _}.
 End IdRedTy.
 
 Export IdRedTy(IdRedTy, Build_IdRedTy,IdRedTmEq,IdPropEq,LRId').
+Arguments IdRedTy.outTy _ /.
 
 Notation "[ Γ ||-Id< l > A ≅ B ]" := (IdRedTy Γ l A B) (at level 0, Γ, l,  A, B at level 50).
 Notation "[ Γ ||-Id< l > t : A | RA ]" := (IdRedTmEq (Γ:=Γ) (l:=l) (A:=A) RA t t) (at level 0, Γ, l, t, A, RA at level 50).

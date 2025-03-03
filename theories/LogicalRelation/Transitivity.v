@@ -274,15 +274,12 @@ Section Transitivity.
     5: exact (IdRedTy.redR IBC).
     1: eapply ihty; rewrite <- eqty; eapply IdRedTy.tyRed.
     all: destruct IAB, IBC; cbn in *; subst; tea.
-    (* - intros; now eapply ihkr. *)
     - now etransitivity.
     - now eapply ihty.
     - now eapply ihty.
     - cbn; constructor.
       + intros ?? ?%(irrLR tyRed) ; eapply (irrLR _ tyRed); now symmetry.
       + intros ??? ?%(irrLR tyRed) ?%(irrLR tyRed); eapply (irrLR _ tyRed); now etransitivity.
-    (* - intros * ? ?%(irrLR (tyKripke _ ρ wfΔ)) ; eapply (irrLR _ (tyKripke _ ρ' wfΞ)).
-      now eapply tyKripkeTmEq. *)
   Defined.
 
   Definition transIdPropEq {t u v} : IdPropEq IAB t u -> IdPropEq IBC u v -> IdPropEq transId t v.
@@ -464,30 +461,6 @@ Lemma irrLREqCum@{i j k l i' j' k' l'} {Γ l l' A A' B B'}
   : [Γ ||-<l> t ≅ u : _ | RAB] -> [Γ ||-<l'> t ≅ u : _ | RAB'].
 Proof. eapply irrLRCum; subst; now eapply lrefl. Qed.
 
-
-
-(* Lemma LREqTermSymConv {Γ t u G G' l RG RG'} :
-  [Γ ||-<l> t ≅ u : G | RG] ->
-  [Γ ||-<l> G' ≅ G | RG'] ->
-  [Γ ||-<l> u ≅ t : G' | RG'].
-Proof.
-  intros Rtu RGG'.
-  eapply LRTmEqSym; eapply LRTmEqConv; tea.
-  now eapply LRTyEqSym.
-Qed.
-
-Lemma LREqTermHelper {Γ t t' u u' G G' l RG RG'} :
-  [Γ ||-<l> t ≅ u : G | RG] ->
-  [Γ ||-<l> t' ≅ u' : G' | RG'] ->
-  [Γ ||-<l> G ≅ G' | RG] ->
-  [Γ ||-<l> u ≅ u' : G | RG] ->
-  [Γ ||-<l> t ≅ t' : G | RG].
-Proof.
-  intros Rtu Rtu' RGG' Ruu'.
-  do 2  (eapply transEqTerm; tea).
-  now eapply LREqTermSymConv.
-Qed. *)
-
 End Consequences.
 
 Instance perLRTm `{GenericTypingProperties} {Γ l A B} (RAB : [Γ ||-<l> A ≅ B]) :
@@ -530,7 +503,3 @@ Lemma kripkeLRurefl `{GenericTypingProperties} {Γ l A A' B B'}
 Proof.
   eapply kripkeLRlrefl; tea; intros; symmetry; eapply hB; now symmetry.
 Qed.
-
-
-
-

@@ -166,23 +166,19 @@ Section Symmetry.
   End SymΣ.
 
   Section SymId.
-  Context {Γ l A B} (IA: [Γ ||-Id< l > A ≅ B])
-    (ihdom:  sym (IdRedTy.tyRed IA)).
-    (* (ihkr: forall (Δ : context) (ρ : Δ ≤ Γ) (wfΔ : [ |-[ ta ] Δ]), sym (IdRedTy.tyKripke IA ρ wfΔ)). *)
+  Context {Γ l A B} (IA: [Γ ||-Id< l > A ≅ B]) (ihdom:  sym (IdRedTy.tyRed IA)).
 
   Lemma symId : [Γ ||-Id<l> B ≅ A].
   Proof.
     destruct IA; unshelve econstructor.
     8,9: tea.
     * now eapply ihdom.
-    (* * intros; now eapply ihkr. *)
     * now symmetry.
     * now eapply ihdom.
     * now eapply ihdom.
     * constructor.
       1: intros ?? ?%ihdom; eapply ihdom; cbn in *; now symmetry.
       intros ??? ?%ihdom ?%ihdom; eapply ihdom; cbn in *; now etransitivity.
-    (* * intros * ? ?%ihkr; eapply ihkr; cbn in *; now eapply tyKripkeTmEq. *)
   Defined.
 
   #[local] Instance : PER _ := IA.(IdRedTy.tyPER).

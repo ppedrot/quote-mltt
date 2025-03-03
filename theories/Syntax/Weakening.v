@@ -442,10 +442,6 @@ Proof. intros; now rewrite 2!wk1_ren_on. Qed.
 Lemma var0_wk1_id {Γ A t} : t[tRel 0 .: @wk1 Γ A >> tRel] = t.
 Proof. bsimpl. rewrite scons_eta'. now asimpl. Qed.
 
-#[deprecated(note="use eq_subst_scons ?")]
-Lemma subst_wk_id_tail Γ P t : P[t .: @wk_id Γ >> tRel] = P[t..].
-Proof. setoid_rewrite id_ren; now bsimpl. Qed.
-
 Lemma eq_subst_scons {Γ} a B : B[a..] = B[a⟨@wk_id Γ⟩ .: @wk_id Γ >> tRel].
 Proof. now bsimpl. Qed.
 

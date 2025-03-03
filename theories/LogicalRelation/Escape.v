@@ -38,50 +38,43 @@ Section Escapes.
     [Γ ||-< l > t ≅ u : A | lr ] ->
     [Γ |- t : A] × [Γ |- u : A] × [Γ |- t ≅ u : A].
   Proof.
-    indLR lr.
-    - intros RU [[] []]; cbn in *; pose proof (invLRConvU RU).
-      prod_splitter.
+    generalize (whredL_conv lr); caseLR lr.
+    - intros RU ? [[] []]; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
       destruct RU; eapply convtm_wfexp; gtyping.
-    - intros neA []; pose proof (invLRConvNe neA).
-      prod_splitter.
+    - intros neA ? []; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
       destruct neA; cbn in *; eapply convtm_wfexp.
       1-3: gtyping.
       2: now eapply urefl.
       eapply convtm_convneu; tea.
       constructor; now eapply convneu_whne.
-    - intros ΠA _ _ [[] []]; cbn in *; pose proof (invLRConvPi ΠA).
-      prod_splitter.
+    - intros ΠA ? [[] []]; cbn in *; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
       destruct ΠA as [???? []]; cbn in *.
       eapply convtm_wfexp.
       1-3: gtyping.
       2: now eapply lrefl.
       tea.
-    - intros NA []; pose proof (invLRConvNat NA).
-      prod_splitter.
+    - intros NA ? []; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
       destruct NA; eapply convtm_wfexp.
       1-3: gen_typing.
       2: now eapply urefl.
       tea.
-    - intros NA [???? []]; pose proof (invLRConvEmpty NA).
-      prod_splitter.
+    - intros EA ? [???? []]; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
-      destruct NA; eapply convtm_wfexp.
+      destruct EA; eapply convtm_wfexp.
       1-3: gen_typing.
       2: now eapply urefl.
       eapply convtm_convneu; tea; constructor.
-    - intros ΣA _ _ [[] []]; cbn in *; pose proof (invLRConvSig ΣA).
-      prod_splitter.
+    - intros ΣA ? [[] []]; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
       destruct ΣA as [???? []]; cbn in *; eapply convtm_wfexp.
       1-3: gtyping.
       2: now eapply urefl.
       tea.
-    - intros IA _ []; cbn in *; pose proof (invLRConvId IA).
-      prod_splitter.
+    - intros IA ? []; cbn in *; prod_splitter.
       1,2: (eapply ty_conv; [gtyping|now symmetry]).
       destruct IA as []; cbn in *; eapply convtm_wfexp.
       1-3: gtyping.

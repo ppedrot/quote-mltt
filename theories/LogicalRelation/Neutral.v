@@ -3,6 +3,7 @@ From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Escape Irrelevance Symmetry Transitivity.
 
 Set Universe Polymorphism.
+Set Printing Primitive Projection Parameters.
 
 Section Neutral.
 Context `{GenericTypingProperties}.
@@ -22,12 +23,6 @@ Proof.
   * eapply redtmwf_conv; tea; now eapply redtmwf_refl.
   * now eapply NeType, convneu_whne.
 Defined.
-
-
-Set Printing Primitive Projection Parameters.
-
-#[deprecated(note="use neu")]
-Let neuEq {l Γ A B} := @neu l Γ A B.
 
 Definition reflect {l Γ A B} (RA : [Γ ||-<l> A ≅ B]) :=
  forall n n',
@@ -260,16 +255,6 @@ Qed.
 
 Definition neuTerm {l Γ A B} (RA : [Γ ||-<l> A ≅ B]) {n} :=
   reflect_diag RA (reflectLR RA) n.
-
-#[deprecated(note="use reflectLR")]
-Lemma neuTermEq {l Γ A} (RA : [Γ ||-<l> A]) {n n'} :
-  [Γ |- n : A] ->
-  [Γ |- n' : A] ->
-  [Γ |- n ~ n' : A] ->
-  [Γ ||-<l> n ≅ n' : A| RA].
-Proof.
-  intros; now eapply reflectLR.
-Qed.
 
 Lemma neNfTermEq {Γ l A n n'} (RA : [Γ ||-<l> A]) : [Γ ||-NeNf n ≅ n' : A] -> [RA | Γ ||- n ≅ n' : A].
 Proof. intros []; now eapply reflectLR. Qed.

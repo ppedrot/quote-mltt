@@ -133,15 +133,6 @@ Proof.
     eapply irrLRCum; tea; symmetry; now eapply validTyExt.
 Qed.
 
-#[deprecated(note="use transSubst")]
-Lemma transSubstEq {Γ Γ' Γ''}
-  (VΓ : [||-v Γ ≅ Γ']) (VΓ' : [||-v Γ' ≅ Γ'']) (VΓ'' : [||-v Γ ≅ Γ'']) :
-  forall {σ σ' σ'' Δ} (wfΔ : [|- Δ]),
-    [Δ ||-v σ ≅ σ' : _ | VΓ | wfΔ ] ->
-    [Δ ||-v σ' ≅ σ'' : _ | VΓ' | wfΔ ] ->
-    [Δ ||-v σ ≅ σ'' : _ | VΓ'' | wfΔ ].
-Proof. now apply transSubst. Defined.
-
 Lemma ureflValidTy {Γ Γ' l A B} (VΓ : [||-v Γ ≅ Γ']) (VΓ' : [||-v Γ' ≅ Γ']) :
   [Γ ||-v<l> A ≅ B | VΓ] -> [Γ' ||-v<l> B ≅ B | VΓ'].
 Proof.
@@ -346,17 +337,6 @@ Proof.
 Qed.
 
 End Irrelevances.
-
-(* Ltac irrValid :=
-  match goal with
-  | [_ : _ |- [||-v _]] => idtac
-  | [_ : _ |- [ _ ||-v _ : _ | _ | _]] => eapply irrelevanceSubst
-  | [_ : _ |- [ _ ||-v _ ≅ _ : _ | _ | _ ]] => eapply irrelevanceSubstEq
-  | [_ : _ |- [_ ||-v<_> _ | _]] => eapply irrelevanceTy
-  | [_ : _ |- [_ ||-v<_> _ ≅ _ | _ | _]] => eapply irrelevanceTyEq
-  | [_ : _ |- [_ ||-v<_> _ : _ | _ | _]] => eapply irrelevanceTm
-  | [_ : _ |- [_ ||-v<_> _ ≅ _ : _ | _ | _]] => eapply irrelevanceTmEq
-  end; eassumption. *)
 
 #[global] Existing Instance perValid.
 #[global] Existing Instance perSubst.

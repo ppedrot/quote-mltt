@@ -652,10 +652,7 @@ Section NatCanonicityInduction.
   Qed.
 
   Lemma nat_red_empty_ind :
-  (forall t u,
-  (* NatRedTmEq ε t u -> *)
-  [ε ||-Nat t ≅ u :Nat] ->
-  ∑ n : nat, [ε |- t ≅ n : tNat]) ×
+  (forall t u, [ε ||-Nat t ≅ u :Nat] -> ∑ n : nat, [ε |- t ≅ n : tNat]) ×
   (forall t u, NatPropEq ε t u -> ∑ n : nat, [ε |- t ≅ n : tNat]).
   Proof.
     apply NatRedEqInduction.

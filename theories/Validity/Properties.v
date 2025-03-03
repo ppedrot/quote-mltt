@@ -172,8 +172,6 @@ Qed.
 
 
 Definition escapeValid {Γ Γ'} (VΓ : [||-v Γ ≅ Γ']) : [|-Γ] := (soundCtxId VΓ).π1.
-#[deprecated(note="use escapeValid")]
-Definition soundCtx {Γ Γ'} (VΓ : [||-v Γ ≅ Γ']) : [|-Γ] := (soundCtxId VΓ).π1.
 
 Definition idSubst {Γ Γ'} (VΓ : [||-v Γ ≅ Γ']) : [Γ ||-v tRel : Γ | VΓ | _] := (soundCtxId VΓ).π2.
 
@@ -247,25 +245,6 @@ Proof.
   intros Vt; pose proof (validTmExt Vt _ (idSubst VΓ)); escape.
   rewrite !subst_rel in *. now repeat split.
 Qed.
-
-
-
-(* Lemma compSubstS {Γ} (VΓ : [||-v Γ])  :
-  forall Δ (VΔ : [||-v Δ])
-    {σ σ'} (Vσσ' : [_ ||-v σ ≅ σ' : _ | VΓ | validWf VΔ])
-    Ξ (wfΞ : [|- Ξ])
-    {τ τ'} (Vττ' : [_ ||-v τ ≅ τ' : _ | VΔ | wfΞ]),
-    [_ ||-v  σ >> subst_term τ ≅ σ' >> subst_term τ' : _ | VΓ | wfΞ].
-Proof.
-  induction Γ, VΓ using validity_rect.
-  1: intros; constructor.
-  intros ; unshelve econstructor.
-  - eapply irrelevanceSubstEqExt.
-    3:{ eapply IHVΓ; [eapply eqTail, Vσσ'|]; tea.  }
-    1,2: intros ?; reflexivity.
-  - cbn.  unfold funcomp. cbv. bsimpl. substify. asimpl.
-
-  intros Δ VΔ; induction Δ, VΔ using validity_rect. unshelve econstructor. *)
 
 Lemma redSubstValid {Γ Γ' A A' t u l}
   (VΓ : [||-v Γ ≅ Γ'])

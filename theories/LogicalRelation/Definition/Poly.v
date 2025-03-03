@@ -24,12 +24,6 @@ Module PolyRedPack.
     posRed {Δ} {a b} (ρ : Δ ≤ Γ) (h : [ |- Δ ]) :
         [ (shpRed ρ h) |  Δ ||- a ≅ b : shp⟨ρ⟩ ≅ shp'⟨ρ⟩] ->
         LRPack@{i} Δ (pos[a .: (ρ >> tRel)]) (pos'[b .: (ρ >> tRel)]);
-    (* posExt
-      {Δ a b}
-      (ρ : Δ ≤ Γ)
-      (h :  [ |- Δ ])
-      (hab : [ (shpRed ρ h) | Δ ||- a ≅ b : shp⟨ρ⟩]) :
-      [ (posRed ρ h hab) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ] *)
   }.
 
   Arguments PolyRedPack {_ _ _ _}.

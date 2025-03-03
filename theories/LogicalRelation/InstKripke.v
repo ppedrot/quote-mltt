@@ -2,7 +2,6 @@
 From Coq Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Escape Irrelevance Symmetry Transitivity Weakening Neutral.
- (* Reduction NormalRed EqRedRight. *)
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.

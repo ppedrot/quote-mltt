@@ -164,32 +164,4 @@ Section LogRelRecFoldLemmas.
     destruct h as [? []]; now cbn.
   Qed.
 
-
-  (* This is a duplicate of the above, no ? *)
-  (* Lemma LogRelRec_unfold {Γ l A t eqTy eqTm} (h: [Γ ||-U<l> A]) :
-    LogRelRec l (URedTy.level h) (URedTy.lt h) Γ t eqTy eqTm <~>
-    LogRel (URedTy.level h) Γ t eqTy eqTm.
-  Proof.
-    destruct l; [destruct (elim (URedTy.lt h))|].
-    destruct h; inversion lt; subst; cbn; now split.
-  Qed. *)
-
-  (* Lemma TyEqRecFwd {l Γ A t u} (h : [Γ ||-U<l> A])
-    (lr : [LogRelRec l (URedTy.level h) (URedTy.lt h) | Γ ||- t]) :
-    [lr | Γ ||- t ≅ u] <~> [RedTyRecFwd h lr | Γ ||- t ≅ u].
-  Proof.
-    unfold RedTyRecFwd.
-    destruct h as [? lt]; cbn in *.
-    induction lt; cbn; split; easy.
-  Qed.
-
-  Lemma TyEqRecBwd {l Γ A t u} (h : [Γ ||-U<l> A])
-    (lr : [LogRel (URedTy.level h) | Γ ||- t ]) :
-    [lr | Γ ||- t ≅ u] <~> [RedTyRecBwd h lr | Γ ||- t ≅ u].
-  Proof.
-    unfold RedTyRecBwd.
-    destruct h as [? lt]; cbn in *.
-    induction lt; cbn; split; easy.
-  Qed. *)
-
 End LogRelRecFoldLemmas.

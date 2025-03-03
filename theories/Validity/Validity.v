@@ -281,40 +281,14 @@ Ltac instValid vσ :=
   let wfΔ := (eval unfold wfCtxOfsubstS in (wfCtxOfsubstS vσ)) in
   repeat lazymatch goal with
   | [H : typeValidity _ _ _ _ _ _ |- _] =>
-    (* try (let X := fresh "R" H in pose (X := validTy H wfΔ vσ)); *)
     try (let X := fresh "R" H in pose (X := validTyExt H wfΔ vσ)) ;
-     (* should only do that if vσ : [.. |- σ ≅ σ' : ...] with σ != σ' *)
+     (* TODO: should only do that if vσ : [.. |- σ ≅ σ' : ...] with σ != σ' *)
     try (let X := fresh "Rl" H in pose (X := validTyExt H wfΔ (lrefl vσ))) ;
     try (let X := fresh "Rr" H in pose (X := validTyExt H wfΔ (urefl vσ))) ;
     block H
-  (* | [H : termValidity _ _ _ _ _ _ |- _] =>
-    let X := fresh "R" H in
-    try pose (X := validTmEq H wfΔ vσ) ;
-    block H *)
-  (* | [H : typeEqValidity _ _ _ _ _ _ |- _] =>
-    try (let X := fresh "R" H in pose (X := validTyEq H wfΔ vσ)) ;
-    try (let X := fresh "RSym" H in pose (X := LRTyEqRedRight _ (validTyEq H wfΔ vσ))) ;
-    block H *)
   | [H : termEqValidity _ _ _ _ _ _ _ _ _ |- _] =>
     try (let X := fresh "R" H in pose (X := validTmExt H wfΔ vσ)) ;
     try (let X := fresh "Rl" H in pose (X := validTmExt H wfΔ (lrefl vσ))) ;
     try (let X := fresh "Rr" H in pose (X := validTmExt H wfΔ (urefl vσ))) ;
     block H
   end; unblock.
-
-(* Ltac instValidExt vσ' vσσ' :=
-  repeat lazymatch goal with
-  | [H : typeValidity _ _ _ _ |- _] =>
-    let X := fresh "RE" H in
-    try pose (X := validTyExt H _ _ vσ' vσσ') ;
-    block H
-  | [H : termValidity _ _ _ _ _ _ |- _] =>
-    let X := fresh "RE" H in
-    try pose (X := validTmExt H _ _ vσ' vσσ') ;
-    block H
-  end; unblock. *)
-
-(* Ltac instAllValid vσ vσ' vσσ' :=
-  instValid vσ ;
-  instValid vσ' ;
-  instValidExt vσ' vσσ'. *)

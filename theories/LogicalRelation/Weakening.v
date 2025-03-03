@@ -186,9 +186,6 @@ Section Weakenings.
     8,9: erewrite wk_Id; eapply redtywf_wk; tea; apply IA.(IdRedTy.redL) + apply IA.(IdRedTy.redR).
     2: rewrite 2!wk_Id; eapply convty_wk; tea; eapply IA.(IdRedTy.eq).
     - now eapply ih.(wkRed).
-    (* - intros; rewrite 2!wk_comp_ren_on; now apply tyKripke. *)
-    (* - unshelve eapply tyKripkeTmEq. *)
-    (* could also employ reflexivity instead *)
     - eapply wkRedTm; now destruct IA.
     - eapply wkRedTm; now destruct IA.
     - apply perLRTm.

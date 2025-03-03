@@ -135,11 +135,6 @@ Section RedDefinitions.
     PairWfPair : forall A' B' a b : term,
       [Γ |- A'] ->
       [Γ |- A ≅ A'] ->
-      (* [Γ,, A' |- B] ->
-      [Γ,, A' |- B'] ->
-      [Γ,, A |- B'] ->
-      [Γ,, A |- B ≅ B'] ->
-      [Γ,, A' |- B ≅ B'] -> *)
       [Γ |- a : A] ->
       [Γ |- B[a..]] ->
       [Γ |- B'[a..]] ->
@@ -189,18 +184,6 @@ Notation "[ |-[ ta  ] Γ ≅ Δ ]" := (ConvCtx (ta := ta) Γ Δ) : typing_scope.
 #[export] Hint Extern 1 =>
   now unshelve first [ eapply tyred_whnf_red|eapply tmred_whnf_red
     | eapply tyred_whnf_isType| eapply tmred_whnf_whnf] : gen_typing.
-
-(* #[export] Hint Extern 1 =>
-  match goal with
-    | H : [ _ |- _ ▹h _ ] |- _ => destruct H
-    |  H : [ _ |- _ ↘ _ ] |- _ => destruct H
-    |  H : [ _ |- _ ↘ _ : _ ] |- _ => destruct H
-    |  H : [ _ |- _ :≅: _ ] |- _ => destruct H
-    |  H : [ _ |- _ :≅: _ : _] |- _ => destruct H
-    |  H : [ _ |- _ :⤳*: _ ] |- _ => destruct H
-    |  H : [ _ |- _ :⤳*: _ : _ ] |- _ => destruct H
-  end
-  : gen_typing. *)
 
 (** ** Properties of the abstract interface *)
 
@@ -1020,9 +1003,6 @@ Section GenericConsequences.
     { renToWk; apply wft_wk; [apply wfc_cons|]; tea. }
     2:{ constructor; first [now eapply lrefl|now apply ty_var0|tea]. }
     3:{ constructor; first [now eapply lrefl|now apply ty_var0|tea]. }
-        (* eapply ty_conv; [now apply ty_var0|].
-        do 2 rewrite <- (@wk1_ren_on Γ A'); apply convty_wk; [|now symmetry].
-        now apply wfc_cons. } *)
     1,2: eapply ty_id; tea; now symmetry.
     assert [|- Γ,, A] by gen_typing.
     assert [Γ,, A |-[ ta ] A⟨@wk1 Γ A⟩] by now eapply wft_wk.
@@ -1218,7 +1198,6 @@ Section GenericConsequences.
       symmetry.
       now eapply convty_prod.
     - constructor; tea.
-      (* now eapply ty_conv. *)
     - eapply @convtm_exp with (t' := t) (u' := t'); tea.
       3: now eapply lrefl.
       2: eapply redtm_conv ; cbn ; [eapply redtm_meta_conv |..] ; [eapply redtm_beta |..].

@@ -30,16 +30,12 @@ Module IdRedTyPack.
     rhsRed : [ tyRed | Γ ||- rhsL ≅ rhsR : _ ] ;
     (* Bake in PER property for reducible conversion at ty  to cut dependency cycles *)
     tyPER : PER tyRed.(LRPack.eqTm) ;
-    (* tyKripke : forall {Δ} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]), LRPack@{i} Δ tyL⟨ρ⟩ tyR⟨ρ⟩ ;
-    tyKripkeTmEq : forall {Δ Ξ} (ρ : Δ ≤ Γ) (ρ' : Ξ ≤ Γ) (ρ'' : Ξ ≤ Δ) (wfΔ : [|-Δ]) (wfΞ : [|-Ξ]) t u,
-      ρ' =1 ρ'' ∘w ρ -> [tyKripke ρ wfΔ | _ ||- t ≅ u : _] -> [tyKripke ρ' wfΞ | _ ||- t⟨ρ''⟩ ≅ u⟨ρ''⟩ : _]; *)
   }.
 
   Record IdRedTyAdequate@{i j} `{ta : tag} `{WfContext ta} `{WfType ta} `{RedType ta} `{ConvType ta}
     {Γ : context} {A B : term} {R : RedRel@{i j}} {IA : IdRedTyPack@{i} (Γ:=Γ) (A:=A) (B:=B)} :=
     {
       tyAd : LRPackAdequate@{i j} R IA.(tyRed) ;
-      (* tyKripkeAd : forall {Δ} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]), LRPackAdequate@{i j} R (IA.(tyKripke) ρ wfΔ) ; *)
     }.
 
   Arguments IdRedTyPack {_ _ _ _ _}.
@@ -70,11 +66,8 @@ Section IdRedTmEq.
     [Γ |- x' : A'] ->
     [Γ |- IA.(IdRedTyPack.tyL) ≅ A] ->
     [Γ |- IA.(IdRedTyPack.tyL) ≅ A'] ->
-    (* [IA.(IdRedTyPack.tyRed) | _ ||- _ ≅ A] ->
-    [IA.(IdRedTyPack.tyRed) | _ ||- _ ≅ A'] -> *)
     [IA.(IdRedTyPack.tyRed) | _ ||- IA.(IdRedTyPack.lhsL) ≅ x : _ ] ->
     [IA.(IdRedTyPack.tyRed) | _ ||- IA.(IdRedTyPack.lhsL) ≅ x' : _ ] ->
-    (* Should the indices only be conversion ? *)
     [IA.(IdRedTyPack.tyRed) | _ ||- IA.(IdRedTyPack.rhsL) ≅ x : _ ] ->
     [IA.(IdRedTyPack.tyRed) | _ ||- IA.(IdRedTyPack.rhsL) ≅ x' : _ ] ->
     IdPropEq (tRefl A x) (tRefl A' x')
