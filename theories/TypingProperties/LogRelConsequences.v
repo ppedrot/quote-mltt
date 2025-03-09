@@ -74,7 +74,7 @@ Section TypeConstructors.
   Proof.
     intros * tyT Hconv.
     eapply Fundamental in Hconv as [HΓ Hconv].
-    pose proof (whredR (redValidTy Hconv)) as [].
+    pose proof (whredtyR (redValidTy Hconv)) as [].
     eexists; split; [gtyping| tea].
   Qed.
 
@@ -106,7 +106,7 @@ Section TypeConstructors.
     assert (wfΓ : [|- Γ]) by gtyping.
     eapply Fundamental in Hconv as [HΓ Hconv].
     eapply redValidTy in Hconv.
-    eapply (type_hd_view_irr (whredL Hconv).(tyred_whnf_isType) (whredR Hconv).(tyred_whnf_isType)).
+    eapply (type_hd_view_irr (whredtyL Hconv).(tyred_whnf_isType) (whredtyR Hconv).(tyred_whnf_isType)).
     1,2: symmetry ; now eapply whredty_whnf, isType_whnf.
     clear nfT nfT' HΓ; remember one as l eqn: e; revert e wfΓ.
     caseLR Hconv; cbn; try easy.
@@ -132,43 +132,32 @@ Qed.
 
 (** ** Injectivity of term constructors *)
 
-Instance whredTmLR `{GenericTypingProperties} {Γ A B l} (RAB : [Γ ||-<l> A ≅ B]) :
-  WhRedTmRel Γ (whredL RAB).(tyred_whnf) (RAB.(LRPack.eqTm)).
-Proof.
-  caseLR RAB; intros; try typeclasses eauto.
-  - apply URedTmEqWhRedRel.
-  - apply neRedTmWhRedTm.
-  - apply IdRedTmWhRedRel.
-Defined.
-(* whredtm_conv *)
-
 Section TermConstructors.
 
   Import DeclarativeTypingProperties DeclarativeTypingData.
 
-  (* TODO: Unused ? *)
   Lemma escapeEqzero_fwd {Γ A B l} (lr : [Γ ||-< l > A ≅ B]) :
-    let A':= (whredL lr).(tyred_whnf) in
-    let B':= (whredR lr).(tyred_whnf) in
+    let A':= (whredtyL lr).(tyred_whnf) in
+    let B':= (whredtyR lr).(tyred_whnf) in
     [Γ |- A ≅ B : U] -> [Γ |- A' ≅ B' : U].
   Proof.
     intros ?? [?? ?%redValidTm]%Fundamental.
     subst A' B'.
     assert (Vtu' : [LRU_ (invLRU (redValidTy VA)) | _ ||- A ≅ B : _]) by now eapply irrLR.
-    pose proof (whredtm_ty_det (whredL lr) (whredtmL Vtu')) as ->.
-    pose proof (whredtm_ty_det (whredR lr) (whredtmR Vtu')) as ->.
+    pose proof (whredtm_ty_det (whredtyL lr) (whredtmL Vtu')) as ->.
+    pose proof (whredtm_ty_det (whredtyR lr) (whredtmR Vtu')) as ->.
     apply (whredtm_conv Vtu').
   Qed.
 
   Lemma escapeEqzero_bwd {Γ A B l} (lr : [Γ ||-< l > A ≅ B]) :
-    let A':= (whredL lr).(tyred_whnf) in
-    let B':= (whredR lr).(tyred_whnf) in
+    let A':= (whredtyL lr).(tyred_whnf) in
+    let B':= (whredtyR lr).(tyred_whnf) in
     [Γ |- A : U] -> [Γ |- B : U] ->
     ([Γ |- A' : U] -> [Γ |- B' : U] -> [Γ |- A' ≅ B' : U]) ->
     [Γ |- A ≅ B : U].
   Proof.
     intros; subst A' B'.
-    destruct (whredL lr) as [A'], (whredR lr) as [B']; cbn in *.
+    destruct (whredtyL lr) as [A'], (whredtyR lr) as [B']; cbn in *.
     assert [Γ |-[de] A ⤳ A' : U] by (eapply subject_reduction; gtyping).
     assert [Γ |-[de] B ⤳ B' : U] by (eapply subject_reduction; gtyping).
     assert [Γ |-[de] A' : U] by boundary.
@@ -245,15 +234,6 @@ Section TermConstructors.
       eapply (escapeEqzero_bwd tyRed); tea; eauto.
   Qed.
 
-  Lemma univ_hd_view_irr {Γ T0 T0' T1 T1'}
-    (nfT0 : isType T0) (nfT0' : isType T0') (nfT1 : isType T1) (nfT1' : isType T1') :
-    T0 = T1 -> T0' = T1' -> univ_hd_view Γ nfT0 nfT0' -> univ_hd_view Γ nfT1 nfT1'.
-  Proof.
-    intros ??.
-    enough (h : univ_hd_view Γ nfT0 nfT0' = univ_hd_view Γ nfT1 nfT1')
-    by now rewrite h.
-    subst; f_equal; apply isType_uniq.
-  Qed.
 
   #[local]
   Theorem _univ_conv_view : forall (Γ : context) (T T' : term) (nfT : isType T) (nfT' : isType T'),
@@ -264,9 +244,9 @@ Section TermConstructors.
     assert (wfΓ : [|- Γ]) by gtyping.
     eapply Fundamental in Hconv as [HΓ ? Hconv].
     eapply redValidTm, (UnivEq zero) in Hconv.
-    assert ([Γ |- (whredL Hconv).(tyred_whnf) : U] × [Γ |- (whredR Hconv).(tyred_whnf) : U]) as [wtL wtR]
+    assert ([Γ |- (whredtyL Hconv).(tyred_whnf) : U] × [Γ |- (whredtyR Hconv).(tyred_whnf) : U]) as [wtL wtR]
     by (pose proof (escapeEqzero_fwd Hconv HconvU); split; boundary).
-    eapply (univ_hd_view_irr (whredL Hconv).(tyred_whnf_isType) (whredR Hconv).(tyred_whnf_isType)).
+    eapply (univ_hd_view_irr (whredtyL Hconv).(tyred_whnf_isType) (whredtyR Hconv).(tyred_whnf_isType)).
     1,2: symmetry ; now eapply whredty_whnf, isType_whnf.
     remember zero as l eqn: e; revert e wfΓ wtL wtR; clear nfT nfT' HΓ VA HconvU;  caseLR Hconv; cbn; try easy.
     - intros [? lt] ?; subst; inversion lt.
@@ -301,35 +281,11 @@ Section TermConstructors.
     cbn in *; pose proof (redtywf_whnf redR (isType_whnf _ nfT')); now subst.
   Qed.
 
-
-  Lemma NatPropEq_isNat {Γ : context} {t t' : term} :
-    NatPropEq Γ t t' -> isNat t × isNat t'.
-  Proof.
-    intros [| |?? []]; split; constructor.
-    all: eapply convneu_whne; eassumption + now symmetry.
-  Defined.
-
   Lemma _nat_prop_inj (Γ : context) (wfΓ : [|-Γ]) (t t' : term) (Rt : NatPropEq Γ t t')
     (nftt' := NatPropEq_isNat Rt) : nat_hd_view Γ (fst nftt') (snd nftt').
   Proof.
     induction Rt as [| ?? Rn| ?? []]; cbn; try easy; [|gtyping].
     (unshelve now eapply (escapeTm (Nat.natRed wfΓ))); constructor.
-  Qed.
-
-  Lemma isNat_uniq {t} (p q : isNat t) : p = q.
-  Proof.
-    destruct p; depind q; try easy; try now inversion w.
-    f_equal; eapply whne_uniq.
-  Qed.
-
-  Lemma nat_hd_view_irr {Γ t0 t0' t1 t1'}
-    (nft0 : isNat t0) (nft0' : isNat t0') (nft1 : isNat t1) (nft1' : isNat t1') :
-    t0 = t1 -> t0' = t1' -> nat_hd_view Γ nft0 nft0' -> nat_hd_view Γ nft1 nft1'.
-  Proof.
-    intros ??.
-    enough (h : nat_hd_view Γ nft0 nft0' = nat_hd_view Γ nft1 nft1')
-    by now rewrite h.
-    subst; f_equal; apply isNat_uniq.
   Qed.
 
   Lemma _nat_conv_inj : forall (Γ : context) (t t' : term) (nft : isNat t) (nft' : isNat t'),
@@ -348,14 +304,6 @@ Section TermConstructors.
     destruct prop as [| | ?? []]; intros h; tea; now inversion h.
   Qed.
 
-
-  Lemma IdPropEq_isId {Γ l A x y} {t t' : term} {IA : [Γ ||-Id<l> tId A x y ≅ tId A x y]}:
-    IdPropEq IA t t' -> isId t × isId t'.
-  Proof.
-    intros [|?? []]; split; constructor.
-    all: eapply convneu_whne; eassumption + now symmetry.
-  Defined.
-
   Lemma _id_prop_inj {Γ l A x y} {t t' : term} (IA : [Γ ||-<l> tId A x y ≅ tId A x y])
    (Rt : IdPropEq (normRedId IA) t t') (nftt' := IdPropEq_isId Rt) :
    id_hd_view Γ A x y (fst nftt') (snd nftt').
@@ -363,22 +311,6 @@ Section TermConstructors.
     induction Rt as [| ?? []]; cbn in * ; [split|gtyping].
     - etransitivity; tea; now symmetry.
     - eapply convtm_conv; tea; etransitivity; [symmetry|]; now eapply escapeTm.
-  Qed.
-
-  Lemma isId_uniq {t} (p q : isId t) : p = q.
-  Proof.
-    destruct p; depind q; try easy; try now inversion w.
-    f_equal; eapply whne_uniq.
-  Qed.
-
-  Lemma id_hd_view_irr {Γ A x y t0 t0' t1 t1'}
-    (nft0 : isId t0) (nft0' : isId t0') (nft1 : isId t1) (nft1' : isId t1') :
-    t0 = t1 -> t0' = t1' -> id_hd_view Γ A x y nft0 nft0' -> id_hd_view Γ A x y nft1 nft1'.
-  Proof.
-    intros ??.
-    enough (h : id_hd_view Γ A x y nft0 nft0' = id_hd_view Γ A x y nft1 nft1')
-    by now rewrite h.
-    subst; f_equal; apply isId_uniq.
   Qed.
 
   Lemma _id_conv_inj Γ A x y t t' (nft : isId t) (nft' : isId t') :

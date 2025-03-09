@@ -87,11 +87,17 @@ Section IdRedTmEq.
   Section Def.
     Context `{!GenericTypingProperties _ _ _ _ _ _ _ _ _}.
 
+    Lemma IdPropEq_isId {t t'} : IdPropEq t t' -> isId t × isId t'.
+    Proof.
+      intros [|?? []]; split; constructor.
+      all: eapply convneu_whne; eassumption + now symmetry.
+    Defined.
+
     Definition whnfL {t u} : IdPropEq t u -> whnf t.
-    Proof. intros [] ; [constructor|]; unshelve eapply NeNf.whredL ; cycle 3; tea. Qed.
+    Proof. intros []%IdPropEq_isId ; now eapply isId_whnf. Qed.
 
     Definition whnfR {t u} : IdPropEq t u -> whnf u.
-    Proof. intros [] ; [constructor|]; unshelve eapply NeNf.whredR ; cycle 3; tea. Qed.
+    Proof. intros []%IdPropEq_isId ; now eapply isId_whnf. Qed.
 
     Definition whredL {t u} : @IdRedTmEq t u -> [Γ |- t ↘ IdRedTyPack.outTy IA].
     Proof. intros []; econstructor; tea; now eapply whnfL. Defined.
@@ -105,4 +111,4 @@ Arguments IdRedTmEq {_ _ _ _ _ _ _ _ _ _ _ _}.
 Arguments IdPropEq {_ _ _ _ _ _ _ _ _ _}.
 End IdRedTmEq.
 
-Export IdRedTmEq(IdRedTmEq,Build_IdRedTmEq, IdPropEq).
+Export IdRedTmEq(IdRedTmEq,Build_IdRedTmEq, IdPropEq, IdPropEq_isId).

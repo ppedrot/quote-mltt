@@ -71,19 +71,18 @@ Section NatRedTmEq.
   Section Def.
     Context `{!GenericTypingProperties _ _ _ _ _ _ _ _ _}.
 
-    Definition whnfL {t u} : NatPropEq t u -> whnf t.
+    Lemma NatPropEq_isNat {t t' : term} :
+      NatPropEq t t' -> isNat t × isNat t'.
     Proof.
-      intros [].
-      1,2: constructor.
-      unshelve eapply NeNf.whredL; cycle 3; tea.
-    Qed.
+      intros [| |?? []]; split; constructor.
+      all: eapply convneu_whne; eassumption + now symmetry.
+    Defined.
+
+    Definition whnfL {t u} : NatPropEq t u -> whnf t.
+    Proof. intros []%NatPropEq_isNat; now eapply isNat_whnf. Qed.
 
     Definition whnfR {t u} : NatPropEq t u -> whnf u.
-    Proof.
-      intros [].
-      1,2: constructor.
-      unshelve eapply NeNf.whredR; cycle 3; tea.
-    Qed.
+    Proof. intros []%NatPropEq_isNat; now eapply isNat_whnf. Qed.
 
     Definition whredL {t u} : NatRedTmEq t u -> [Γ |- t ↘ tNat].
     Proof.
@@ -132,7 +131,7 @@ Arguments NatRedTmEq {_ _ _ _ _}.
 Arguments NatPropEq {_ _ _ _ _}.
 End NatRedTmEq.
 
-Export NatRedTmEq(NatRedTmEq,Build_NatRedTmEq, NatPropEq, NatRedEqInduction).
+Export NatRedTmEq(NatRedTmEq,Build_NatRedTmEq, NatPropEq, NatRedEqInduction, NatPropEq_isNat).
 
 Notation "[ Γ ||-Nat t ≅ u :Nat]" := (@NatRedTmEq _ _ _ _ _ Γ t u).  (* (at level 0, Γ, t, u, A, RA at level 50). *)
 

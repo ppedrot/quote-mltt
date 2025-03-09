@@ -228,41 +228,30 @@ Ltac caseLR lr :=
     pattern l, Γ, A, B, lr; apply LR_case_TyUr; clear l Γ A B lr; intros l Γ A B
   end.
 
-From Equations Require Import Equations.
-
-Derive Signature for whne.
-
-Definition whne_uniq {t} (w1 w2 : whne t) : w1 = w2.
-Proof.
-  induction w1; depelim w2; f_equal; eauto.
-Qed.
-
-Derive Signature for isType.
-
-Definition isType_uniq {A} (w1 w2 : isType A) : w1 = w2.
-Proof.
-  destruct w1; depelim w2; try reflexivity; try solve [inv_whne].
-  f_equal; now eapply whne_uniq.
-Qed.
-
-
 (** ** Inversion principles *)
+
+Instance whredTyLR `{GenericTypingProperties} {Γ l} : WhRedTyRel Γ (LRAdequate Γ (LogRel l)).
+Proof.
+  unshelve econstructor; intros ?? lr; caseLR lr;
+    try first [now eapply whredtyL | now eapply whredtyR | now eapply whredty_conv].
+Defined.
+
+Instance whredTmLR `{GenericTypingProperties} {Γ A B l} (RAB : [Γ ||-<l> A ≅ B]) :
+  WhRedTmRel Γ (whredtyL RAB).(tyred_whnf) (RAB.(LRPack.eqTm)).
+Proof.
+  caseLR RAB; intros; try typeclasses eauto.
+  - apply URedTmEqWhRedRel.
+  - apply neRedTmWhRedTm.
+  - apply IdRedTmWhRedRel.
+Defined.
+
 
 Section Inversions.
   Context `{GenericTypingProperties}.
 
-  Definition whredL  {Γ l A B } (lr : [Γ ||-<l> A ≅ B]) : [Γ |- A ↘ ].
-  Proof. indLR lr; intros h **; try now refine (whredtyL h).  Defined.
-
-  Definition whredR  {Γ l A B } (lr : [Γ ||-<l> A ≅ B]) : [Γ |- B ↘ ].
-  Proof. indLR lr; intros h **; try now refine (whredtyR h). Defined.
-
-  Definition whred_conv  {Γ l A B } (lr : [Γ ||-<l> A ≅ B]) : [Γ |- (whredL lr).(tyred_whnf) ≅ (whredR lr).(tyred_whnf)].
-  Proof. indLR lr; intros h **; try now refine (whredty_conv h). Defined.
-
-  Lemma whredL_conv {Γ l A B} (lr : [Γ ||-<l> A ≅ B]) : [Γ |- A ≅ (whredL lr).(tyred_whnf)].
+  Lemma whredL_conv {Γ l A B} (lr : [Γ ||-<l> A ≅ B]) : [Γ |- A ≅ (whredtyL lr).(tyred_whnf)].
   Proof.
-    pose proof (whred_conv lr); destruct (whredL lr); cbn in *.
+    pose proof (whredty_conv lr); destruct (whredtyL lr); cbn in *.
     eapply convty_exp.
     1: gtyping.
     1: eapply redty_refl; gtyping.
@@ -271,6 +260,7 @@ Section Inversions.
 
   Definition pidom (A : term) :=
     match A with | tProd dom _ => dom | _ => A end.
+
 
   Definition picod (A : term) :=
     match A with | tProd _ cod => cod | _ => A end.
@@ -303,35 +293,16 @@ Section Inversions.
 
   Lemma invLREqL {Γ l A B A'} (lr : [Γ ||-<l> A ≅ B]) (r : [A ⤳* A']) (w : isType A') : invLRTyEqL lr w.
   Proof.
-    assert (A' = (whredL lr).(tyred_whnf)); subst.
+    assert (A' = (whredtyL lr).(tyred_whnf)); subst.
     1: eapply whred_det; try apply isType_whnf; tea; gtyping.
-    rewrite (isType_uniq w (whredL lr).(tyred_whnf_isType)).
+    rewrite (isType_uniq w (whredtyL lr).(tyred_whnf_isType)).
     clear r w;  indLR lr; cbn; intros ; repeat esplit.
   Qed.
 
-  Definition invLRTyEqR {Γ l A B A'} (lr : [Γ ||-<l> A ≅ B]) (w : isType A') :=
-    match w return Type with
-    | UnivType => ∑ (h : [Γ ||-U<l> A ≅ B]), lr = LRU_ h
-    | ProdType => ∑ (h : [Γ ||-Π<l> A ≅ B]), [× lr = LRPi' h, h.(ParamRedTy.domR) = pidom A' & h.(ParamRedTy.codR) = picod A']
-    | NatType => ∑ (h : [Γ ||-Nat A ≅ B]), lr = LRNat_ l h
-    | EmptyType => ∑ (h : [Γ ||-Empty A ≅ B]), lr = LREmpty_ l h
-    | SigType => ∑ (h : [Γ ||-Σ<l> A ≅ B]), [× lr = LRSig' h, h.(ParamRedTy.domR) = sigdom A' & h.(ParamRedTy.codR) = sigcod A']
-    | IdType => ∑ (h : [Γ||-Id<l> A ≅ B]), [× lr = LRId' h, h.(IdRedTy.tyR) = idparam A', h.(IdRedTy.lhsR) = idlhs A' & h.(IdRedTy.rhsR) = idrhs A']
-    | NeType _ => ∑ (h : [Γ ||-ne A ≅ B]), lr = LRne_ l h × h.(neRedTy.tyR) = A'
-    end.
-
-  Lemma invLREqR {Γ l A B B'} (lr : [Γ ||-<l> A ≅ B]) (r : [B ⤳* B']) (w : isType B') : invLRTyEqR lr w.
-  Proof.
-    assert (B' = (whredR lr).(tyred_whnf)); subst.
-    1: eapply whred_det; try apply isType_whnf; tea; gtyping.
-    rewrite (isType_uniq w (whredR lr).(tyred_whnf_isType)).
-    clear r w;  indLR lr; cbn; intros ; repeat esplit.
-  Qed.
-
-  Lemma invLREqL_whred {Γ l l' A A' B} (RAA' : [Γ ||-<l'> A ≅ A']) (lr : [Γ ||-<l> A ≅ B]) : invLRTyEqL lr (whredL RAA').(tyred_whnf_isType).
+  Lemma invLREqL_whred {Γ l l' A A' B} (RAA' : [Γ ||-<l'> A ≅ A']) (lr : [Γ ||-<l> A ≅ B]) : invLRTyEqL lr (whredtyL RAA').(tyred_whnf_isType).
   Proof. apply invLREqL; gtyping. Qed.
 
-  Lemma invLREqL_whred' {Γ l l' A B C} (RAB : [Γ ||-<l> A ≅ B]) (lr : [Γ ||-<l'> B ≅ C]) : invLRTyEqL lr (whredR RAB).(tyred_whnf_isType).
+  Lemma invLREqL_whred' {Γ l l' A B C} (RAB : [Γ ||-<l> A ≅ B]) (lr : [Γ ||-<l'> B ≅ C]) : invLRTyEqL lr (whredtyR RAB).(tyred_whnf_isType).
   Proof. apply invLREqL; gtyping. Qed.
 
   Lemma invLRU {Γ l B} : [Γ ||-<l> U ≅ B] -> [Γ ||-U<l> U ≅ B].

@@ -147,7 +147,7 @@ Proof.
 Qed.
 
 Lemma redFwd {Γ l A B} (lr : [Γ ||-<l> A ≅ B]) :
-  [Γ ||-<l> (whredL lr).(tyred_whnf) ≅ (whredR lr).(tyred_whnf)].
+  [Γ ||-<l> (whredtyL lr).(tyred_whnf) ≅ (whredtyR lr).(tyred_whnf)].
 Proof.
   indLR lr.
   - intros []; cbn in *; apply LRU_; econstructor; tea; gtyping.
@@ -168,7 +168,7 @@ Proof.
 Qed.
 
 Lemma redFwd' {Γ l A B} (lr : [Γ ||-<l> A ≅ B]) :
-  [Γ ||-<l> A ≅ (whredL lr).(tyred_whnf)] × [Γ ||-<l> B ≅ (whredR lr).(tyred_whnf)].
+  [Γ ||-<l> A ≅ (whredtyL lr).(tyred_whnf)] × [Γ ||-<l> B ≅ (whredtyR lr).(tyred_whnf)].
 Proof.
   split.
   - eapply redSubst; [eapply lrefl, redFwd|]; gtyping.
@@ -176,16 +176,6 @@ Proof.
 Qed.
 
 Arguments IdRedTy.outTy {_ _ _ _ _ _ _ _ _ _ _ _ _ _} _ /.
-
-Instance WhRedTmRelLR {Γ l A B } (lr : [Γ ||-<l> A ≅ B]) :
-  WhRedTmRel Γ (whredL lr).(tyred_whnf) (lr.(LRPack.eqTm)).
-Proof.
-  caseLR lr; intros; try typeclasses eauto.
-  (* TODO: should debug why these are not automatically found *)
-  - apply URedTmEqWhRedRel.
-  - apply neRedTmWhRedTm.
-  - apply IdRedTmWhRedRel.
-Defined.
 
 Lemma redFwdURedTm {Γ l l' A B t} {h : [Γ ||-U<l> A ≅ B]}
   (Rt : URedTm l' Γ t) : URedTm l' Γ (URedTm.te Rt).
@@ -220,8 +210,8 @@ Proof.
     | [|- [_ |-[ _ ] _ :⤳*: _ : _]] => apply redtmwf_refl ; cbn; gtyping end.
   all: tea.
   pose proof (Rtu := redTyRecFwd _ relEq).
-  pose proof (eql := whredtm_ty_det (whredL Rtu) (whredtm redL)).
-  pose proof (eqr := whredtm_ty_det (whredR Rtu) (whredtm redR)).
+  pose proof (eql := whredtm_ty_det (whredtyL Rtu) (whredtm redL)).
+  pose proof (eqr := whredtm_ty_det (whredtyR Rtu) (whredtm redR)).
   cbn in eql, eqr; rewrite <-eql, <-eqr.
   eapply redTyRecBwd, redFwd.
 Qed.
@@ -231,8 +221,8 @@ Lemma redTmFwd' {Γ l A B t u} {RA : [Γ ||-<l> A ≅ B]}
   [× [Γ ||-<l> t ≅ (whredtmL Rtu).(tmred_whnf) : _| RA],
     [Γ ||-<l> (whredtmL Rtu).(tmred_whnf) ≅ (whredtmR Rtu).(tmred_whnf) : _  | RA],
     [Γ ||-<l> (whredtmR Rtu).(tmred_whnf) ≅ u : _ | RA],
-    [Γ ||-<l> A ≅ (whredL RA).(tyred_whnf)] &
-    [Γ ||-<l> A ≅ (whredR RA).(tyred_whnf)] ].
+    [Γ ||-<l> A ≅ (whredtyL RA).(tyred_whnf)] &
+    [Γ ||-<l> A ≅ (whredtyR RA).(tyred_whnf)] ].
 Proof.
   pose proof (redTmFwd Rtu); pose proof (redFwd' RA) as [RAwh RBwh].
   split; tea.

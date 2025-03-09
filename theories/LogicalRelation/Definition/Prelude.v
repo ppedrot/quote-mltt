@@ -18,11 +18,11 @@ Ltac logrel := eauto with logrel.
 (** Instead of using induction-recursion, we encode simultaneously the fact that a type is reducible,
   and the graph of its decoding, as a single inductive relation.
   Concretely, the type of our reducibility relation is the following RedRel:
-  for some R : RedRel, R Γ A eqTy redTm eqTm says
-  that according to R, A is reducible in Γ and the associated reducible type equality
-  (resp. term reducibility, term reducible equality) are eqTy (resp. redTm eqTm).
-  One should think of RedRel as a functional relation taking two arguments (Γ and A) and returning
-  three outputs (eqTy, redTm and eqTm). *)
+  for some R : RedRel, R Γ A B eqTm says
+  that according to R, A is reducibly convertible to B in Γ and the associated reducible term equality
+  is eqTm.
+  One should think of RedRel as a functional relation taking three arguments (Γ, A and B) and returning
+  eqTm as an output. *)
 
   Definition RedRel@{i j} :=
   context               ->
@@ -51,7 +51,7 @@ Notation "[ P | Γ ||- t : A ]" := (@LRPack.eqTm Γ A A P t t).
 Notation "[ P | Γ ||- t ≅ u : A ]" := (@LRPack.eqTm Γ A _ P t u).
 Notation "[ P | Γ ||- t ≅ u : A ≅ B ]" := (@LRPack.eqTm Γ A B P t u).
 
-(** An LRPack is adequate wrt. a RedRel when its three unpacked components are. *)
+(** An LRPack is adequate wrt. a RedRel when its unpacked eqTm component is. *)
 Definition LRPackAdequate@{i j} {Γ : context}
   (R : RedRel@{i j}) {A B : term} (P : LRPack@{i} Γ A B) : Type@{j} :=
   R Γ A B P.(LRPack.eqTm).
@@ -80,6 +80,8 @@ Coercion LRAd.adequate : LRAdequate >-> LRPackAdequate.
 Notation "[ R | Γ ||- A ≅ B ]"              := (@LRAdequate Γ R A B).
 Notation "[ R | Γ ||- t ≅ u : A | RA ]" := (RA.(@LRAd.pack Γ R A _).(LRPack.eqTm) t u).
 Notation "[ R | Γ ||- t ≅ u : A ≅ B | RA ]" := (RA.(@LRAd.pack Γ R A B).(LRPack.eqTm) t u).
+
+(** ** Uniform interface to access the wh normal form of type/term reducibility relations *)
 
 Class WhRedTyRel `{ta : tag} `{WfType ta} `{RedType ta} `{ConvType ta} Γ (P : term -> term -> Type) := {
   whredtyL : forall {A B}, P A B -> [Γ |- A ↘ ] ;
