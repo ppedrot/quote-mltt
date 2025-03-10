@@ -9,7 +9,7 @@ Section Properties.
     `{!RedType ta} `{!RedTerm ta}.
 
 
-  (** Typing is stable by substitution *) 
+  (** Typing is stable by substitution *)
   Class TypingSubst :=
   {
     ty_subst {Γ Δ σ A} :
@@ -60,7 +60,7 @@ Section Properties.
 
   Definition type_hd_view (Γ : context) {T T' : term}
     (nfT : isType T) (nfT' : isType T') : Type :=
-    
+
     match nfT, nfT' with
       | @UnivType s, @UnivType s' => s = s'
       | @ProdType A B, @ProdType A' B' => [Γ |- A' ≅ A] × [Γ,, A' |- B ≅ B']
@@ -98,6 +98,16 @@ Section Properties.
       | _, _ => False
     end.
 
+  Lemma univ_hd_view_irr {Γ T0 T0' T1 T1'}
+    (nfT0 : isType T0) (nfT0' : isType T0') (nfT1 : isType T1) (nfT1' : isType T1') :
+    T0 = T1 -> T0' = T1' -> univ_hd_view Γ nfT0 nfT0' -> univ_hd_view Γ nfT1 nfT1'.
+  Proof.
+    intros ??.
+    enough (h : univ_hd_view Γ nfT0 nfT0' = univ_hd_view Γ nfT1 nfT1')
+    by now rewrite h.
+    subst; f_equal; apply isType_uniq.
+  Qed.
+
   Definition nat_hd_view (Γ : context) {t t' : term} (nft : isNat t) (nft' : isNat t') : Type :=
   match nft, nft' with
     | ZeroNat, ZeroNat => True
@@ -106,12 +116,34 @@ Section Properties.
     | _, _ => False
   end.
 
+  Lemma nat_hd_view_irr {Γ t0 t0' t1 t1'}
+    (nft0 : isNat t0) (nft0' : isNat t0') (nft1 : isNat t1) (nft1' : isNat t1') :
+    t0 = t1 -> t0' = t1' -> nat_hd_view Γ nft0 nft0' -> nat_hd_view Γ nft1 nft1'.
+  Proof.
+    intros ??.
+    enough (h : nat_hd_view Γ nft0 nft0' = nat_hd_view Γ nft1 nft1')
+    by now rewrite h.
+    subst; f_equal; apply isNat_uniq.
+  Qed.
+
+
   Definition id_hd_view (Γ : context) (A x x' : term) {t t' : term} (nft : isId t) (nft' : isId t') : Type :=
     match nft, nft' with
       | @ReflId A a, @ReflId A' a' => [Γ |- A ≅ A'] × [Γ |- a ≅ a' : A]
       | NeId _, NeId _ => [Γ |- t ≅ t' : tId A x x']
       | _, _ => False
     end.
+
+  Lemma id_hd_view_irr {Γ A x y t0 t0' t1 t1'}
+    (nft0 : isId t0) (nft0' : isId t0') (nft1 : isId t1) (nft1' : isId t1') :
+    t0 = t1 -> t0' = t1' -> id_hd_view Γ A x y nft0 nft0' -> id_hd_view Γ A x y nft1 nft1'.
+  Proof.
+    intros ??.
+    enough (h : id_hd_view Γ A x y nft0 nft0' = id_hd_view Γ A x y nft1 nft1')
+    by now rewrite h.
+    subst; f_equal; apply isId_uniq.
+  Qed.
+
 
   Class TermConstructorsInj :=
   {
@@ -134,7 +166,7 @@ Section Properties.
       (nft : isId t) (nft' : isId t') :
       [Γ |- t ≅ t' : tId A x y] ->
       id_hd_view Γ A x y nft nft' ;
-    
+
     (* neu_conv_inj (Γ : context) (A t t' : term) :
       whne A -> whne t -> whne t' ->
       [Γ |- t ≅ t' : A] ->
@@ -194,5 +226,5 @@ Section Properties.
     ty_compl Γ A : [Γ |-[ta] A] -> [Γ |-[ta'] A] ;
     tm_compl Γ A t : [Γ |-[ta] t : A] -> [Γ |-[ta'] t : A] ;
   }.
-  
+
 End Properties.

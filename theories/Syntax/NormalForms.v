@@ -165,6 +165,36 @@ Proof.
   now eexists.
 Qed.
 
+(** * Unicity of witnesses *)
+
+Derive Signature for whne.
+
+Definition whne_uniq {t} (w1 w2 : whne t) : w1 = w2.
+Proof.
+  induction w1; depelim w2; f_equal; eauto.
+Qed.
+
+Derive Signature for isType.
+
+Definition isType_uniq {A} (w1 w2 : isType A) : w1 = w2.
+Proof.
+  destruct w1; depelim w2; try reflexivity; try solve [inv_whne].
+  f_equal; now eapply whne_uniq.
+Qed.
+
+Lemma isNat_uniq {t} (p q : isNat t) : p = q.
+Proof.
+  destruct p; depind q; try easy; try now inversion w.
+  f_equal; eapply whne_uniq.
+Qed.
+
+Lemma isId_uniq {t} (p q : isId t) : p = q.
+Proof.
+  destruct p; depind q; try easy; try now inversion w.
+  f_equal; eapply whne_uniq.
+Qed.
+
+
 (** ** Canonical forms *)
 
 Inductive isCanonical : term -> Type :=
