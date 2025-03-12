@@ -169,8 +169,6 @@ Qed.
 
 (** * Unicity of witnesses *)
 
-Derive Signature for whne.
-
 Definition whne_uniq {t} (w1 w2 : whne t) : w1 = w2.
 Proof.
   induction w1; depelim w2; f_equal; eauto.
