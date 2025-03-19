@@ -3,8 +3,7 @@
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
 
-Import DeclarativeTypingProperties AlgorithmicTypingData.
-
+Import DeclarativeTypingProperties AlgorithmicTypedConvData AlgorithmicTypingData.
 
 (** ** Definition of bundled algorithmic typing *)
 
@@ -115,9 +114,7 @@ Record ConvNeuBun Γ A m n :=
 {
   bun_conv_ne_ctx : [|-[de] Γ] ;
   bun_conv_ne_l : well_typed (ta := de) Γ m ;
-  bun_conv_ne_wh_l : whne m ;
   bun_conv_ne_r : well_typed (ta := de) Γ n ;
-  bun_conv_ne_wh_r : whne n ;
   bun_conv_ne : [Γ |-[al] m ~ n ▹ A]
 }.
 
@@ -125,9 +122,7 @@ Record ConvNeuRedBun Γ A m n :=
 {
   bun_conv_ne_red_ctx : [|-[de] Γ] ;
   bun_conv_ne_red_l : well_typed (ta := de) Γ m ;
-  bun_conv_ne_red_wh_l : whne m ;
   bun_conv_ne_red_r : well_typed (ta := de) Γ n ;
-  bun_conv_ne_red_wh_r : whne n ;
   bun_conv_ne_red : [Γ |-[al] m ~h n ▹ A]
 }.
 
@@ -135,9 +130,7 @@ Record ConvNeuConvBun Γ A m n :=
 {
   bun_conv_ne_conv_ctx : [|-[de] Γ] ;
   bun_conv_ne_conv_l : well_typed (ta := de) Γ m ;
-  bun_conv_ne_conv_wh_l : whne m ;
   bun_conv_ne_conv_r : well_typed (ta := de) Γ n ;
-  bun_conv_ne_conv_wh_r : whne n ;
   bun_conv_ne_conv_ty : term ;
   bun_conv_ne_conv : [Γ |-[al] m ~ n ▹ bun_conv_ne_conv_ty] ;
   bun_conv_ne_conv_conv : [Γ |-[de] bun_conv_ne_conv_ty ≅ A]
@@ -235,14 +228,11 @@ Module BundledTypingData.
     change OneStepRedTermBun with (osred_tm (ta := bn)) in * ;
     change RedTermBun with (red_tm (ta := bn)) in *.
 
-  (** If bundled judgements are complete, then so are the unbundled judgments *)
-
-  #[refine]Instance CompleteBundledAlgoConv
-    `{ta : tag} `{!ConvType ta} `{ConvTerm ta} `{! ConvComplete (ta := ta) (ta' := bn)} :
-    ConvComplete (ta := ta) (ta' := al) := {}.
+  #[export,refine] Instance ConvImplies_Bundle
+    `{ta : tag} `{ConvType ta} `{ConvTerm ta} `{i : !ConvImplies ta bn} : 
+    `{ConvImplies ta al} := {}.
   Proof.
-    - now intros * []%(ty_conv_compl (ta' := bn)).
-    - now intros * []%(tm_conv_compl (ta' := bn)).
+    all: now intros * []%i.
   Qed.
 
 End BundledTypingData.
@@ -269,20 +259,16 @@ Module BundledIntermediateData.
     change (conv_term (ta := bni)) with (conv_term (ta := bn)) in * ;
     change (conv_neu_ty (ta := bni)) with (conv_neu_ty (ta := bn)) in *.
 
-  (** If bundled judgements are complete, then so are the unbundled judgments *)
-
-  #[refine]Instance CompleteBundledAlgoConv
-    `{ta : tag} `{!ConvType ta} `{ConvTerm ta} `{! ConvComplete (ta := ta) (ta' := bni)} :
-    ConvComplete (ta := ta) (ta' := al) := {}.
+  #[export,refine] Instance ConvImplies_BundleInt
+    `{ta : tag} `{ConvType ta} `{ConvTerm ta} `{i : !ConvImplies ta bni} : 
+    `{ConvImplies ta al} := {}.
   Proof.
-    - now intros * []%(ty_conv_compl (ta' := bni)).
-    - now intros * []%(tm_conv_compl (ta' := bni)).
+    all: now intros * []%i.
   Qed.
 
 End BundledIntermediateData.
 
 Set Universe Polymorphism.
-
 
 (** ** Invariants of algorithmic typing (aka McBride discipline):
   for each rule,
@@ -302,7 +288,7 @@ Set Universe Polymorphism.
 *)
 
 Section Invariants.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
   Lemma typeConvRed_prem2 (Γ : context) (A A' B B' : term) :
     [A ⤳* A'] ->
@@ -1078,7 +1064,7 @@ hypotheses holding. *)
 Section BundledConv.
   Universe u.
 
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
 
   Context (PTyEq PTyRedEq : context -> term -> term -> Type@{u})
@@ -1314,8 +1300,7 @@ only constant true predicates, we get only the post-conditions, ie a soundness t
 
 Section ConvSoundness.
 
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
-
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
   Let PTyEq (Γ : context) (A B : term) :=
     [Γ |-[de] A] ->
@@ -1346,12 +1331,17 @@ Section ConvSoundness.
     all: now constructor.
   Qed.
 
+  Corollary algo_conv_sound_ty Γ A B :
+    [Γ |-[ de ] A] -> [Γ |-[ de ] B] -> [Γ |-[al] A ≅ B] -> [Γ |-[ de ] A ≅ B].
+  Proof.
+    now intros ???%algo_conv_sound.
+  Qed.
+
 End ConvSoundness.
 
 Theorem bn_conv_sound
-  `{!TypingSubst (ta := de)}
-  `{!TypeReductionComplete (ta := de)}
-  `{!TypeConstructorsInj (ta := de)} :
+  `{!TypingSubst de}
+  `{!TypeConstructorsInj de} :
 
   BundledConvInductionConcl
     (fun Γ A B => [Γ |-[de] A ≅ B])
@@ -1376,7 +1366,8 @@ Qed.
 
 Section BundledTyping.
 
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
+  Context `{ta : tag} `{ConvType ta}.
 
   Context (PTy : context -> term -> Type)
     (PInf PInfRed PCheck : context -> term -> term -> Type).
@@ -1398,9 +1389,11 @@ Section BundledTyping.
     | context C [PTy ?Γ ?A] =>
         context C [PTy Γ A × [Γ |-[de] A]]
     | context C [PInf ?Γ ?A ?t] =>
-        context C [PInf Γ A t × [Γ |-[de] t : A]]
+        context C [PInf Γ A t ×
+          ([Γ |-[de] t : A] × forall T, [Γ |-[de] t : T] -> [Γ |-[de] A ≅ T])]
     | context C [PInfRed ?Γ ?A ?t] =>
-        context C [PInfRed Γ A t × [Γ |-[de] t : A]]
+        context C [PInfRed Γ A t × 
+          ([Γ |-[de] t : A] × forall T, [Γ |-[de] t : T] -> [Γ |-[de] A ≅ T])]
     | context C [PCheck ?Γ ?A ?t] =>
         context C [PCheck Γ A t × [Γ |-[de] t : A]]
     | ?Hyp' => Hyp'
@@ -1408,10 +1401,10 @@ Section BundledTyping.
 
   #[local] Ltac bundle Hyp :=
     lazymatch Hyp with
-      | [?Γ |-[al] ?A] => constr:([Γ |-[bn] A])
-      | [?Γ |-[al] ?t ▹ ?A] => constr:([Γ |-[bn] t ▹ A])
-      | [?Γ |-[al] ?t ▹h ?A] => constr:([Γ |-[bn] t ▹h A])
-      | [?Γ |-[al] ?t ◃ ?A] => constr:([Γ |-[bn] t ◃ A])
+      | [?Γ |-[ta] ?A] => constr:([Γ |-[bn] A])
+      | [?Γ |-[ta] ?t ▹ ?A] => constr:([Γ |-[bn] t ▹ A])
+      | [?Γ |-[ta] ?t ▹h ?A] => constr:([Γ |-[bn] t ▹h A])
+      | [?Γ |-[ta] ?t ◃ ?A] => constr:([Γ |-[bn] t ◃ A])
       | ?Hyp' => constr:(Hyp')
     end.
 
@@ -1453,46 +1446,69 @@ Section BundledTyping.
     | ?Cend => let Cend' := weak_concl Cend in constr:(Cend')
   end.
 
-  Let PTy' (c : context) (t : term) :=
-        [ |-[ de ] c] -> PTy c t × [c |-[ de ] t].
-  Let PInf' (c : context) (t t1 : term) :=
-     [ |-[ de ] c] -> PInf c t t1 × [c |-[ de ] t1 : t].
-  Let PInfRed' (c : context) (t t1 : term) :=
-       [ |-[ de ] c] -> PInfRed c t t1 × [c |-[ de ] t1 : t].
-  Let PCheck' (c : context) (t t1 : term) :=
-         [ |-[ de ] c] ->
-         [c |-[ de ] t] -> PCheck c t t1 × [c |-[ de ] t1 : t].
+  #[local] Ltac crush := repeat unshelve (
+    match reverse goal with
+      | IH : context [prod] |- _ => destruct IH as (?&IH) ; [..|shelve] ; prod_hyp_splitter ; gen_typing
+    end) ;
+  split ; prod_splitter ; [idtac|econstructor|..] ; eauto.
 
   (** The main theorem *)
   Theorem algo_typing_discipline : ltac:(
     let t := (type of (AlgoTypingInduction PTy PInf PInfRed PCheck)) in
     let ind := strong_statement t in
-    exact ind).
+    exact (
+      (forall Γ A A', [Γ |-[de] A] -> [Γ |-[de] A'] -> [Γ |-[ta] A ≅ A'] -> [Γ |-[de] A ≅ A']) ->
+      ind)).
   Proof.
-    intros.
-    subst PTy' PInf' PInfRed' PCheck'.
+    intros Hconv **.
     apply AlgoTypingInduction.
-    1-10: solve [intros ;
-      repeat unshelve (
-        match reverse goal with
-          | IH : context [prod] |- _ => destruct IH ; [..|shelve] ; gen_typing
-        end) ;
-      now split ; [|econstructor] ; eauto].
+    1-7: intros ; crush.
+
+    - intros * Hin ? ; crush.
+
+      intros ? (?&(?&[-> ])&?)%termGen'.
+      eapply in_ctx_inj in Hin ; tea ; subst.
+      assumption.
+
+    - intros * ? IHA ? IHB ? ; crush.
+      1: eauto 10.
+
+      intros ? (?&[-> ]&?)%termGen'.
+      assumption.
+
+    - intros * ? IHA ? IHt ? ; crush.
+      
+      intros ? (?&(?&[-> ])&?)%termGen'.
+      etransitivity ; tea.
+      constructor ; eauto.
+      now eapply TypeRefl.
+
     - intros * ? IHI ? IHC ?.
-      destruct IHI as [? IHt].
-      1: gen_typing.
+    
+      destruct IHI as [? [IHt]] ; tea.
       destruct IHC ; tea.
       1: now eapply boundary, prod_ty_inv in IHt as [].
-      split ; [|econstructor] ; eauto.
+      split ; [|split ; [econstructor|]] ; eauto.
+
+      intros ? (?&(?&?&[->])&?)%termGen'.
+      etransitivity ; tea.
+      eapply typing_subst1 ; tea.
+      1: now eapply TermRefl.
+      now eapply prod_ty_inj.
+
     - intros.
       split ; [eauto|..].
-      now econstructor.
+      split ; [now econstructor|].
+      now intros ? (?&[]&?)%termGen'.
     - intros.
       split ; [eauto|..].
-      now econstructor.
+      split ; [now econstructor|].
+      now intros ? (?&[]&?)%termGen'.
     - intros.
       split ; [eauto|..].
-      now econstructor.
+      split ; [now econstructor|].
+      now intros ? (?&[->]&?)%termGen'.
+    
     - intros * ? IHn ? IHP ? IHz ? IHs ?.
       assert [|-[de] Γ,, tNat]
         by (econstructor ; tea ; now econstructor).
@@ -1505,26 +1521,31 @@ Section BundledTyping.
       assert [Γ |-[de] elimSuccHypTy P]
         by now eapply elimSuccHypTy_ty.
       split ; [eauto 10 |..].
-      econstructor.
+      split ; [econstructor|].
       + now eapply IHP.
       + now eapply IHz.
       + now eapply IHs.
       + now eapply IHn.
+      + now intros ? (?&[->]&?)%termGen'.
     - intros.
       split ; [eauto|..].
-      now econstructor.
+      split ; [now econstructor|].
+      now intros ? (?&->&?)%termGen'.
     - intros * ? IHe ? IHP ?.
       assert [|-[de] Γ,, tEmpty]
         by (econstructor ; tea ; now econstructor).
       split ; [eauto|..].
-      econstructor.
+      split ; [econstructor|].
       + now eapply IHP.
       + now eapply IHe.
+      + now intros ? (?&[->]&?)%termGen'.
     - intros * ? ihA ? ihB ?.
-      edestruct ihA as []; tea.
-      edestruct ihB as [].
+      edestruct ihA as (?&?&?); tea.
+      edestruct ihB as (?&?&?).
       1: gen_typing.
-      split; [eauto|now econstructor].
+      split; [eauto|..].
+      split ; [econstructor|..] ; eauto.
+      now intros ? (?&[->]&?)%termGen'.
     - intros * ? ihA ? ihB ? iha ? ihb ?.
       edestruct ihA as []; tea.
       edestruct ihB as [].
@@ -1532,24 +1553,37 @@ Section BundledTyping.
       edestruct iha as []; tea.
       edestruct ihb as []; tea.
       1: now eapply typing_subst1.
-      split;[eauto|now econstructor].
-      (* why is that not found by eauto ? *)
-      eapply X17; tea; now split.
+      split;[eauto 10|..].
+      split ; [econstructor|..] ; eauto.
+      now intros ? (?&[->]&?)%termGen'.
     - intros * ? ih ?.
-      edestruct ih as []; tea.
-      split;[eauto|now econstructor].
+      edestruct ih as (?&?&?); tea.
+      split;[eauto|..].
+      split ; [econstructor|..] ; eauto.
+      intros ? (?&(?&?&[->])&?)%termGen'.
+      etransitivity ; tea.
+      now eapply sig_ty_inj.
     - intros * ? ih ?.
-      edestruct ih as []; tea.
-      split;[eauto|now econstructor].
+      edestruct ih as (?&?&?); tea.
+      split;[eauto|..].
+      split ; [econstructor|..] ; eauto.
+      intros ? (?&(?&?&[->])&?)%termGen'.
+      etransitivity ; tea.
+      eapply typing_subst1.
+      1: now eapply TermRefl ; econstructor.
+      now eapply sig_ty_inj.
     - intros * ? ihA ? ihx ? ihy ?.
       edestruct ihA as []; tea.
       assert [Γ |-[de] A] by now econstructor.
       split; [eauto|].
-      econstructor; tea; [now eapply ihx | now eapply ihy].
+      split.
+      1: econstructor; [now eapply ihA | now eapply ihx | now eapply ihy].
+      now intros ? (?&[->]&?)%termGen'.
     - intros * ? ihA ? ihx ?.
       assert [Γ |-[de] A] by now eapply ihA.
-      split; [eauto|]. 
-      econstructor; tea; now eapply ihx.
+      split; [eauto|].
+      split ; [econstructor; tea; now eapply ihx|..].
+      now intros ? (?&[->]&?)%termGen'.
     - intros * ? ihA ? ihx ? ihP ? ihhr ? ihy ? ihe ?.
       assert [Γ |-[de] A] by now eapply ihA.
       assert [Γ |-[de] x : A] by now eapply ihx.
@@ -1560,20 +1594,25 @@ Section BundledTyping.
           cbn;rewrite 2!wk1_ren_on, 2!shift_one_eq; now econstructor.
       }
       assert [Γ |-[de] tId A x y] by now econstructor.
-      split. 1:eapply X22; eauto. (* ??? *)
-      econstructor; tea; [eapply ihP| eapply ihhr| eapply ihy | eapply ihe]; eauto.
-    - intros * ? IH HA ?.
-      destruct IH as [? IH] ; tea.
+      split. 1:eauto 10.
+      split ; [econstructor; tea; [eapply ihP| eapply ihhr| eapply ihy | eapply ihe]; eauto|..].
+      now intros ? (?&[->]&?)%termGen'.
+    - eintros * ? IH [HA ?]%dup ? ?.
+      destruct IH as (?&?&?) ; tea.
+      eapply subject_reduction_type, reddecl_conv in HA ; refold.
+      2: boundary.
       split ; [eauto|..].
-      econstructor ; tea.
-      eapply subject_reduction_type, reddecl_conv in HA.
-      1: eassumption.
-      now boundary.
+      split ; [econstructor ; tea|..].
+      
+      intros.
+      etransitivity ; eauto.
+      now symmetry.
+
     - intros * ? IHt HA ?.
-      destruct IHt as [? IHt] ; eauto.
+      destruct IHt as (?&?&?) ; eauto.
       split ; [eauto|].
       econstructor ; tea.
-      eapply algo_conv_sound in HA ; tea.
+      eapply Hconv in HA ; tea.
       now boundary.
   Qed.
 
@@ -1581,22 +1620,31 @@ Section BundledTyping.
     ltac:(let t := eval red in (AlgoTypingInductionConcl PTy PInf PInfRed PCheck) in
       let t' := weak_statement t in exact t').
 
-  Corollary BundledTypingInduction :
+  Definition BundledTypingInduction_stmt :=
     ltac:(
       let t := (type of (AlgoTypingInduction PTy PInf PInfRed PCheck)) in
       let ind := weak_statement t in
       exact ind).
-  Proof.
-    intros.
-    repeat match goal with |- prod _ _ => split end.
-    all: intros * [].
-    all: apply algo_typing_discipline ; assumption.
-  Qed.
 
 End BundledTyping.
 
+Corollary BundledTypingInduction `{!TypingSubst de} `{!TypeConstructorsInj de}
+  PTy PInf PInfRed PCheck :
+  BundledTypingInduction_stmt (ta := al) PTy PInf PInfRed PCheck.
+Proof.
+  red.
+  intros.
+  repeat match goal with |- prod _ _ => split end.
+  all: intros * [].
+  all: apply (algo_typing_discipline (ta := al) PTy PInf PInfRed PCheck) ;
+    auto using algo_conv_sound_ty.
+Qed.
+
 Section TypingSoundness.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
+  Context `{ta : tag} `{conv : ConvType ta}.
+  Hypothesis conv_sound :
+    forall Γ A A', [Γ |-[de] A] -> [Γ |-[de] A'] -> [Γ |-[ta] A ≅ A'] -> [Γ |-[de] A ≅ A'].
 
   Let PTy (Γ : context) (A : term) :=
     [|-[de] Γ] -> [Γ |-[de] A].
@@ -1607,11 +1655,11 @@ Section TypingSoundness.
     [Γ |-[de] A] ->
     [Γ |-[de] t : A].
 
-  Theorem algo_typing_sound : AlgoTypingInductionConcl PTy PInf PInf PCheck.
+  Theorem algo_typing_sound_generic : AlgoTypingInductionConcl PTy PInf PInf PCheck.
   Proof.
     subst PTy PInf PCheck.
     red.
-    pose proof (algo_typing_discipline 
+    pose proof (algo_typing_discipline
       (fun _ _ => True) (fun _ _ _ => True) (fun _ _ _ => True) (fun _ _ _ => True)) as [H' H] 
       ;
     cycle -1.
@@ -1619,15 +1667,40 @@ Section TypingSoundness.
       intros ; apply H' ; tea ; match goal with H : sigT _ |- _ => destruct H | _ => idtac end ; gen_typing 
       | ..] ; clear H' ; try destruct H as [H' H]).
     1: now intros ; apply H ; gen_typing.
-    all: now constructor.
+    all: tea ; now constructor.
+  Qed.
+
+  Theorem algo_infer_unique Γ A T t :
+    [|-[de] Γ] ->
+    [Γ |-[de] t : T] ->
+    ([Γ |-[ta] t ▹ A] -> [Γ |-[de] A ≅ T]) × ([Γ |-[ta] t ▹h A] -> [Γ |-[de] A ≅ T]).
+  Proof.
+    pose proof (algo_typing_discipline 
+      (fun _ _ => True) (fun _ _ _ => True) (fun _ _ _ => True) (fun _ _ _ => True)) as [H' H] 
+      ;
+    cycle -1.
+    1: shelve.
+    all: easy.
+    Unshelve.
+    intros ; split ; intros Hal.
+    all: eapply H in Hal ; eauto.
+    all: now prod_hyp_splitter.
+  Qed.
+
+  Corollary algo_context_sound Γ : [|-[ta] Γ] -> [|-[de] Γ ].
+  Proof.
+    induction 1 as [| ???? HA] ; constructor ; tea.
+    now eapply algo_typing_sound_generic in HA.
   Qed.
 
 End TypingSoundness.
 
+Definition algo_typing_sound `{!TypingSubst de} `{!TypeConstructorsInj de} :=
+  algo_typing_sound_generic (ta := al) algo_conv_sound_ty.
+
 Theorem bn_alg_typing_sound
-  `{!TypingSubst (ta := de)}
-  `{!TypeReductionComplete (ta := de)}
-  `{!TypeConstructorsInj (ta := de)} :
+  `{!TypingSubst de}
+  `{!TypeConstructorsInj de} :
 
   BundledTypingInductionConcl
     (fun Γ A => [Γ |-[de] A])
@@ -1638,27 +1711,24 @@ Proof.
   red.
   prod_splitter.
   all: intros * [].
-  all: match goal with H : context [al] |- _ => eapply algo_typing_sound in H end.
-  all: prod_hyp_splitter.
-  all: now eassumption.
+  all: match goal with H : context [al] |- _ => eapply (algo_typing_sound_generic (ta := al)) in H end ;
+    auto using algo_conv_sound_ty.
 Qed.
 
 Lemma bn_typing_sound 
-  `{!TypingSubst (ta := de)}
-  `{!TypeReductionComplete (ta := de)}
-  `{!TypeConstructorsInj (ta := de)}
+  `{!TypingSubst de}
+  `{!TypeConstructorsInj de}
   Γ t A :
   [Γ |-[bn] t : A] -> [Γ |-[de] t : A].
 Proof.
   intros [???Hty?].
   econstructor ; tea.
-  now eapply algo_typing_sound in Hty.
+  eapply algo_typing_sound_generic in Hty ; eauto using algo_conv_sound_ty.
 Qed.
 
 Corollary inf_conv_decl
-  `{!TypingSubst (ta := de)}
-  `{!TypeReductionComplete (ta := de)}
-  `{!TypeConstructorsInj (ta := de)}
+  `{!TypingSubst de}
+  `{!TypeConstructorsInj de}
   Γ t A A' :
   [Γ |-[al] t ▹ A] ->
   [Γ |-[de] A ≅ A'] ->
@@ -1666,6 +1736,5 @@ Corollary inf_conv_decl
 Proof.
   intros Ht Hconv.
   apply algo_typing_sound in Ht.
-  2: boundary.
-  now econstructor.
+  all: gen_typing.
 Qed.

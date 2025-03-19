@@ -2,21 +2,20 @@
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
+From LogRel.TypingProperties Require Import Normalisation DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
 From LogRel.Algorithmic Require Import BundledAlgorithmicTyping AlgorithmicConvProperties AlgorithmicTypingProperties.
 From LogRel Require Import Utils.
 
-From LogRel.Decidability Require Import Functions Soundness.
+From LogRel.Decidability Require Import Functions Views Soundness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
 #[global] Unset Asymmetric Patterns.
 
-Import DeclarativeTypingProperties AlgorithmicTypingData.
+Import DeclarativeTypingProperties.
 
 Section RedImplemComplete.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
-
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
   #[local]Definition R_aux := lexprod term term cored term_subterm.
 
@@ -38,14 +37,6 @@ Section RedImplemComplete.
   - eapply well_founded_term_subterm.
   - eapply well_founded_term_subterm.
   Qed.
-
-  (* Lemma well_typed_acc Γ t π :
-    well_formed Γ (zip t π) ->
-    Acc R (t,π).
-  Proof.
-    intros.
-    now eapply R_acc, typing_acc_cored.
-  Qed. *)
 
   Lemma normalising_acc t π t' :
     [(zip t π) ⤳* t'] ->
@@ -295,55 +286,6 @@ Section RedImplemComplete.
 
 End RedImplemComplete.
 
-
-Definition whne_ne_view1 {N} (w : whne N) : ne_view1 N :=
-  match w with
-  | whne_tRel => ne_view1_rel _
-  | whne_tApp _ => ne_view1_dest _ (eApp _)
-  | whne_tNatElim _ => ne_view1_dest _ (eNatElim _ _ _)
-  | whne_tEmptyElim _ => ne_view1_dest _ (eEmptyElim _)
-  | whne_tFst _ => ne_view1_dest _ eFst
-  | whne_tSnd _ => ne_view1_dest _ eSnd
-  | whne_tIdElim _ => ne_view1_dest _ (eIdElim _ _ _ _ _)
-  end.
-
-Lemma whne_ty_view1 {N} (w : whne N) : build_ty_view1 N = ty_view1_small (whne_ne_view1 w).
-Proof.
-  now destruct w.
-Qed.
-
-Lemma whne_nf_view1 {N} (w : whne N) : build_nf_view1 N = nf_view1_ne (whne_ne_view1 w).
-Proof.
-  now destruct w.
-Qed.
-
-Lemma whne_ty_view2 {M N} (wM : whne M) (wN : whne N) : build_nf_ty_view2 M N = ty_neutrals M N.
-Proof.
-  simp build_nf_ty_view2.
-  unshelve erewrite ! whne_ty_view1 ; tea.
-  now reflexivity.
-Qed.
-
-Lemma whne_nf_view3 P m n (wP : isPosType P) (wm : whne m) (wn : whne n) :
-  build_nf_view3 P m n =
-    (match wP with
-    | UnivPos => types _ (ty_neutrals m n)
-    | _ => neutrals _ m n
-    end).
-Proof.
-  simp build_nf_view3.
-  destruct wP ; cbn.
-  2-4: unshelve erewrite whne_nf_view1 ; tea; cbn; now rewrite (whne_nf_view1 wn).
-  - rewrite whne_ty_view2 ; cbn ; tea.
-    reflexivity.
-  - unshelve erewrite whne_ty_view1 ; tea.
-    cbn.
-    unshelve erewrite whne_nf_view1 ; tea ; cbn.
-    destruct (build_nf_view1 _) eqn:e ; try easy.
-    all: unshelve erewrite whne_nf_view1 in e ; tea.
-    all: inversion e.
-Qed.
-
 (* The combinator rec throws in a return branch with a type 
   necessarily convertible to the exception errors type, but the syntactic 
   mismatch between the 2 types prevents `rec_graph` from `apply`ing.
@@ -358,7 +300,9 @@ Qed.
 
 Section ConversionComplete.
 
-Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+Import AlgorithmicTypedConvData.
+
+Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
 Let PTyEq (Γ : context) (A B : term) :=
   forall v, graph _conv (ty_state;Γ;v;A;B) ok.
@@ -375,7 +319,7 @@ Let PTmRedEq (Γ : context) (A t u : term) :=
 
 Arguments PFun_instance_1 : simpl never.
 
-Lemma _implem_conv_complete :
+Lemma implem_conv_complete :
   BundledConvInductionConcl PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
 Proof.
   subst PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
@@ -586,7 +530,7 @@ Proof.
     all: now econstructor ; [exact (IHm tt)|constructor].
 Qed.
 
-Corollary implem_conv_complete `{!ConvComplete (ta := de) (ta' := al)} Γ A B :
+(* Corollary implem_conv_complete `{!ConvImplies de al} Γ A B :
   [Γ |-[de] A ≅ B] ->
   graph tconv (Γ,A,B) ok.
 Proof.
@@ -599,15 +543,17 @@ Proof.
     1-3: boundary.
     now apply ty_conv_compl.
   - econstructor.
-Qed.
+Qed. *)
 
 End ConversionComplete.
 
-Section TypingComplete.
+Section TypingImplies.
+Import AlgorithmicTypingData.
 
-Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+Context `{ta : tag} `{! ConvType ta}.
+Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
-Variable conv : (context × term × term) ⇀ exn errors unit.
+Context (conv : (context × term × term) ⇀ exn errors unit).
 
 Hypothesis conv_complete : forall Γ T V,
   [Γ |-[de] T ≅ V] ->
@@ -770,4 +716,4 @@ Proof.
     all: now boundary.
 Qed.
 
-End TypingComplete.
+End TypingImplies.

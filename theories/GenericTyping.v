@@ -110,6 +110,12 @@ Section RedDefinitions.
         by (now rewrite Heq).
   Qed.
 
+  Definition WellClass (Γ : context) (A : class) (t : term) :=
+    match A with
+      | istype => [Γ |- t]
+      | isterm A => [Γ |- t : A]
+    end.
+
   Record well_typed Γ t :=
   {
     well_typed_type : term ;
@@ -119,11 +125,19 @@ Section RedDefinitions.
   Record well_formed Γ t :=
   {
     well_formed_class : class ;
-    well_formed_typed :
-    match well_formed_class with
-    | istype => [Γ |- t]
-    | isterm A => [Γ |- t : A]
-    end
+    well_formed_typed : WellClass Γ well_formed_class t
+  }.
+
+  Definition ConvClass (Γ : context) (A : class) (t u : term) :=
+    match A with
+      | istype => [Γ |- t ≅ u]
+      | isterm A => [Γ |- t ≅ u : A]
+    end.
+
+  Record RedClosureClass (Γ : context) (A : class) (t u : term) := {
+    reddecl_typ : match A with istype => [Γ |- t] | isterm A => [Γ |- t : A] end;
+    reddecl_red : RedClosureAlg t u;
+    reddecl_conv : ConvClass Γ A t u ;
   }.
 
   Inductive isWfFun (Γ : context) (A B : term) : term -> Set :=
@@ -173,6 +187,10 @@ Notation "[ Γ '|-s' σ ≅ τ : A ]" := (ConvSubst Γ A σ τ) (only parsing) :
 Notation "[ Γ |-[ ta ']s' σ ≅ τ : A ]" := (ConvSubst (ta := ta) Γ A σ τ) : typing_scope.
 Notation "[ |- Γ ≅ Δ ]" := (ConvCtx Γ Δ) (only parsing) : typing_scope.
 Notation "[ |-[ ta  ] Γ ≅ Δ ]" := (ConvCtx (ta := ta) Γ Δ) : typing_scope.
+Notation "[ Γ |- t ∈ A ]" := (WellClass Γ A t) : typing_scope.
+Notation "[ Γ |-[ ta  ] t ∈ A ]" := (WellClass (ta := ta) Γ A t) : typing_scope.
+Notation "[ Γ |- t ≅ t' ∈ A ]" := (ConvClass Γ A t t') : typing_scope.
+Notation "[ Γ |-[ ta  ] t ≅ t' ∈ A ]" := (ConvClass (ta := ta) Γ A t t') : typing_scope.
 
 #[export] Hint Resolve
   Build_TypeRedWhnf Build_TermRedWhnf Build_TypeConvWf
@@ -1172,7 +1190,7 @@ Section GenericConsequences.
     eapply ty_app; tea.
     2: refine (ty_var _ (in_here _ _)); gen_typing.
     1: eapply typing_meta_conv; [renToWk; eapply ty_wk; tea;gen_typing|now rewrite wk1_ren_on].
-    fold ren_term. bsimpl; rewrite scons_eta'; now asimpl.
+    fold ren_term. now bsimpl.
   Qed.
 
   Lemma lambda_cong {Γ A A' B B' t t'} :
@@ -1210,12 +1228,8 @@ Section GenericConsequences.
         now eapply wft_wk.
       + eapply ty_var ; tea.
         now econstructor.
-      + bsimpl.
-        rewrite scons_eta'.
-        now bsimpl.
-      + bsimpl.
-        rewrite scons_eta'.
-        now bsimpl.
+      + now bsimpl.
+      + now bsimpl.
       + renToWk.
         now eapply wft_wk.
       + renToWk.
@@ -1227,13 +1241,9 @@ Section GenericConsequences.
         renToWk.
         now eapply convty_wk.
       + shelve.
-      + bsimpl.
-        rewrite scons_eta'.
-        now bsimpl.
+      + now bsimpl.
       + symmetry. eassumption.
       Unshelve.
-      bsimpl.
-      rewrite scons_eta'.
       now bsimpl.
   Qed.
 

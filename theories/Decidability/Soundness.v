@@ -3,10 +3,8 @@ From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicTyping.
 
-From LogRel.Decidability Require Import Functions.
+From LogRel.Decidability Require Import Functions Views.
 From PartialFun Require Import Monad PartialFun MonadExn.
-
-Import AlgorithmicTypingData.
 
 Set Universe Polymorphism.
 
@@ -29,7 +27,7 @@ Proof.
 Qed.
 
 Lemma red_stack_sound :
-  funrect wh_red_stack (fun _ => True) (fun '(t,π) t' => [zip t π ⤳* t']).
+  funrec wh_red_stack (fun _ => True) (fun '(t,π) t' => [zip t π ⤳* t']).
 Proof.
   intros ? _.
   funelim (wh_red_stack _).
@@ -50,26 +48,8 @@ Proof.
   all: eapply IHπ ; now econstructor.
 Qed.
 
-Lemma isType_tm_view1 t e :
-  build_tm_view1 t = tm_view1_type e ->
-  isType t × ~ whne t.
-Proof.
-  intros H.
-  destruct e ; cbn.
-  all: split ; [ now econstructor | intros H' ; inversion H'].
-Qed.
-
-Lemma whnf_tm_view1_nat t e :
-  build_tm_view1 t = tm_view1_nat e ->
-  whnf t × ~ whne t.
-Proof.
-  intros H.
-  destruct e ; cbn.
-  all: split ; [ now econstructor | intros H' ; inversion H'].
-Qed.
-
 Lemma red_stack_whnf :
-funrect wh_red_stack (fun _ => True) (fun '(t,π) t' => whnf t').
+funrec wh_red_stack (fun _ => True) (fun '(t,π) t' => whnf t').
 Proof.
   intros ? _.
   funelim (wh_red_stack _).
@@ -81,14 +61,14 @@ Proof.
 Qed.
 
 Corollary _red_sound :
-  funrect wh_red (fun _ => True) (fun t t' => [t ⤳* t'] × whnf t').
+  funrec wh_red (fun _ => True) (fun t t' => [t ⤳* t'] × whnf t').
 Proof.
   intros ? _.
   cbn; intros ? H; split.
-  - eapply funrect_graph in H.
+  - eapply funrec_graph in H.
     2: exact red_stack_sound. (* apply fails !? *)
     all: easy.
-  - eapply funrect_graph in H.
+  - eapply funrec_graph in H.
     2: exact red_stack_whnf.
     all: easy.
 Qed.
@@ -98,7 +78,7 @@ Qed.
   [t ⤳* t'] × whnf t'.
 Proof.
   intros H.
-  eapply (funrect_graph wh_red _ _ _ _ _red_sound). (* weird universe inconsistency? *)
+  eapply (funrec_graph wh_red _ _ _ _ _red_sound). (* weird universe inconsistency? *)
   1: easy.
   eassumption.
 Qed.
@@ -148,62 +128,8 @@ Ltac funelim_conv :=
       funelim (conv_tm _) | funelim (conv_tm_red _) | 
       funelim (conv_ne _) | funelim (conv_ne_red _) ].
 
-Lemma ty_view1_small_can T n : build_ty_view1 T = ty_view1_small n -> ~ isCanonical T.
-Proof.
-  destruct T ; cbn.
-  all: inversion 1.
-  all: inversion 1.
-Qed.
-
-Lemma tm_view1_neutral_can t n : build_nf_view1 t = nf_view1_ne n -> ~ isCanonical t.
-Proof.
-  destruct t ; cbn.
-  all: inversion 1.
-  all: inversion 1.
-Qed.
-
-Lemma ty_view2_neutral_can T V : build_nf_ty_view2 T V = ty_neutrals T V -> ~ isCanonical T × ~ isCanonical V.
-Proof.
-  destruct T, V ; cbn.
-  all: inversion 1.
-  all: split ; inversion 1.
-Qed.
-
-
-Lemma whnf_view3_ty_neutral_can s t u : build_nf_view3 (tSort s) t u = types s (ty_neutrals t u) -> ~ isCanonical t × ~ isCanonical u.
-Proof.
-  destruct t, u ; cbn.
-  all: inversion 1.
-  all: split ; inversion 1.
-Qed.
-
-Lemma whnf_view3_neutrals_can A t u :
-  whnf A ->
-  build_nf_view3 A t u = neutrals A t u ->
-  [× isPosType A, ~ isCanonical t & ~ isCanonical u].
-Proof.
-  intros HA.
-  simp build_nf_view3.
-  destruct (build_ty_view1 A) eqn:EA ; cbn.
-  all: try solve [inversion 1].
-  1: match goal with | |- context [match ?t with | _ => _ end] => destruct t eqn:? ; cbn end ;
-    try solve [inversion 1].
-  all: simp build_nf_view3 ; cbn.
-  all: destruct (build_nf_view1 t) eqn:? ; cbn.
-  all: try solve [inversion 1].
-  all: repeat (
-    match goal with | |- context [match ?t with | _ => _ end] => destruct t eqn:? ; cbn end ;
-    try solve [inversion 1]).
-  all: intros _.
-  all: split ; try solve [now eapply tm_view1_neutral_can].
-  all: econstructor.
-  eapply ty_view1_small_can in EA.
-  destruct HA ; try easy.
-  all: exfalso ; apply EA ; now constructor.
-Qed.
-
 Section ConversionSound.
-
+  Import AlgorithmicTypedConvData.
 
   #[universes(polymorphic)]Definition conv_sound_type
     (x : conv_full_dom)
@@ -220,7 +146,7 @@ Section ConversionSound.
   end.
 
   Lemma _implem_conv_sound :
-    funrect _conv (fun _ => True) conv_sound_type.
+    funrec _conv (fun _ => True) conv_sound_type.
   Proof.
     intros x _.
     funelim_conv ; cbn.
@@ -262,7 +188,7 @@ Section ConversionSound.
     graph _conv x r ->
     conv_sound_type x r.
   Proof.
-    eapply funrect_graph.
+    eapply funrec_graph.
     1: now apply _implem_conv_sound.
     easy.
   Qed.
@@ -271,17 +197,17 @@ Section ConversionSound.
     graph tconv (Γ,T,V) ok ->
     [Γ |-[al] T ≅ V].
   Proof.
-    assert (funrect tconv (fun _ => True)
+    assert (funrec tconv (fun _ => True)
       (fun '(Γ,T,V) r => match r with | success _ => [Γ |-[al] T ≅ V] | _ => True end)) as Hrect.
     {
      intros ? _.
      funelim (tconv _) ; cbn.
      intros [] ; cbn ; [|easy].
-     eintros ?%funrect_graph.
+     eintros ?%funrec_graph.
      2: now apply _implem_conv_sound.
      all: now cbn in *.
     }
-    eintros ?%funrect_graph.
+    eintros ?%funrec_graph.
     2: eassumption.
     all: now cbn in *.
   Qed.
@@ -296,26 +222,28 @@ Ltac funelim_typing :=
       funelim (typing_wf_ty _ _) ].
 
 Section TypingSound.
+  Import AlgorithmicTypingData.
 
-  Variable conv : (context × term × term) ⇀ exn errors unit.
+  Context `{ta : tag} `{! ConvType ta}.
+  Context (conv : (context × term × term) ⇀ exn errors unit).
 
   Hypothesis conv_sound : forall Γ T V,
     graph conv (Γ,T,V) ok ->
-    [Γ |-[al] T ≅ V].
+    [Γ |-[ta] T ≅ V].
 
   #[universes(polymorphic)]Definition typing_sound_type
     (x : ∑ (c : typing_state) (_ : context) (_ : tstate_input c), term)
     (r : exn errors (tstate_output x.π1)) : Type :=
   match x, r with
   | _, (exception _) => True
-  | (wf_ty_state;Γ;_;T), (success _) => [Γ |-[al] T]
-  | (inf_state;Γ;_;t), (success T) => [Γ |-[al] t ▹ T]
-  | (inf_red_state;Γ;_;t), (success T) => [Γ |-[al] t ▹h T]
-  | (check_state;Γ;T;t), (success _) => [Γ |-[al] t ◃ T]
+  | (wf_ty_state;Γ;_;T), (success _) => [Γ |-[ta] T]
+  | (inf_state;Γ;_;t), (success T) => [Γ |-[ta] t ▹ T]
+  | (inf_red_state;Γ;_;t), (success T) => [Γ |-[ta] t ▹h T]
+  | (check_state;Γ;T;t), (success _) => [Γ |-[ta] t ◃ T]
   end.
 
   Lemma _implem_typing_sound :
-    funrect (typing conv) (fun _ => True) typing_sound_type.
+    funrec (typing conv) (fun _ => True) typing_sound_type.
   Proof.
     intros x _.
     funelim_typing ; cbn.
@@ -334,23 +262,23 @@ Section TypingSound.
       | H : (_;_;_) = (_;_;_) |- _ => injection H; clear H; intros; subst 
       end).
     all: try now econstructor.
-    econstructor; tea; now rewrite 2!Weakening.wk1_ren_on.
-    econstructor ; tea.
-    apply conv_sound.
-    now match goal with | H : unit |- _ => destruct H end.
+    - econstructor; tea; now rewrite 2!Weakening.wk1_ren_on.
+    - econstructor ; tea.
+      apply conv_sound.
+      now match goal with | H : unit |- _ => destruct H end.
   Qed.
 
   Lemma implem_typing_sound x r:
     graph (typing conv) x r ->
     typing_sound_type x r.
   Proof.
-    eapply funrect_graph.
+    eapply funrec_graph.
     1: now apply _implem_typing_sound.
     easy.
   Qed.
 
   Lemma _check_ctx_sound :
-    funrect (check_ctx conv) (fun _ => True) (fun Γ r => if r then [|- Γ] else True).
+    funrec (check_ctx conv) (fun _ => True) (fun Γ r => if r then [|- Γ] else True).
   Proof.
     intros ? _.
     funelim (check_ctx _ _) ; cbn.
@@ -364,9 +292,9 @@ Section TypingSound.
      
   Lemma check_ctx_sound Γ :
     graph (check_ctx conv) Γ ok ->
-    [|-[al] Γ].
+    [|-[ta] Γ].
   Proof.
-    eintros ?%funrect_graph.
+    eintros ?%funrec_graph.
     2: eapply _check_ctx_sound.
     all: easy.
   Qed.

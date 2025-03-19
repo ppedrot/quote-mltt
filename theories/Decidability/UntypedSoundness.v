@@ -2,7 +2,7 @@
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicTyping UntypedAlgorithmicConversion.
-From LogRel.Decidability Require Import Functions UntypedFunctions Soundness.
+From LogRel.Decidability Require Import Functions UntypedFunctions Views Soundness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Import AlgorithmicTypingData.
@@ -23,7 +23,7 @@ Section ConversionSound.
   end.
 
   Lemma _implem_uconv_sound :
-    funrect _uconv (fun _ => True) uconv_sound_type.
+    funrec _uconv (fun _ => True) uconv_sound_type.
   Proof.
     intros x _.
     funelim (_uconv _); 
@@ -37,7 +37,7 @@ Section ConversionSound.
       | |- context [match ?t with | _ => _ end] => destruct t ; cbn ; try easy
       | s : sort |- _ => destruct s
       | H : graph wh_red _ _ |- _ => eapply red_sound in H as []
-      | H : (_,_,_) = (_,_,_) |- _ => injection H; clear H; intros; subst 
+      | H : (_,_) = (_,_) |- _ => injection H; clear H; intros; subst 
       end).
     all: try solve [now econstructor].
     1-4: econstructor ; eauto.
@@ -52,7 +52,7 @@ Section ConversionSound.
     graph _uconv x r ->
     uconv_sound_type x r.
   Proof.
-    eapply funrect_graph.
+    eapply funrec_graph.
     1: now apply _implem_uconv_sound.
     easy.
   Qed.
@@ -61,17 +61,17 @@ Section ConversionSound.
     graph uconv (Γ,T,V) ok ->
     [T ≅ V].
   Proof.
-    assert (funrect uconv (fun _ => True)
+    assert (funrec uconv (fun _ => True)
       (fun '(Γ,T,V) r => match r with | success _ => [T ≅ V] | _ => True end)) as Hrect.
     {
      intros ? _.
      funelim (uconv _) ; cbn.
      intros [] ; cbn ; [|easy].
-     eintros ?%funrect_graph.
+     eintros ?%funrec_graph.
      2: now apply _implem_uconv_sound.
      all: now cbn in *.
     }
-    eintros ?%funrect_graph.
+    eintros ?%funrec_graph.
     2: eassumption.
     all: now cbn in *.
   Qed.

@@ -1,5 +1,6 @@
 (** * LogRel.NeutralConvProperties: properties of declarative neutral conversion, using type constructor injectivity. *)
 From Coq Require Import CRelationClasses.
+From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj.
 
@@ -13,12 +14,12 @@ Import DeclarativeTypingData.
 instance to prove! *)
 
 Section NeuConvProperties.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
   Lemma conv_neu_wk Γ Δ (ρ : Δ ≤ Γ) A m n :
     [|- Δ] ->
     [Γ |- m ~ n : A] ->
-    [Δ |- m⟨ρ⟩ ~ n ⟨ρ⟩ : A⟨ρ⟩].
+    [Δ |- m⟨ρ⟩ ~ n⟨ρ⟩ : A⟨ρ⟩].
   Proof.
     intros HΔ.
     induction 1 ; eauto.
@@ -183,6 +184,34 @@ Section NeuConvProperties.
       all: now eapply TypeTrans.
   Qed.
 
+  (** Equivalence between the "local" view on neutral injectivity, and the global one. *)
+
+  Lemma neu_inj_conv_neu `{H : !NeutralInj de} : ConvNeutralConv de.
+  Proof.
+    destruct H as [neu_inj].
+    constructor.
+    intros * nen nen' Hconv.
+    induction nen in T, n', nen', Hconv |- *.
+    all: unshelve eapply neu_inj  in Hconv ; tea ; [econstructor|..] ; destruct nen' ; cbn in * ; try easy.
+    all: prod_hyp_splitter ; subst.
+    all: eapply neuConvConv ; refold ; tea.
+    all: econstructor ; eauto.
+    now boundary.
+  Qed.
+
+  Lemma conv_neu_neu_inj `{H : !ConvNeutralConv de} : NeutralInj de.
+  Proof.
+    destruct H as [conv_neu_conv].
+    constructor.
+    intros * Hconv.
+    eapply conv_neu_conv in Hconv ; tea.
+    eapply neuConvGen in Hconv.
+    destruct net ; cbn in Hconv ; prod_hyp_splitter ; subst.
+    all: depelim net' ; cbn ; refold.
+    all: repeat eexists ; eauto using conv_neu_sound.
+  Qed.
+
+
   Lemma conv_neu_refl Γ A n :
     whne n ->
     [Γ |- n : A] ->
@@ -335,6 +364,21 @@ Section NeuConvProperties.
 
   Qed.
 
+  Corollary conv_neu_typing_unique Γ T n n' :
+    [Γ |- n ~ n' : T] ->
+    [× [Γ |-[ de ] n ≅ n' : T],
+      forall T' : term, [Γ |-[ de ] n : T'] -> [Γ |-[ de ] T ≅ T']
+      & forall T' : term, [Γ |-[ de ] n' : T'] -> [Γ |-[ de ] T ≅ T']].
+  Proof.
+    intros Hconv ; split.
+    + now apply conv_neu_sound.
+    + intros.
+      eapply conv_neu_typing.
+      1: now eapply conv_neu_sym.
+      eassumption.
+    + intros.
+      now eapply conv_neu_typing.
+  Qed.
 
   Lemma conv_neu_trans Γ A n1 n2 n3 :
     [Γ |- n1 ~ n2 : A] ->
@@ -438,7 +482,7 @@ Module DeclarativeTypingProperties.
   #[export] Existing Instance RedTypeDeclProperties.
 
   #[export, refine] Instance ConvTermDeclProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}
+    `{!TypingSubst de} `{!TypeConstructorsInj de}
     : ConvTermProperties (ta := de) := {}.
   Proof.
     4,7,11: shelve.
@@ -474,7 +518,7 @@ Module DeclarativeTypingProperties.
   Qed.
 
   #[export, refine] Instance ConvNeuDeclProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeConstructorsInj de} :
     ConvNeuProperties (ta := de) := {}.
   Proof.
     all: try solve [now econstructor].
@@ -491,7 +535,7 @@ Module DeclarativeTypingProperties.
   Qed.
 
   #[export] Instance DeclarativeTypingProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeConstructorsInj de} :
     GenericTypingProperties de _ _ _ _ _ _ _ _ := {}.
 
 End DeclarativeTypingProperties.

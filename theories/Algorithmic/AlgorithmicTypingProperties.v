@@ -5,7 +5,7 @@ From LogRel.Algorithmic Require Import BundledAlgorithmicTyping AlgorithmicConvP
 
 From LogRel Require Import Utils.
 
-Import DeclarativeTypingProperties AlgorithmicTypingData BundledTypingData.
+Import DeclarativeTypingProperties AlgorithmicTypingData.
 
 (** ** Small types are large types *)
 
@@ -14,36 +14,146 @@ while in the definition of algorithmic typing we only allow it when A is a non-c
 type (in which case it has to be small).
 So we need to show admissibility of the more general rule. *)
 
-Lemma algo_typing_small_large
-  `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}
-  Γ A :
-  [Γ |-[bn] A : U] ->
-  [Γ |-[bn] A].
-Proof.
-  enough (BundledTypingInductionConcl
-    (fun _ _ => True)
-    (fun Γ A t => [Γ |-[de] A ≅ U] -> [Γ |-[al] t])
-    (fun Γ A t => A = U -> [Γ |-[al] t])
-    (fun _ _ _ => True)) as (?&?&H&?).
-  {
-    intros [].
-    split ; tea.
-    eapply H.
-    2: reflexivity.
-    do 2 (econstructor ; tea).
-    now eapply redty_red, red_compl_univ_r.
-  }
-  eapply BundledTypingInduction.
-  all: try solve [
-    econstructor |
-    intros; econstructor; [intros Hcan; inversion Hcan| econstructor;[now econstructor|now eapply redty_red, red_compl_univ_r]]|
-    intros; match goal with H : [_ |- _ ≅ _] |- _ => unshelve eapply ty_conv_inj in H; try now econstructor; now cbn in H end ].
+Section SmallLarge.
+  Import AlgorithmicTypedConvData BundledTypingData.
+  Context `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
-  - intros * ? [IH] **; subst.
-    eapply IH.
-    eapply subject_reduction_type ; tea.
-    boundary.
-Qed.
+  Lemma algo_typing_small_large Γ A :
+    [Γ |-[bn] A : U] ->
+    [Γ |-[bn] A].
+  Proof.
+    enough (BundledTypingInductionConcl
+      (fun _ _ => True)
+      (fun Γ A t => [Γ |-[de] A ≅ U] -> [Γ |-[al] t])
+      (fun Γ A t => A = U -> [Γ |-[al] t])
+      (fun _ _ _ => True)) as (?&?&H&?).
+    {
+      intros [].
+      split ; tea.
+      eapply H.
+      2: reflexivity.
+      do 2 (econstructor ; tea).
+      now eapply redty_red, red_compl_univ_r.
+      constructor.
+    }
+    eapply BundledTypingInduction.
+    all: try solve [
+      econstructor |
+      intros; econstructor; [intros Hcan; inversion Hcan| econstructor;[now econstructor|now eapply redty_red, red_compl_univ_r|constructor]]|
+      intros; match goal with H : [_ |- _ ≅ _] |- _ => unshelve eapply ty_conv_inj in H; try now econstructor; now cbn in H end ].
+
+      intros * ? [IH []] **; subst.
+      eapply IH.
+      eapply subject_reduction_type ; tea.
+      boundary.
+  Qed.
+
+End SmallLarge.
+
+(** The shape of the inferred type is the same as that of any type *)
+
+Section InferShape.
+  Import AlgorithmicTypingData.
+  Context `{ta : tag} `{! ConvType ta}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
+
+  Hypothesis conv_sound :
+    forall Γ A A', [Γ |-[de] A] -> [Γ |-[de] A'] -> [Γ |-[ta] A ≅ A'] -> [Γ |-[de] A ≅ A'].
+
+  Lemma infer_U Γ A T : [Γ |-[de] A : U] -> [Γ |-[ta] A ▹h T] -> T = U.
+  Proof.
+    intros Hde [Hal Hal']%dup.
+    eapply algo_infer_unique in Hal ; tea.
+    2: boundary.
+    assert (isType T).
+    {
+      eapply type_isType.
+      1: boundary.
+      now inversion Hal'.
+    }
+    unshelve eapply ty_conv_inj in Hal ; tea.
+    1: constructor.
+    destruct H ; cbn in * ; try easy.
+    now destruct s.
+  Qed.
+
+  Lemma infer_nat Γ A T : [Γ |-[de] A : tNat] -> [Γ |-[ta] A ▹h T] -> T = tNat.
+  Proof.
+    intros Hde [Hal Hal']%dup.
+    eapply algo_infer_unique in Hal ; tea.
+    2: boundary.
+    assert (isType T).
+    {
+      eapply type_isType.
+      1: boundary.
+      now inversion Hal'.
+    }
+    unshelve eapply ty_conv_inj in Hal ; tea.
+    1: constructor.
+    now destruct H ; cbn in *.
+  Qed.
+
+  Lemma infer_empty Γ A T : [Γ |-[de] A : tEmpty] -> [Γ |-[ta] A ▹h T] -> T = tEmpty.
+  Proof.
+    intros Hde [Hal Hal']%dup.
+    eapply algo_infer_unique in Hal ; tea.
+    2: boundary.
+    assert (isType T).
+    {
+      eapply type_isType.
+      1: boundary.
+      now inversion Hal'.
+    }
+    unshelve eapply ty_conv_inj in Hal ; tea.
+    1: constructor.
+    now destruct H ; cbn in *.
+  Qed.
+
+  Lemma infer_prod Γ A B f T : [Γ |-[de] f : tProd A B] -> [Γ |-[ta] f ▹h T] ->
+    ∑ A' B', T = tProd A' B'.
+  Proof.
+    intros Hde [Hal Hal']%dup.
+    eapply algo_infer_unique in Hal ; tea.
+    2: boundary.
+    assert (isType T).
+    {
+      eapply type_isType.
+      1: boundary.
+      now inversion Hal'.
+    }
+    unshelve eapply ty_conv_inj in Hal ; tea.
+    1: constructor.
+    destruct H ; cbn in * ; easy.
+  Qed.
+
+  Lemma infer_sig Γ A B f T : [Γ |-[de] f : tSig A B] -> [Γ |-[ta] f ▹h T] ->
+    ∑ A' B', T = tSig A' B'.
+  Proof.
+    intros Hde [Hal Hal']%dup.
+    eapply algo_infer_unique in Hal ; tea.
+    2: boundary.
+    assert (isType T).
+    {
+      eapply type_isType.
+      1: boundary.
+      now inversion Hal'.
+    }
+    unshelve eapply ty_conv_inj in Hal ; tea.
+    1: constructor.
+    destruct H ; cbn in * ; easy.
+  Qed.
+
+  Lemma infer_U_ty Γ A T : [Γ |-[de] A] -> [Γ |-[ta] A ▹h T] -> T = U.
+  Proof.
+    intros Hde Hal.
+    inversion Hde ; subst ; refold.
+    1-6: inversion Hal as [???? Hal'] ; subst ; refold.
+    1-6: inversion Hal' ; subst ; refold.
+    1-5: symmetry ; eapply red_whnf ; tea ; constructor.
+    now eapply infer_U.
+  Qed.
+
+End InferShape.
 
 Import BundledIntermediateData IntermediateTypingProperties.
 
@@ -52,6 +162,7 @@ Import BundledIntermediateData IntermediateTypingProperties.
 we easily derive our third instance. *)
 
 Module AlgorithmicTypingProperties.
+  Import AlgorithmicTypedConvData.
   Export BundledTypingData AlgorithmicConvProperties.
 
   #[local] Ltac intros_bn :=
@@ -60,7 +171,7 @@ Module AlgorithmicTypingProperties.
     econstructor ; try assumption.
 
   #[export, refine] Instance WfCtxAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     WfContextProperties (ta := bn) := {}.
   Proof.
     1-8: intros_bn.
@@ -70,22 +181,22 @@ Module AlgorithmicTypingProperties.
   Qed.
 
   #[export, refine] Instance WfTypeAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} `{!ConvComplete (ta := de) (ta' := al)}:
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} `{!ConvImplies de al}:
     WfTypeProperties (ta := bn) := {}.
   Proof.
     all: cycle -1.
     1: intros; now eapply algo_typing_small_large.
-    1: intros_bn; now eapply algo_typing_wk.
+    1: intros_bn; eapply algo_typing_wk ; tea ; intros ; now eapply algo_conv_wk.
     1-3: intros_bn; now econstructor.
     intros_bn; econstructor; tea; econstructor ; tea; now eapply ty_conv_compl.
   Qed.
 
   #[export, refine] Instance TypingAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} `{!ConvComplete (ta := de) (ta' := al)}:
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} `{!ConvImplies de al}:
     TypingProperties (ta := bn) := {}.
   Proof.
     - intros_bn.
-      + now eapply algo_typing_wk.
+      + now eapply algo_typing_wk; tea ; intros ; now eapply algo_conv_wk.
       + gen_typing.
     - intros_bn.
       + now econstructor.
@@ -93,6 +204,7 @@ Module AlgorithmicTypingProperties.
         now eapply in_ctx_wf.
     - intros_bn.
       + do 2 econstructor ; tea.
+        all: try constructor.
         all: now eapply (redty_red (ta := de)), red_compl_univ_r.
       + now do 2 econstructor.
     - intros_bn.
@@ -104,6 +216,7 @@ Module AlgorithmicTypingProperties.
       esplit ; tea.
       + do 2 econstructor ; tea.
         1: now eapply (redty_red (ta := de)).
+        1: constructor.
         eapply ty_conv_compl.
         now etransitivity.
       + eapply typing_subst1 ; tea.
@@ -117,11 +230,13 @@ Module AlgorithmicTypingProperties.
       now do 2 econstructor.
     - intros_bn.
       + do 2 econstructor ; tea.
+        2: now constructor.
         now eapply (redty_red (ta := de)), red_compl_nat_r.
       + now do 2 econstructor.
     - intros_bn.
       1: econstructor ; tea.
       + econstructor ; tea.
+        2: now constructor.
         now eapply (redty_red (ta := de)), red_compl_nat_r.
       + econstructor ; tea.
         now eapply ty_conv_compl.
@@ -137,13 +252,14 @@ Module AlgorithmicTypingProperties.
     - intros_bn.
       1: econstructor ; tea.
       + econstructor ; tea.
+        2: now constructor.
         now eapply (redty_red (ta := de)), red_compl_empty_r.
       + econstructor.
         eapply typing_subst1.
         1: eauto using inf_conv_decl.
         now eapply algo_typing_sound.
     - intros_bn.
-      1: do 2 econstructor; tea.
+      1: do 2 econstructor; tea ; try constructor.
       1,2: now eapply (redty_red (ta:=de)), red_compl_univ_r.
       gen_typing.
     - intros_bn.
@@ -155,11 +271,13 @@ Module AlgorithmicTypingProperties.
     - intros * [].
       pose proof bun_inf_conv_conv as [?[?[]]]%red_compl_sig_r .
       econstructor; tea.
-      do 2 econstructor; tea; now eapply (redty_red (ta:=de)).
+      do 2 econstructor; tea.
+      2: constructor.
+      now eapply (redty_red (ta:=de)).
     - intros * [].
       pose proof bun_inf_conv_conv as [?[?[]]]%red_compl_sig_r .
       econstructor; tea.
-      1: do 2 econstructor; tea; now eapply (redty_red (ta:=de)).
+      1: do 2 econstructor; tea; [now eapply (redty_red (ta:=de))|constructor].
       eapply typing_subst1; tea.
       eapply TermConv; refold ; [|now symmetry].
       econstructor. eapply TermRefl.
@@ -167,7 +285,7 @@ Module AlgorithmicTypingProperties.
     - intros_bn.
       + econstructor; tea.
         2,3: econstructor ; tea; now eapply ty_conv_compl.
-        econstructor; tea; now eapply red_compl_univ_r.
+        econstructor; tea; [now eapply red_compl_univ_r|constructor].
       + now do 2 econstructor.
     - intros * tyA tyx.
       pose proof tyA as ?%bn_alg_typing_sound.
@@ -200,13 +318,13 @@ Module AlgorithmicTypingProperties.
   Qed.
 
   #[export, refine] Instance RedTermAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} `{!ConvComplete (ta := de) (ta' := al)}:
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} `{!ConvImplies de al}:
     RedTermProperties (ta := bn) := {}.
   Proof.
     - intros_bn.
       2: now apply credalg_wk.
       econstructor ; tea.
-      1: now eapply algo_typing_wk.
+      1: now eapply algo_typing_wk; tea ; intros ; now eapply algo_conv_wk.
       now eapply typing_wk.
     - intros * [? []]; assumption.
     - now intros * [].
@@ -235,6 +353,7 @@ Module AlgorithmicTypingProperties.
         econstructor.
         * eassumption.
         * do 2 econstructor ; tea.
+          2: now constructor.
           now eapply (redty_red (ta := de)), red_compl_nat_r.
         * now do 2 econstructor.
       + apply redalg_one_step; now constructor.
@@ -243,6 +362,7 @@ Module AlgorithmicTypingProperties.
         econstructor ; tea.
         1: econstructor.
         * econstructor ; tea.
+          2: now constructor.
           now eapply (redty_red (ta := de)).
         * econstructor ; tea.
           eapply ty_conv_compl ; now etransitivity.
@@ -254,6 +374,7 @@ Module AlgorithmicTypingProperties.
       assert [Γ |-[al] n ▹h tNat].
       {
         econstructor ; tea.
+        2: now constructor.
         now eapply (redty_red (ta := de)), red_compl_nat_r.
       }
       split ; tea.
@@ -274,6 +395,7 @@ Module AlgorithmicTypingProperties.
       assert [Γ |-[al] n ▹h tEmpty].
       {
         econstructor ; tea.
+        2: now constructor.
         now eapply (redty_red (ta := de)), red_compl_empty_r.
       }
       split ; tea.
@@ -293,19 +415,21 @@ Module AlgorithmicTypingProperties.
       2: eapply TypeRefl; refold; now boundary.
       do 2 econstructor.
       1: do 2 (econstructor; tea); now eapply ty_conv_compl.
+      2: now constructor.
       reflexivity.
     - intros * [? []].
       pose proof bun_inf_conv_conv as [?[?[]]]%red_compl_sig_r.
       econstructor; tea.
       2: now apply redalg_fst.
       econstructor; tea.
-      do 2 econstructor; tea; now eapply (redty_red (ta:=de)).
+      do 2 econstructor; tea; [now eapply (redty_red (ta:=de))|now constructor].
     - intros_bn.
       2: econstructor; [|reflexivity]; now constructor.
       econstructor.
       1: tea.
       + do 2 econstructor.
         2: reflexivity.
+        2: now constructor.
         do 2 (econstructor; tea); now eapply ty_conv_compl.
       + eapply TypeRefl; eapply typing_subst1.
         2: now eapply algo_typing_sound.
@@ -319,7 +443,7 @@ Module AlgorithmicTypingProperties.
       econstructor; tea.
       2: now apply redalg_snd.
       econstructor; tea.
-      do 2 econstructor; tea; now eapply (redty_red (ta:=de)).
+      1: do 2 econstructor; tea; [now eapply (redty_red (ta:=de))|now constructor].
       eapply typing_subst1 ; tea.
       eapply TermRefl; eapply wfTermConv; refold; [|now symmetry].
       econstructor; now eapply inf_conv_decl.
@@ -373,11 +497,11 @@ Module AlgorithmicTypingProperties.
   Qed.
 
   #[export, refine] Instance RedTypeAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     RedTypeProperties (ta := bn) := {}.
   Proof.
     - intros_bn.
-      1: now apply algo_typing_wk.
+      1: now apply algo_typing_wk; tea ; intros ; now eapply algo_conv_wk.
       now apply credalg_wk.
     - intros * []; assumption.
     - now intros_bn.
@@ -390,7 +514,7 @@ Module AlgorithmicTypingProperties.
   Qed.
 
   #[export] Instance AlgorithmicTypingProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} `{!ConvComplete (ta := de) (ta' := al)}:
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} `{!ConvImplies de al}:
     GenericTypingProperties bn _ _ _ _ _ _ _ _ := {}.
 
 End AlgorithmicTypingProperties.
@@ -401,7 +525,7 @@ Import AlgorithmicTypingData AlgorithmicTypingProperties.
 
 (** *** Uniqueness of types *)
 
-Lemma type_uniqueness `{! TypingComplete (ta := de) (ta' := bn)} Γ A A' t :
+Lemma type_uniqueness `{! TypingImplies de bn} Γ A A' t :
   [Γ |-[de] t : A] ->
   [Γ |-[de] t : A'] ->
   [Γ |-[de] A ≅ A'].

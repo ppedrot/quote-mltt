@@ -1,6 +1,6 @@
 (** * LogRel.PropertiesDefinition: the high-level, abstract properties of conversion and typing, that we obtain as consequences of the logical relation. *)
 From Coq Require Import CRelationClasses ssrbool.
-From LogRel Require Import Utils Syntax.All GenericTyping.
+From LogRel Require Import Utils Syntax.All GenericTyping Normalisation.
 
 Section Properties.
 
@@ -8,8 +8,7 @@ Section Properties.
     `{!WfContext ta} `{!WfType ta} `{!Typing ta} `{!ConvType ta} `{!ConvTerm ta} `{!ConvNeuConv ta}
     `{!RedType ta} `{!RedTerm ta}.
 
-
-  (** Typing is stable by substitution *)
+  (** Typing is stable by substitution *) 
   Class TypingSubst :=
   {
     ty_subst {Γ Δ σ A} :
@@ -173,6 +172,8 @@ Section Properties.
       [Γ |- t ~ t' : A] *)
   }.
 
+  (** Completeness of neutral conversion, at positive types or at all types *)
+
   Class ConvNeutralConvPos :=
   {
     conv_neu_conv_p Γ T n n' :
@@ -189,13 +190,46 @@ Section Properties.
       [Γ |- n ~ n' : T]
   }.
 
-  (** ** Normalisation *)
+  (** Injectivity of neutral destructors *)
 
-  Record normalising (t : term) := {
-    norm_val : term;
-    norm_red : [ t ⤳* norm_val ];
-    norm_whnf : whnf norm_val;
+  Definition ne_view (Γ : context) (T : term) {n n' : term} (ne : whne n) (ne' : whne n') : Type :=
+  match ne, ne' with
+    | @whne_tRel v, @whne_tRel v' => ∑ T', [× v' = v, in_ctx Γ v T' & [Γ |- T' ≅ T] ]
+    | @whne_tApp t u _, @whne_tApp t' u' _ => ∑ A B, [× [Γ |- t ≅ t' : tProd A B], [Γ |- u ≅ u' : A] & [Γ |- B[u..] ≅ T]]
+    | @whne_tNatElim P hz hs n _, @whne_tNatElim P' hz' hs' n' _ =>
+      [× [Γ |- n ≅ n' : tNat],
+        [Γ ,, tNat |- P ≅ P'],
+        [Γ |- hz ≅ hz' : P[tZero..]],
+        [Γ |- hs ≅ hs' : elimSuccHypTy P] &
+        [Γ |- P[n..] ≅ T]]
+
+    | @whne_tEmptyElim P e _, @whne_tEmptyElim P' e' _ =>
+      [× [Γ ,, tEmpty |- P ≅ P'],
+        [Γ |- e ≅ e' : tEmpty] &
+        [Γ |- P[e..] ≅ T]]
+        
+    | @whne_tFst p _, @whne_tFst p' _ => ∑ A B, [Γ |- p ≅ p' : tSig A B] × [Γ |- A ≅ T]
+    | @whne_tSnd p _, @whne_tSnd p' _ => ∑ A B, [Γ |- p ≅ p' : tSig A B] × [Γ |- B[(tFst p)..] ≅ T]
+    | @whne_tIdElim A x P hr y e _, @whne_tIdElim A' x' P' hr' y' e' _ =>
+      [× [Γ |- A ≅ A'],
+        [Γ |- x ≅ x' : A],
+        [Γ ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) |- P ≅ P'],
+        [Γ |- hr ≅ hr' : P[tRefl A x .: x..]],
+        [Γ |- y ≅ y' : A],
+        [Γ |- e ≅ e' : tId A x y] &
+        [Γ |- P[e .: y..] ≅ T]]
+    | _, _ => False
+  end.
+
+  Class NeutralInj :=
+  {
+    neu_inj (Γ : context) (T t t' : term)
+    (net : whne t) (net' : whne t') :
+    [Γ |- t ≅ t' : T] ->
+    ne_view Γ T net net'
   }.
+
+  (** ** Normalisation *)
 
   Class Normalisation :=
   {
@@ -203,28 +237,38 @@ Section Properties.
     ty_norm {Γ A} : [Γ |- A] -> normalising A ;
   }.
 
-  (** ** Canonicity for natural numbers *)
-
-  Class NatCanonicity :=
+  Class DeepNormalisation :=
   {
-    nat_canonicity {t} : [ε |- t : tNat] ->
-      ∑ n : nat, [ε |- t ≅ Nat.iter n tSucc tZero : tNat]
+    tm_dnorm {Γ A t} : [Γ |- t : A] -> dnorm_tm Γ A t ;
+    ty_dnorm {Γ A} : [Γ |- A] -> dnorm_ty Γ A ;
   }.
 
   Context `{ta' : tag}
-    `{!WfContext ta'} `{!WfType ta'} `{!Typing ta'} `{!ConvType ta'} `{!ConvTerm ta'} `{!ConvNeuConv ta'}
-    `{!RedType ta'} `{!RedTerm ta'}.
+    `{!WfContext ta'} `{!WfType ta'} `{!Typing ta'} `{!ConvType ta'} `{!ConvTerm ta'}.
 
-  (** ** Completeness (of typing `ta'` with respect to typing `ta`). *)
+  (** ** Implication between two different instances. *)
 
-  Class ConvComplete := {
+  Class ConvImplies := {
     ty_conv_compl Γ A A' : [Γ |-[ta] A ≅ A'] -> [Γ |-[ta'] A ≅ A'] ;
     tm_conv_compl Γ A t t' : [Γ |-[ta] t ≅ t' : A] -> [Γ |-[ta'] t ≅ t' : A] ;
   }.
 
-  Class TypingComplete := {
+  Class TypingImplies := {
     ty_compl Γ A : [Γ |-[ta] A] -> [Γ |-[ta'] A] ;
     tm_compl Γ A t : [Γ |-[ta] t : A] -> [Γ |-[ta'] t : A] ;
   }.
 
 End Properties.
+
+Arguments TypingSubst _ {_ _ _ _ _}.
+Arguments Strengthening _ {_ _ _ _ _}.
+Arguments TypeReductionComplete _ {_ _}.
+Arguments TypeConstructorsInj _ {_ _}.
+Arguments TermConstructorsInj _ {_ _}.
+Arguments ConvNeutralConvPos _ {_ _}.
+Arguments ConvNeutralConv _ {_ _}.
+Arguments NeutralInj _ {_ _}.
+Arguments Normalisation _ {_ _}.
+Arguments DeepNormalisation _ {_ _}.
+Arguments ConvImplies _ {_ _} _ {_ _}.
+Arguments TypingImplies _ {_ _} _ {_ _}.

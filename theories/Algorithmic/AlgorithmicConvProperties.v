@@ -1,9 +1,9 @@
 (** * LogRel.AlgorithmicConvProperties: properties of algorithmic conversion. *)
 From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
+From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties Normalisation.
 From LogRel.Algorithmic Require Import BundledAlgorithmicTyping.
 
-Import DeclarativeTypingProperties AlgorithmicTypingData.
+Import DeclarativeTypingProperties AlgorithmicTypedConvData BundledTypingData.
 
 (** ** Stability of algorithmic conversion by type/term expansion *)
 
@@ -25,222 +25,46 @@ Import DeclarativeTypingProperties AlgorithmicTypingData.
     all: now etransitivity.
   Qed.
 
-  (** ** Strengthening *)
-  (** Removing unused variables from a context*)
+(** Algorithmic conversion implies normalisation *)
+Section AlgoConvNorm.
+  
+  Let PTyEq (Γ : context) (A B : term) := dnorm_ty Γ A.
+  Let PTyRedEq (Γ : context) (A B : term) := dnf_ty Γ A.
+  Let PNeEq (Γ : context) (A t u : term) := dneu Γ A t.
+  Let PNeRedEq (Γ : context) (A t u : term) := dneu_red Γ A t.
+  Let PTmEq (Γ : context) (A t u : term) := dnorm_tm Γ A t.
+  Let PTmRedEq (Γ : context) (A t u : term) := dnf_tm Γ A t.
 
-Section ConvStr.
-
-  Let PTyEq (Γ : context) (A B : term) := forall Δ (ρ : Γ ≤ Δ) A' B',
-    A = A'⟨ρ⟩ -> B = B'⟨ρ⟩ ->
-    [Δ |- A' ≅ B'].
-  Let PTyRedEq (Γ : context) (A B : term) := forall Δ (ρ : Γ ≤ Δ) A' B',
-    A = A'⟨ρ⟩ -> B = B'⟨ρ⟩ ->
-    [Δ |- A' ≅h B'].
-  Let PNeEq (Γ : context) (A t u : term) := forall Δ (ρ : Γ ≤ Δ) t' u',
-    t = t'⟨ρ⟩ -> u = u'⟨ρ⟩ ->
-    ∑ A', A = A'⟨ρ⟩ × [Δ |- t' ~ u' ▹ A'].
-  Let PNeRedEq (Γ : context) (A t u : term) := forall Δ (ρ : Γ ≤ Δ) t' u',
-    t = t'⟨ρ⟩ -> u = u'⟨ρ⟩ ->
-    ∑ A', A = A'⟨ρ⟩ × [Δ |- t' ~h u' ▹ A'].
-  Let PTmEq (Γ : context) (A t u : term) := forall Δ (ρ : Γ ≤ Δ) t' u' A',
-    A = A'⟨ρ⟩ -> t = t'⟨ρ⟩ -> u = u'⟨ρ⟩ ->
-    [Δ |- t' ≅ u' : A'].
-  Let PTmRedEq (Γ : context) (A t u : term) := forall Δ (ρ : Γ ≤ Δ) t' u' A',
-    A = A'⟨ρ⟩ -> t = t'⟨ρ⟩ -> u = u'⟨ρ⟩ ->
-    [Δ |- t' ≅h u' : A'].
-
-  #[local] Ltac push_renaming :=
-    repeat match goal with
-    | eq : _ = ?t⟨_⟩ |- _ =>
-        destruct t ; cbn in * ; try solve [congruence] ;
-        inversion eq ; subst ; clear eq
-    end.
-
-  Theorem algo_conv_str :
-    AlgoConvInductionConcl PTyEq PTyRedEq
-      PNeEq PNeRedEq PTmEq PTmRedEq.
+  Lemma algo_conv_dnorm :
+    AlgoConvInductionConcl PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
   Proof.
     subst PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
-    apply AlgoConvInduction.
-    - intros * Hred Hred' ? IH * -> ->.
-      eapply credalg_str in Hred as [? [->]], Hred' as [? [->]].
-      econstructor ; tea.
-      now eapply IH.
-    - intros * ? IHA ? IHB ? **.
-      push_renaming.
-      econstructor.
-      + now eapply IHA.
-      + now eapply IHB with(ρ := wk_up _ ρ).
-    - intros ; push_renaming.
-      econstructor.
-    - intros ; push_renaming.
-      now econstructor.
-    - intros ; push_renaming.
-      now econstructor.
-    - intros * ? IHA ? IHB ? * ??.
-      push_renaming.
-      econstructor.
-      + now eapply IHA.
-      + now eapply IHB with (ρ := wk_up _ ρ).
-    - intros * ? IHA ? IHa ? IHa' **.
-      push_renaming.
-      econstructor.
-      + eapply IHA ; reflexivity.
-      + eapply IHa ; reflexivity.
-      + eapply IHa' ; reflexivity.
-    - intros * ?? ? IH ** ; subst.
-      edestruct IH as [? [->]].
-      1-2 : reflexivity.
-      econstructor ; tea.
-      all: now eapply whne_ren.
-    - intros * Hin **.
-      push_renaming.
-      apply in_ctx_str in Hin as [? [-> ]].
-      eexists ; split.
-      1: reflexivity.
-      eapply section_inj in H1 as ->.
-      2: eapply section_wk.
-      now econstructor.
-    - intros * ? IHm ? IHt **.
-      push_renaming.
-      edestruct IHm as [? []].
-      1-2: reflexivity.
-      push_renaming.
-      eexists ; split.
-      2: econstructor ; tea.
-      2: eapply IHt.
-      2-4: reflexivity.
-      now bsimpl.
-    - intros * ? IHn ? IHP ? IHz ? IHs **.
-      push_renaming.
-      edestruct IHn as [? []].
-      1-2: reflexivity.
-      push_renaming.
-      eexists ; split ; cycle -1.
-      1: econstructor ; tea.
-      + eapply IHP with (ρ := wk_up tNat ρ).
-        all: reflexivity.
-      + eapply IHz.
-        2-3: reflexivity.
-        now bsimpl.
-      + eapply IHs.
-        2-3: reflexivity.
-        unfold elimSuccHypTy ; cbn.
-        now bsimpl.
-      + now bsimpl.
-    - intros * ? IHn ? IHP **.
-      push_renaming.
-      edestruct IHn as [? []].
-      1-2: reflexivity.
-      push_renaming.
-      eexists ; split ; cycle -1.
-      1: econstructor ; tea.
-      + eapply IHP with (ρ := wk_up tEmpty ρ).
-        all: reflexivity.
-      + now bsimpl.
-    - intros * ? IHm **.
-      push_renaming.
-      edestruct IHm as [? []].
-      1-2: reflexivity.
-      push_renaming.
-      eexists ; split.
-      2: econstructor ; tea.
-      reflexivity.
-    - intros * ? IHm **.
-      push_renaming.
-      edestruct IHm as [? []].
-      1-2: reflexivity.
-      push_renaming.
-      eexists ; split.
-      2: econstructor ; tea.
-      now bsimpl.
-    - intros * ? IHn ? IHP ? IHe **.
-      push_renaming.
-      edestruct IHn as [? []].
-      1-2: reflexivity.
-      push_renaming.
-      eexists ; split ; cycle -1.
-      1: econstructor ; tea.
-      + unshelve eapply IHP.
-        * unshelve eexists.
-          1: exact (_wk_up (_wk_up ρ)).
-          evar (A : term) ; replace (tId _ _ _) with A ; subst A.
-          1: do 2 eapply well_up ; eauto.
-          now bsimpl.
-        * reflexivity.
-        * reflexivity.
-      + eapply IHe.
-        2-3: reflexivity.
-        now bsimpl.
-      + now bsimpl.
-    - intros * ? IH red ** ; subst.
-      edestruct IH as [? []].
-      1-2: reflexivity.
-      subst.
-      eapply credalg_str in red as [? [-> ]].
-      eexists ; split ; [reflexivity|..].
-      econstructor ; tea.
-      now eapply whnf_ren.
-    - intros * red red' red'' ? IH * -> -> ->.
-      eapply credalg_str in red as [? [->]], red' as [? [->]], red'' as [? [->]].
-      now econstructor.
-    - intros * ? IHA ? IHB **.
-      push_renaming.
-      econstructor.
-      + eapply IHA ; reflexivity.
-      + eapply IHB with (ρ := wk_up _ ρ).
-        all: reflexivity.
-    - intros ; push_renaming.
-      econstructor.
-    - intros ; push_renaming.
-      econstructor.
-    - intros * ? IH **.
-      push_renaming.
-      econstructor.
-      eapply IH.
-      all: reflexivity.
-    - intros ; push_renaming.
-      econstructor.
-    - intros * ?? ? IH **.
-      subst.
-      push_renaming.
-      econstructor.
-      1-2: now eapply whnf_ren.
-      eapply IH with (ρ := wk_up _ ρ).
-      all: now bsimpl.
-    - intros * ? IHA ? IHB **.
-      push_renaming.
-      econstructor.
-      + eapply IHA ; reflexivity.
-      + eapply IHB with (ρ := wk_up _ ρ).
-        all: reflexivity.
-    - intros * ?? ? IHf ? IHs **.
-      subst.
-      push_renaming.
-      econstructor.
-      1-2: now eapply whnf_ren.
-      + eapply IHf ; reflexivity.
-      + eapply IHs.
-        2-3: reflexivity.
-        now bsimpl.
-    - intros * ? IHA ? IHa ? IHa' **.
-      push_renaming.
-      econstructor.
-      + eapply IHA ; reflexivity.
-      + eapply IHa ; reflexivity.
-      + eapply IHa' ; reflexivity.
-    - intros **.
-      push_renaming.
-      now econstructor.
-    - intros * ? IH **.
-      subst.
-      edestruct IH as [? [-> ]].
-      1-2: reflexivity.
-      econstructor ; tea.
-      now eapply isPosType_ren.
+    apply AlgoConvInduction ; cbn.
+    all: intros ; now econstructor.
   Qed.
 
-End ConvStr.
+End AlgoConvNorm.
+
+(** From this, we deduce that completeness of algorithmic typing wrt. declarative typing
+  implies normalisation, through reflexivity of declarative typing. We can combine this later
+  with the consequence of the logical relation to obtain deep normalisation. *)
+
+Section CompleteNormalisation.
+  Import BundledIntermediateData.
+
+  #[refine]Instance CompleteAlgoNormalisation
+    `{! ConvImplies de al} :
+    DeepNormalisation de := {}.
+  Proof.
+    - intros * Hty.
+      eapply algo_conv_dnorm.
+      now eapply TermRefl, tm_conv_compl in Hty.
+    - intros * Hty.
+      eapply algo_conv_dnorm.
+      now eapply TypeRefl, ty_conv_compl in Hty.
+  Qed.
+
+End CompleteNormalisation.
 
 (** ** Stability of algorithmic conversion by context and type change *)
 
@@ -248,7 +72,7 @@ End ConvStr.
 ones, algorithmic conversion still holds, possibly with a different output type
 (when there is one). *)
 Section AlgoConvConv.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
   Lemma in_ctx_conv_r Γ' Γ n decl :
   [|-[de] Γ' ≅ Γ] ->
@@ -312,7 +136,7 @@ Section AlgoConvConv.
   Theorem bundled_conv_conv :
     BundledConvInductionConcl PTyEq' PTyRedEq' PNeEq' PNeRedEq' PTmEq' PTmRedEq'.
   Proof.
-    all: subst PTyEq' PTyRedEq' PNeEq' PNeRedEq' PTmEq' PTmRedEq'.
+    subst PTyEq' PTyRedEq' PNeEq' PNeRedEq' PTmEq' PTmRedEq'.
     apply BundledConvInduction ; cbn in *.
     - intros * ??? IH **.
       econstructor ; tea.
@@ -569,7 +393,7 @@ End AlgoConvConv.
 (** ** Lifting of algorithmic conversion from terms at the universe to types *)
 
 Section TermTypeConv.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
   Let PTyEq (Γ : context) (A B : term) := True.
   Let PNeEq (Γ : context) (A t u : term) := True.
@@ -610,7 +434,7 @@ End TermTypeConv.
 (** ** Symmetry *)
 
 Section Symmetry.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
   Let PTyEq (Γ : context) (A B : term) := forall Δ,
     [|-[de] Γ ≅ Δ] ->
@@ -953,7 +777,7 @@ End Symmetry.
 (** ** Transitivity *)
 
 Section Transitivity.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
   Let PTyEq (Γ : context) (A B : term) := forall Δ C,
     [|-[de] Γ ≅ Δ] ->
@@ -1281,8 +1105,6 @@ End Transitivity.
 
 (** ** Instances *)
 
-Import BundledTypingData.
-
 Module AlgorithmicConvProperties.
   Export AlgorithmicTypingData.
 
@@ -1292,7 +1114,7 @@ Module AlgorithmicConvProperties.
     econstructor ; try assumption.
 
   #[export, refine] Instance ConvTypeAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     ConvTypeProperties (ta := bn) := {}.
   Proof.
     2: split.
@@ -1346,7 +1168,7 @@ Module AlgorithmicConvProperties.
 Qed.
 
   #[export, refine] Instance ConvTermAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     ConvTermProperties (ta := bn) := {}.
   Proof.
     1: split.
@@ -1408,9 +1230,10 @@ Qed.
       + econstructor.
         1-3: reflexivity.
         econstructor.
-        1-2: eapply isFun_whnf;
+        1-2: eapply isFun_whnf ;
           match goal with H : isWfFun _ _ _ ?f |- isFun ?f => destruct H end; constructor;
-          match goal with H : [_ |-[bn] ?f ~ ?f : _] |- whne ?f => apply H end.
+          match goal with H : [_ |-[bn] ?f ~ ?f : _] |- whne ?f =>
+            now destruct H as [?????%algo_conv_wh] end.
         eassumption.
     - intros_bn.
       1-3: gen_typing.
@@ -1430,7 +1253,8 @@ Qed.
         econstructor; tea.
         1-2: eapply isPair_whnf;
           match goal with H : isWfPair _ _ _ ?f |- isPair ?f => destruct H end; constructor;
-          match goal with H : [_ |-[bn] ?f ~ ?f : _] |- whne ?f => apply H end.
+          match goal with H : [_ |-[bn] ?f ~ ?f : _] |- whne ?f =>
+            now destruct H as [?????%algo_conv_wh] end.
     - intros_bn.
       1-3: gen_typing.
       now do 2 econstructor.
@@ -1455,7 +1279,7 @@ Qed.
   Qed.
 
   #[export, refine] Instance ConvNeuAlgProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     ConvNeuProperties (ta := bn) := {}.
   Proof.
     1: split.
@@ -1482,26 +1306,22 @@ Qed.
       + destruct bun_conv_ne_conv_l.
         eexists.
         gen_typing.
-      + now apply whne_ren.
       + destruct bun_conv_ne_conv_r.
         eexists.
         gen_typing.
-      + now apply whne_ren.
       + now apply algo_conv_wk.
       + now apply typing_wk.
-    - now intros * [].
+    - now intros * [?????%algo_conv_wh].
     - intros * [? ? Hty].
       inversion Hty ; subst ; clear Hty.
       econstructor.
       + assumption.
       + eexists. now econstructor.
-      + gen_typing.
       + eexists. now econstructor.
-      + gen_typing.
       + now econstructor.
       + eassumption.
   - intros *
-    [? ? ? ? ? ? Hf (?&?&[])%red_compl_prod_r]
+    [? ? ? ? Hf (?&?&[])%red_compl_prod_r]
     [? ? ? ? Ht].
     econstructor ; tea.
     + eapply algo_conv_sound in Hf as [Hf] ; tea.
@@ -1510,14 +1330,12 @@ Qed.
       * econstructor ; tea.
         now eapply RedConvTyC.
       * now econstructor.
-    + gen_typing.
     + eapply algo_conv_sound in Hf as [Hg] ; tea.
       eapply boundary in Hg as [_ _ Hg].
       eexists ; econstructor.
       * econstructor ; tea.
         now eapply RedConvTyC.
       * now econstructor.
-    + gen_typing.
     + econstructor.
       * econstructor ; tea.
         2: econstructor.
@@ -1533,7 +1351,6 @@ Qed.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + now econstructor.
     + eexists.
       econstructor ; tea.
       * econstructor ; tea.
@@ -1546,7 +1363,6 @@ Qed.
       * eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
         eapply boundary in Hconv as [].
         now econstructor.
-    + now econstructor.
     + econstructor ; tea.
       econstructor ; tea.
       2: now econstructor.
@@ -1562,13 +1378,11 @@ Qed.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + now econstructor.
     + eexists.
       econstructor ; tea.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + now econstructor.
     + econstructor ; tea.
       econstructor ; tea.
       2: now econstructor.
@@ -1586,13 +1400,11 @@ Qed.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + gen_typing.
     + eexists.
       econstructor; tea.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + gen_typing.
     + do 2 econstructor; tea.
       2: constructor.
       now eapply redty_red.
@@ -1604,13 +1416,11 @@ Qed.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + gen_typing.
     + eexists.
       econstructor; tea.
       eapply algo_conv_sound in bun_conv_ne_conv as [Hconv _]; tea.
       eapply boundary in Hconv as [].
       now econstructor.
-    + gen_typing.
     + do 2 econstructor; tea.
       2: constructor.
       now eapply redty_red.
@@ -1621,14 +1431,13 @@ Qed.
       etransitivity; tea.
       symmetry; econstructor; tea.
       boundary.
-  - intros * tyA tyx convA convx convP convhr convy [?????? conve conv].
+  - intros * tyA tyx convA convx convP convhr convy [???? conve conv].
     pose proof convA as ?%bn_conv_sound.
     pose proof convx as ?%bn_conv_sound.
     pose proof convP as ?%bn_conv_sound.
     pose proof convhr as ?%bn_conv_sound.
     pose proof convy as ?%bn_conv_sound.
     econstructor; tea.
-    2,4: now constructor.
     + eexists; econstructor; try boundary.
       apply algo_conv_sound in conve as [? h]; tea.
       econstructor; [boundary|]; tea.
@@ -1677,7 +1486,7 @@ Module IntermediateTypingProperties.
   Qed.
 
   #[export, refine] Instance TypingIntProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     TypingProperties (ta := bni) := {}.
   Proof.
     all: unfold_bni.
@@ -1709,7 +1518,7 @@ Module IntermediateTypingProperties.
   Qed.
 
   #[export, refine] Instance ConvTypeIntProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     ConvTypeProperties (ta := bni) := {}.
   Proof.
     all: unfold_bni.
@@ -1750,7 +1559,7 @@ Module IntermediateTypingProperties.
   Qed.
 
   #[export, refine] Instance ConvTermIntProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     ConvTermProperties (ta := bni) := {}.
   Proof.
     all: unfold_bni.
@@ -1793,7 +1602,8 @@ Module IntermediateTypingProperties.
       + do 2 econstructor ; [| |gen_typing].
         all: eapply isFun_whnf;
           match goal with H : isWfFun _ _ _ ?f |- isFun ?f => destruct H end; constructor;
-          match goal with H : [_ |-[bni] ?f ~ ?f : _] |- whne ?f => apply H end.
+          match goal with H : [_ |-[bni] ?f ~ ?f : _] |- whne ?f =>
+            now destruct H as [?????%algo_conv_wh] end.
     - intros.
       eapply (convtm_nat (ta := bn)).
       now econstructor.
@@ -1810,7 +1620,8 @@ Module IntermediateTypingProperties.
         econstructor; [| |gen_typing|gen_typing].
         all: eapply isPair_whnf;
           match goal with H : isWfPair _ _ _ ?f |- isPair ?f => destruct H end; constructor;
-          match goal with H : [_ |-[bni] ?f ~ ?f : _] |- whne ?f => apply H end.
+          match goal with H : [_ |-[bni] ?f ~ ?f : _] |- whne ?f =>
+            now destruct H as [?????%algo_conv_wh] end.
     - intros ? HΓ.
       eapply (convtm_empty (ta := bn)).
       now econstructor.
@@ -1819,7 +1630,7 @@ Module IntermediateTypingProperties.
   Qed.
 
   #[export, refine] Instance ConvNeuIntProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     ConvNeuProperties (ta := bni) := {}.
   Proof.
     all: unfold_bni.
@@ -1828,14 +1639,12 @@ Module IntermediateTypingProperties.
     - intros.
       apply convneu_wk ; tea.
       now split.
-    - now intros * [].
+    - now intros * [?????%algo_conv_wh].
     - intros * [? [[? [-> ]]]]%termGen'.
       econstructor.
       + gen_typing.
       + now eexists ; gen_typing.
-      + gen_typing.
       + now eexists ; gen_typing.
-      + gen_typing.
       + now econstructor.
       + eassumption.
     - gen_typing.
@@ -1844,14 +1653,13 @@ Module IntermediateTypingProperties.
     - gen_typing.
     - gen_typing.
     - (* Copy-paste of the proof above in ConvNeuAlgProperties but gen_typing fails (why ?) *)
-      intros * tyA tyx convA convx convP convhr convy [?????? conve conv].
+      intros * tyA tyx convA convx convP convhr convy [???? conve conv].
       pose proof convA as ?%bn_conv_sound.
       pose proof convx as ?%bn_conv_sound.
       pose proof convP as ?%bn_conv_sound.
       pose proof convhr as ?%bn_conv_sound.
       pose proof convy as ?%bn_conv_sound.
       econstructor; tea.
-      2,4: now constructor.
       + eexists; econstructor; try boundary.
         apply algo_conv_sound in conve as [? h]; tea.
         econstructor; [boundary|]; tea.
@@ -1881,7 +1689,7 @@ Module IntermediateTypingProperties.
   Qed.
 
   #[export, refine] Instance RedTermIntProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     RedTermProperties (ta := bni) := {}.
   Proof.
     all: unfold_bni.
@@ -1987,7 +1795,7 @@ Module IntermediateTypingProperties.
     Qed.
 
   #[export, refine] Instance RedTypeIntProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     RedTypeProperties (ta := bni) := {}.
   Proof.
     all: unfold_bni.
@@ -2013,7 +1821,7 @@ Module IntermediateTypingProperties.
   Qed.
 
   #[export] Instance IntermediateTypingProperties
-    `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)} :
+    `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de} :
     GenericTypingProperties bni _ _ _ _ _ _ _ _ := {}.
 
 End IntermediateTypingProperties.

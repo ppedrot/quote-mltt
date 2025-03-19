@@ -1,6 +1,6 @@
 (** * LogRel.LogRelConsequences: the properties from PropertiesDefinition are consequences of the logical relation. *)
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
-From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj NeutralConvProperties NormalisationConsequences.
+From LogRel.TypingProperties Require Import Normalisation PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj NeutralConvProperties NormalisationConsequences.
 
 From LogRel Require Import LogicalRelation Fundamental.
 From LogRel.LogicalRelation Require Import Properties.
@@ -56,7 +56,7 @@ Import WeakDeclarativeTypingProperties WeakDeclarativeTypingData.
 
 End Subst.
 
-#[local, refine] Instance TypingSubstLogRel : TypingSubst (ta := de) := {}.
+#[local, refine] Instance TypingSubstLogRel : TypingSubst de := {}.
   Proof.
     all: intros ; now eapply _typing_subst.
   Qed.
@@ -119,12 +119,12 @@ Section TypeConstructors.
   Qed.
 End TypeConstructors.
 
-#[local, refine] Instance RedCompleteLogRel : TypeReductionComplete (ta := de) := {}.
+#[local, refine] Instance RedCompleteLogRel : TypeReductionComplete de := {}.
 Proof.
   all: intros ; eauto using _red_ty_complete_l, _red_ty_complete_r.
   Qed.
 
-#[local, refine] Instance TypeConstructorsInjLogRel : TypeConstructorsInj (ta := de) := {}.
+#[local, refine] Instance TypeConstructorsInjLogRel : TypeConstructorsInj de := {}.
 Proof.
   intros.
   now apply _ty_conv_inj.
@@ -331,7 +331,7 @@ Section TermConstructors.
 
 End TermConstructors.
 
-#[local, refine] Instance TermConstructorsInjLogRel : TermConstructorsInj (ta := de) := {}.
+#[local, refine] Instance TermConstructorsInjLogRel : TermConstructorsInj de := {}.
 Proof.
   - intros. now eapply _univ_conv_inj.
   - intros. now eapply _nat_conv_inj.
@@ -377,7 +377,7 @@ Section NeutralConv.
 
 End NeutralConv.
 
-#[local, refine] Instance ConvNeutralConvPosLogRel : ConvNeutralConvPos (ta := de) := {}.
+#[local, refine] Instance ConvNeutralConvPosLogRel : ConvNeutralConvPos de := {}.
 Proof.
   intros * ?? [] Hconv.
   - destruct s.
@@ -398,13 +398,13 @@ Section Completeness.
   `{!RedType ta} `{!RedTerm ta}
   `{!GenericTypingProperties ta _ _ _ _ _ _ _ _}.
 
-  #[local, refine] Instance ConvCompleteLogRel : ConvComplete (ta := de) (ta' := ta) := {}.
+  #[local, refine] Instance ConvImpliesLogRel : ConvImplies de ta := {}.
   Proof.
     - now intros * [HΓ ?%redValidTy%(escapeEq (ta := ta))]%Fundamental.
     - now intros * [HΓ ? ?%redValidTm%(escapeTm (ta := ta)) ]%Fundamental.
   Qed.
 
-  #[local, refine] Instance TypingCompleteLogRel : TypingComplete (ta := de) (ta' := ta) := {}.
+  #[local, refine] Instance TypingImpliesLogRel : TypingImplies de ta := {}.
   Proof.
     - now intros * [HΓ ?%redValidTy%(escapeTy (ta := ta))]%Fundamental.
     - now intros * [_ _ ?%redValidTm%escapeTm]%(Fundamental (ta := ta)).
@@ -561,62 +561,7 @@ Section Normalisation.
 
 End Normalisation.
 
-#[local, refine] Instance NormalisationLogRel : Normalisation (ta := de) := {}.
+#[local, refine] Instance NormalisationLogRel : Normalisation de := {}.
   Proof.
     all: intros ; eauto using _tm_norm, _ty_norm.
   Qed.
-
-(** ** Canonicity **)
-
-(** Every closed natural number is a numeral, i.e. an iteration of [tSucc] on [tZero]. *)
-
-Section NatCanonicityInduction.
-
-  Import WeakDeclarativeTypingProperties WeakDeclarativeTypingData.
-
-  Let numeral : nat -> term := fun n => Nat.iter n tSucc tZero.
-
-  #[local] Coercion numeral : nat >-> term.
-
-  #[local] Lemma red_nat_empty : [ε ||-Nat tNat ≅ tNat].
-  Proof.
-    repeat econstructor.
-  Qed.
-
-  Lemma nat_red_empty_ind :
-  (forall t u, [ε ||-Nat t ≅ u :Nat] -> ∑ n : nat, [ε |- t ≅ n : tNat]) ×
-  (forall t u, NatPropEq ε t u -> ∑ n : nat, [ε |- t ≅ n : tNat]).
-  Proof.
-    apply NatRedEqInduction.
-    - intros * [? []] ? ? _ [n] ; refold.
-      exists n.
-      now etransitivity.
-    - exists 0 ; cbn.
-      now repeat constructor.
-    - intros ? ? _ [n].
-      exists (S n) ; simpl.
-      now econstructor.
-    - intros ? ? [? ? []].
-      exfalso.
-      now eapply no_neutral_empty_ctx.
-  Qed.
-
-  Lemma _nat_canonicity {t} : [ε |- t : tNat] ->
-  ∑ n : nat, [ε |- t ≅ n : tNat].
-  Proof.
-    intros Ht.
-    assert [LRNat_ one red_nat_empty | ε ||- t : tNat] as ?%nat_red_empty_ind.
-    {
-      apply Fundamental in Ht as [?? Vt%redValidTm].
-      now eapply irrLR.
-    }
-    now assumption.
-  Qed.
-
-
-End NatCanonicityInduction.
-
-#[local, refine] Instance NatCanonicityLogRel : NatCanonicity (ta := de) := {}.
-Proof.
-  auto using _nat_canonicity.
-Qed.

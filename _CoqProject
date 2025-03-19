@@ -23,6 +23,7 @@ theories/Syntax/All.v
 theories/GenericTyping.v
 theories/DeclarativeTyping.v
 
+theories/TypingProperties/Normalisation.v
 theories/TypingProperties/PropertiesDefinition.v
 theories/TypingProperties/DeclarativeProperties.v
 theories/TypingProperties/SubstConsequences.v
@@ -93,15 +94,19 @@ theories/Algorithmic/UntypedAlgorithmicConversion.v
 theories/Algorithmic/BundledAlgorithmicTyping.v
 theories/Algorithmic/AlgorithmicConvProperties.v
 theories/Algorithmic/AlgorithmicTypingProperties.v
+theories/Algorithmic/Strengthening.v
 
 theories/Decidability/Functions.v
 theories/Decidability/UntypedFunctions.v
+theories/Decidability/Views.v
 theories/Decidability/Soundness.v
 theories/Decidability/NegativeSoundness.v
 theories/Decidability/Completeness.v
 theories/Decidability/Termination.v
 theories/Decidability/UntypedSoundness.v
 theories/Decidability/UntypedCompleteness.v
+theories/Decidability/UntypedNegativeSoundness.v
+theories/Decidability/UntypedTermination.v
 theories/Decidability.v
 
 theories/Decidability/Execution.v

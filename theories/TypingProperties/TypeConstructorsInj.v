@@ -11,7 +11,7 @@ Import WeakDeclarativeTypingProperties.
 (** Various specialized and easy-to-use versions of the general theorem. *)
 
 Section TypeConstructors.
-  Context `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
   Corollary conv_univ_l Γ T :
     isType T ->
@@ -316,12 +316,43 @@ Section TypeConstructors.
 
 End TypeConstructors.
 
+Section TermConstructors.
+  Context `{!TermConstructorsInj de}.
+
+  Lemma prod_tm_inj Γ A B A' B' :
+    [Γ |-[de] tProd A B ≅ tProd A' B' : U] ->
+    [Γ |-[de] A' ≅ A : U] × [Γ,,A' |-[de] B ≅ B' : U].
+  Proof.
+    unshelve eintros ?%univ_conv_inj.
+    1-2: now econstructor.
+    now cbn in *.
+  Qed.
+
+  Lemma sig_tm_inj Γ A B A' B' :
+    [Γ |-[de] tSig A B ≅ tSig A' B' : U] ->
+    [Γ |-[de] A ≅ A' : U] × [Γ,,A |-[de] B ≅ B' : U].
+  Proof.
+    unshelve eintros ?%univ_conv_inj.
+    1-2: now econstructor.
+    now cbn in *.
+  Qed.
+
+  Lemma id_tm_inj Γ A x y A' x' y' :
+    [Γ |-[de] tId A x y ≅ tId A' x' y' : U] ->
+    [× [Γ |-[de] A ≅ A' : U], [Γ |-[de] x ≅ x' : A] & [Γ |-[de] y ≅ y' : A]].
+  Proof.
+    unshelve eintros ?%univ_conv_inj.
+    1-2: now econstructor.
+    now cbn in *.
+  Qed.
+
+End TermConstructors.
 
 (** ** Subject reduction *)
 
 Section SubjectReduction.
 
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
   Theorem subject_reduction_one Γ A t t' :
       [Γ |- t : A] ->
@@ -472,7 +503,7 @@ End SubjectReduction.
 (** Characterizes the possible weak-head normal forms at a given type. *)
 
 Section WhClassification.
-  Context `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}.
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
 
   Lemma Uterm_isType Γ A :
@@ -634,7 +665,7 @@ Section WhClassification.
 End WhClassification.
 
 Lemma idElimConv {Γ A x P hr y e A' x' P' hr' e' y' T A'' x'' y''}
-  `{!TypingSubst (ta := de)} `{!TypeReductionComplete (ta := de)} `{!TypeConstructorsInj (ta := de)}:
+  `{!TypingSubst de} `{!TypeConstructorsInj de}:
   well_typed (ta := de) Γ (tIdElim A x P hr y e) ->
   well_typed (ta := de) Γ (tIdElim A' x' P' hr' y' e') ->
   (forall T', [Γ |-[de] e : T'] -> [Γ |-[de] T ≅ T']) ->
