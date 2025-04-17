@@ -59,7 +59,7 @@ jobs:
         run: sudo chown -R 1001:116 .  # <--
 
       - name: Install graphviz
-        uses: ts-graphviz/setup-graphviz@v1
+        uses: ts-graphviz/setup-graphviz@v2
 
       - name: Build dependency graph
         run: |
