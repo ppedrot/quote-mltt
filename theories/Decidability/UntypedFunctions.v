@@ -1,4 +1,4 @@
-(** * LogRel.Decidability.UnytpedFunctions: implementation of untyped conversion. *)
+(** * LogRel.Decidability.UntypedFunctions: implementation of untyped conversion. *)
 From Coq Require Import Nat Lia.
 From Equations Require Import Equations.
 From PartialFun Require Import Monad PartialFun MonadExn.

@@ -1,3 +1,5 @@
+(** * LogRel.AutoSubst.Ast: abstract syntax tree, definitions of renamings, substitutions and many lemmas, generated using AutoSubst. *)
+
 From LogRel.AutoSubst Require Import core unscoped.
 From LogRel.Syntax Require Import BasicAst.
 From Coq Require Import Setoid Morphisms Relation_Definitions.
@@ -1063,18 +1065,12 @@ Class Up_term X Y :=
 #[global]
 Instance VarInstance_term : (Var _ _) := @tRel.
 
-(* Notation "[ sigma_term ]" := (subst_term sigma_term)
-( at level 1, left associativity, only printing)  : fscope. *)
-
 Notation "s [ sigma_term ]" := (subst_term sigma_term s)
 ( at level 7, left associativity, only printing)  : subst_scope.
 
 Notation "↑__term" := up_term (only printing)  : subst_scope.
 
 Notation "↑__term" := up_term_term (only printing)  : subst_scope.
-
-Notation "⟨ xi_term ⟩" := (ren_term xi_term)
-( at level 1, left associativity, only printing)  : fscope.
 
 Notation "s ⟨ xi_term ⟩" := (ren_term xi_term s)
 ( at level 7, left associativity, only printing)  : subst_scope.

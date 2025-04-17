@@ -1,4 +1,4 @@
-(** * LogRel.NormalForms: definition of normal and neutral forms, and properties. *)
+(** * LogRel.Syntax.NormalForms: definition of normal and neutral forms, and properties. *)
 From Coq Require Import ssrbool.
 From Equations Require Import Equations. (* for depelim *)
 From LogRel Require Import AutoSubst.Extra Utils.

@@ -1,12 +1,11 @@
-(** * LogRel.UntypedAlgorithmicConversion: alternative definition of algorithmic conversion. *)
+(** * LogRel.Algorithmic.UntypedConversion: alternative, fully term-directed conversion checking algorithm, as inductive predicate. *)
 
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
 From LogRel Require Import Sections.
-From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj NeutralConvProperties.
-From LogRel.Algorithmic Require Import BundledAlgorithmicTyping AlgorithmicConvProperties.
+From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
+From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData AlgorithmicTypingData.
-
 
 (** ** Definitions *)
 

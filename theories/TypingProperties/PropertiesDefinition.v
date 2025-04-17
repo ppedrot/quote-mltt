@@ -1,4 +1,4 @@
-(** * LogRel.PropertiesDefinition: the high-level, abstract properties of conversion and typing, that we obtain as consequences of the logical relation. *)
+(** * LogRel.TypingProperties.PropertiesDefinition: the high-level, abstract properties of conversion and typing, that we obtain as consequences of the logical relation. *)
 From Coq Require Import CRelationClasses ssrbool.
 From LogRel Require Import Utils Syntax.All GenericTyping Normalisation.
 

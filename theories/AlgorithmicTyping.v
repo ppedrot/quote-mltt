@@ -1,4 +1,4 @@
-(** * LogRel.AlgorithmicTyping: definition of algorithmic conversion and typing. *)
+(** * LogRel.AlgorithmicTyping: definition of type-directed conversion and algorithmic typing, as inductive predicates. *)
 From Coq Require Import ssrbool.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 

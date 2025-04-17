@@ -1,7 +1,7 @@
 (** * LogRel.AlgorithmicTypingProperties: properties of algorithmic typing. *)
 From LogRel Require Import Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj NeutralConvProperties.
-From LogRel.Algorithmic Require Import BundledAlgorithmicTyping AlgorithmicConvProperties.
+From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
+From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties.
 
 From LogRel Require Import Utils.
 

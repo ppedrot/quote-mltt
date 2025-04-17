@@ -1,3 +1,4 @@
+(** * LogRel.Validity.Validity: definition of validity: closure of the logical relation under substitution. *)
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation LogicalRelation.Properties.
 From Equations Require Import Equations.
 

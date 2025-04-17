@@ -1,3 +1,5 @@
+(** * LogRel.Syntax.Sections: some very short theory of sections, useful to define strengthening lemmas. *)
+
 From Coq Require Import Nat Morphisms.
 From LogRel Require Import Utils AutoSubst.Extra.
 From LogRel.Syntax Require Import Weakening.

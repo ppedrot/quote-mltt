@@ -2,7 +2,7 @@
 From Coq Require Import CRelationClasses.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
-From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeConstructorsInj.
+From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences.
 
 Set Printing Primitive Projection Parameters.
 
@@ -10,8 +10,8 @@ Import DeclarativeTypingData.
 
 (** ** Properties of neutral conversion *)
 
-(** Note that some of these properties require injectivity of type constructors, which we need the above
-instance to prove! *)
+(** Note that some of these properties require injectivity of type constructors, which
+explain *)
 
 Section NeuConvProperties.
   Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
@@ -492,7 +492,9 @@ Module DeclarativeTypingProperties.
       apply conv_neu_sound.
       assumption.
     - intros * ??? Hf ? Hg **.
-      eapply (convtm_eta (ConvNeuConv0 := WeakDeclarativeTypingData.ConvNeuConv_WeakDecl)) ; eauto.
+      unshelve eapply convtm_eta.
+      7: typeclasses eauto.
+      all: eauto.
       + inversion Hf ; subst.
         all: constructor ; eauto.
         split.
@@ -504,7 +506,9 @@ Module DeclarativeTypingProperties.
         1-2: now eapply conv_neu_ne.
         now eapply conv_neu_sound.
     - intros * ??? Hp ? Hp' **.
-      eapply (convtm_eta_sig (ConvNeuConv0 := WeakDeclarativeTypingData.ConvNeuConv_WeakDecl)) ; eauto.
+      unshelve eapply convtm_eta_sig.
+      7: typeclasses eauto.
+      all: eauto.
       + inversion Hp ; subst.
         all: constructor ; eauto.
         split.
