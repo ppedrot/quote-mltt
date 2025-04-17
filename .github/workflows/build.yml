@@ -1,9 +1,12 @@
 name: LogRel CI
 
 on:
-  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - 'coq.*'
+      - 'rocq.*'
 
 permissions:
   contents: read
