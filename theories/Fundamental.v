@@ -1,4 +1,4 @@
-(** * LogRel.Fundamental: declarative typing implies the logical relation for any generic instance. *)
+(** * LogRel.Fundamental: declarative typing implies the logical relation (for any generic instance). *)
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Properties.
 From LogRel.Validity Require Import Validity Irrelevance Properties ValidityTactics.

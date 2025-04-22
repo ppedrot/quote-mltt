@@ -1,6 +1,6 @@
-(** * LogRel.NormalisationConsequences: direct consequences of normalisation. *)
+(** * LogRel.TypingProperties.NormalisationConsequences: direct consequences of normalisation. *)
 From Coq Require Import CRelationClasses.
-From LogRel Require Import Utils Syntax.All Sections GenericTyping DeclarativeTyping PropertiesDefinition SubstConsequences NeutralConvProperties TypeConstructorsInj DeclarativeProperties Normalisation.
+From LogRel Require Import Utils Syntax.All Sections GenericTyping DeclarativeTyping PropertiesDefinition SubstConsequences NeutralConvProperties TypeInjectivityConsequences DeclarativeProperties Normalisation.
 
 Import DeclarativeTypingProperties.
 

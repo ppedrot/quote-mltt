@@ -1,7 +1,7 @@
-(** * LogRel.BundledAlgorithmicTyping: algorithmic typing bundled with its pre-conditions, and a tailored induction principle. *)
+(** * LogRel.Algorithmic.Bundled: algorithmic judgments bundled with their pre-conditions, and tailored induction principles. *)
 
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeConstructorsInj NeutralConvProperties.
+From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData AlgorithmicTypingData.
 

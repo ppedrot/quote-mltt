@@ -1,4 +1,4 @@
-(** * LogRel.TypeConstructorsInj: injectivity and no-confusion of type constructors, and many consequences, including subject reduction. *)
+(** * LogRel.TypingProperties.TypeInjectivityConsequences: properties around injectivity and no-confusion of type constructors and many consequences, including subject reduction. *)
 From Coq Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences.

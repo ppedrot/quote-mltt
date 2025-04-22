@@ -1,7 +1,7 @@
-(** * LogRel.Decidability.Soundness: the implementations imply the inductive predicates. *)
+(** * LogRel.Decidability.UntypedSoundness: the implementations imply the inductive predicates. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicTyping UntypedAlgorithmicConversion.
+From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicTyping UntypedConversion.
 From LogRel.Decidability Require Import Functions UntypedFunctions Views Soundness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 

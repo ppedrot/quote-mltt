@@ -1,3 +1,5 @@
+(** * LogRel.PERTactics: Ltac2 tactics to manipulate partial equivalence relations. *)
+
 From Coq Require Import CRelationClasses.
 From LogRel Require Import Utils.
 From Ltac2 Require Import Ltac2 Printf.

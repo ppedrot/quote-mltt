@@ -1,6 +1,7 @@
+(** * LogRel.Syntax.TermNotations: notations for terms in the object language, defined in a custom entry. *)
 
-From LogRel Require Import Utils AutoSubst.Extra.
-From LogRel.Syntax Require Import Notations BasicAst Context.
+From LogRel Require Import Utils AutoSubst.Extra Notations.
+From LogRel.Syntax Require Import BasicAst Context.
 
 (** Custom notation for contexts *)
 Declare Custom Entry mlttctx.

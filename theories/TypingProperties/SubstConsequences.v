@@ -1,9 +1,9 @@
-(** * LogRel.SubstConsequences: consequences of stability by substitution. *)
+(** * LogRel.TypingProperties.SubstConsequences: consequences of stability by substitution. *)
 From Coq Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition.
 
-(** Many lemmas in this file, prefixed by an underscore, have extraneous premises, which we cannot remove directly because of circular dependencies. The "correct" version is the one without underscore. *)
+(** Many lemmas in this file, prefixed by an underscore, have extraneous premises, which we cannot remove immediately because of circular dependencies. The stronger version which one wants to use is the one without underscore. *)
 
 Set Printing Primitive Projection Parameters.
 

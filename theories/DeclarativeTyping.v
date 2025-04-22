@@ -418,6 +418,13 @@ Module DeclarativeTypingData.
 
 End DeclarativeTypingData.
 
+(** This weaker instance is necessary to break circularity: indeed, we can only derive
+  that the above instance is an instance of generic typing once we have injectivity
+  of type constructors, because we need said injectivity to show that neutral conversion
+  is transitive. So we will first instantiate the logical relation once with this
+  weaker instance, obtain injectivity of type constructors, then derive that the above
+  instance is also an instance of generic typing, then instantiate the logical relation again.
+*)
 Module WeakDeclarativeTypingData.
 
   Import DeclarativeTypingData.

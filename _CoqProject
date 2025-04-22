@@ -5,6 +5,7 @@
 theories/Utils.v
 theories/PERTactics.v
 theories/Syntax/BasicAst.v
+theories/Notations.v
 
 theories/AutoSubst/core.v
 theories/AutoSubst/unscoped.v
@@ -12,7 +13,6 @@ theories/AutoSubst/Ast.v
 theories/AutoSubst/Extra.v
 
 theories/Syntax/Context.v
-theories/Syntax/Notations.v
 theories/Syntax/TermNotations.v
 theories/Syntax/NormalForms.v
 theories/Syntax/Weakening.v
@@ -23,11 +23,11 @@ theories/Syntax/All.v
 theories/GenericTyping.v
 theories/DeclarativeTyping.v
 
+theories/TypingProperties/DeclarativeProperties.v
 theories/TypingProperties/Normalisation.v
 theories/TypingProperties/PropertiesDefinition.v
-theories/TypingProperties/DeclarativeProperties.v
 theories/TypingProperties/SubstConsequences.v
-theories/TypingProperties/TypeConstructorsInj.v
+theories/TypingProperties/TypeInjectivityConsequences.v
 theories/TypingProperties/NeutralConvProperties.v
 theories/TypingProperties/NormalisationConsequences.v
 theories/TypingProperties/LogRelConsequences.v
@@ -90,8 +90,8 @@ theories/Validity/Introductions/Id.v
 theories/Fundamental.v
 
 theories/AlgorithmicTyping.v
-theories/Algorithmic/UntypedAlgorithmicConversion.v
-theories/Algorithmic/BundledAlgorithmicTyping.v
+theories/Algorithmic/UntypedConversion.v
+theories/Algorithmic/Bundled.v
 theories/Algorithmic/AlgorithmicConvProperties.v
 theories/Algorithmic/AlgorithmicTypingProperties.v
 theories/Algorithmic/Strengthening.v
@@ -100,12 +100,12 @@ theories/Decidability/Functions.v
 theories/Decidability/UntypedFunctions.v
 theories/Decidability/Views.v
 theories/Decidability/Soundness.v
-theories/Decidability/NegativeSoundness.v
-theories/Decidability/Completeness.v
-theories/Decidability/Termination.v
 theories/Decidability/UntypedSoundness.v
-theories/Decidability/UntypedCompleteness.v
+theories/Decidability/NegativeSoundness.v
 theories/Decidability/UntypedNegativeSoundness.v
+theories/Decidability/Completeness.v
+theories/Decidability/UntypedCompleteness.v
+theories/Decidability/Termination.v
 theories/Decidability/UntypedTermination.v
 theories/Decidability.v
 

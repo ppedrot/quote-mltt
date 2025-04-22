@@ -1,4 +1,4 @@
-(** * LogRel.BasicAst: definitions preceding those of the AST of terms: sorts, binder annotations… *)
+(** * LogRel.Syntax.BasicAst: definitions preceding those of the AST of terms: sorts, binder annotations… *)
 
 Inductive sort : Set :=
   | set : sort.

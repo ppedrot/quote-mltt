@@ -1,7 +1,7 @@
-(** * LogRel.UntypedReduction: untyped reduction, used to define algorithmic typing.*)
+(** * LogRel.Syntax.UntypedReduction: untyped reduction, used to define algorithmic typing.*)
 From Coq Require Import CRelationClasses.
-From LogRel Require Import Utils AutoSubst.Extra.
-From LogRel.Syntax Require Import BasicAst Notations Context NormalForms Weakening.
+From LogRel Require Import Utils AutoSubst.Extra Notations.
+From LogRel.Syntax Require Import BasicAst Context NormalForms Weakening.
 
 (** ** Reductions *)
 
