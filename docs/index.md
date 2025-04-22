@@ -80,6 +80,16 @@ The various functions for conversion-checking and type-checking are defined and 
 [Decidability.Decidability] | Type-checking is decidable.
 [Decidability.Execution] | Example executions of the type checker, in Coq.
 
+Miscellaneous
+----------------------
+
+The [Misc]() folder contains files that are not strictly necessary for the development, but that we keep around for curiosity.
+
+| File | Description |
+|---|----|
+[Misc.Positivity](https://github.com/CoqHott/logrel-coq/blob/coq-8.20/theories/Misc/Positivity.v) | A discrepancy in positivity-checking inductive types between Agda and Coq, which was a source of difficulties when first setting up the logical relation in Coq.
+
+
 
 [Utils]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.Utils.html
 [Syntax.BasicAst]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.Syntax.BasicAst.html
