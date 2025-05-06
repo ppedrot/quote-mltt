@@ -1,9 +1,9 @@
 (** * LogRel.Decidability.UntypedCompleteness: the inductive predicates imply the implementation answer positively. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
+From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties UntypedConversion.
+From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties UntypedConvSoundness.
 From LogRel.Decidability Require Import Functions Views UntypedFunctions Soundness UntypedSoundness Completeness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
@@ -301,7 +301,7 @@ Proof.
     eapply neuAppCongAlg_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     econstructor ; [now eapply IHm|..] ; cbn.
     eapply implem_uconv_graph, uconv_sound_decl in IHm as [? Hpost0] ; tea.
-    eapply AppCongUAlg_bridge in Hpost0 as (?&?&[? [Hpre1 []]%dup]); eauto.
+    eapply AppCongUAlg_bridge in Hpost0 as (?&?&[? Hpre1]); eauto.
     eapply neuAppCongAlg_prem1 in Hpre1 as [Hpre1 []]%dup ; eauto. 
     patch_rec_ret ; econstructor ; [now eapply IHt|..] ; cbn.
     now constructor.

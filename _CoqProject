@@ -24,7 +24,7 @@ theories/GenericTyping.v
 theories/DeclarativeTyping.v
 
 theories/TypingProperties/DeclarativeProperties.v
-theories/TypingProperties/Normalisation.v
+theories/TypingProperties/NormalisationDefinition.v
 theories/TypingProperties/PropertiesDefinition.v
 theories/TypingProperties/SubstConsequences.v
 theories/TypingProperties/TypeInjectivityConsequences.v
@@ -89,10 +89,13 @@ theories/Validity/Introductions/Id.v
 
 theories/Fundamental.v
 
-theories/AlgorithmicTyping.v
-theories/Algorithmic/UntypedConversion.v
+theories/AlgorithmicJudgments.v
 theories/Algorithmic/Bundled.v
 theories/Algorithmic/AlgorithmicConvProperties.v
+theories/Algorithmic/AlgorithmicConvPER.v
+theories/Algorithmic/AlgorithmicConvInstances.v
+theories/Algorithmic/UntypedConvSoundness.v
+theories/Algorithmic/UntypedTypedConv.v
 theories/Algorithmic/AlgorithmicTypingProperties.v
 theories/Algorithmic/Strengthening.v
 

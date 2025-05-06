@@ -1,7 +1,7 @@
 (** * LogRel.Decidability: type-checking is decidable. *)
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping
-  AlgorithmicTyping Bundled AlgorithmicConvProperties
+  AlgorithmicJudgments Bundled AlgorithmicConvProperties AlgorithmicConvInstances
   AlgorithmicTypingProperties PropertiesDefinition NeutralConvProperties NormalisationConsequences LogRelConsequences.
 
 From LogRel.Decidability Require Import Functions Soundness NegativeSoundness Termination.

@@ -1,10 +1,9 @@
 (** * LogRel.Decidability.UntypedNegativeSoundness: implementation failure implies negation of typing for untyped conversion. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties.
-From LogRel Require Import UntypedConversion.
+From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties UntypedConvSoundness.
 
 From LogRel.Decidability Require Import Functions UntypedFunctions Views Soundness
   UntypedSoundness Completeness UntypedCompleteness.
@@ -628,7 +627,7 @@ Qed.
       intros [? (?&?&?&?&[[=]])%neuConvGen] ; subst.
       eapply Hnty'.
       econstructor ; tea.
-      eapply prod_ty_inj, Hty.
+      eapply prod_ty_inj, conv_neu_typing ; tea.
       boundary.
 
     - edestruct neuNatElimCong_prem0 ; eauto.

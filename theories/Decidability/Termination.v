@@ -1,8 +1,8 @@
 (** * LogRel.Decidability.Termination: the implementation always terminates on well-typed inputs. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import Normalisation DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationConsequences.
+From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
+From LogRel.TypingProperties Require Import NormalisationDefinition DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationConsequences.
 From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties.
 From LogRel Require Import Utils.
 
@@ -260,7 +260,7 @@ Proof.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
-    subst ; eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    subst ; eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuNatElimCong_prem1 in Hpost1 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
@@ -286,7 +286,7 @@ Proof.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
-    subst ; eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    subst ; eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuEmptyElimCong_prem1 in Hpost1 ; eauto.
     now split ; [eauto | intros [] ; cbn].
 
@@ -336,7 +336,7 @@ Proof.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
-    subst ; eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    subst ; eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuIdElimCong_prem1 in Hpost1 as [[]]%dup ; eauto.
     repeat erewrite <- wk1_ren_on.
     split ; [eauto | intros [] ; cbn ; [|easy]].
@@ -353,7 +353,7 @@ Proof.
 
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost0 []]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost0 ?]%implem_conv_graph%algo_conv_sound%dup ; eauto.
     2: now eapply dnf_whnf in Hn.
     split ; [..|easy].
     eapply wh_red_complete ; [exists istype|eapply ty_norm] ; cbn ; boundary.

@@ -3,8 +3,8 @@ From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping
   DeclarativeProperties GenericTyping PropertiesDefinition.
-From LogRel Require Import SubstConsequences TypeInjectivityConsequences NeutralConvProperties AlgorithmicTyping Bundled Normalisation AlgorithmicConvProperties AlgorithmicTypingProperties.
-From LogRel Require Import UntypedConversion.
+From LogRel Require Import SubstConsequences TypeInjectivityConsequences NeutralConvProperties AlgorithmicJudgments NormalisationDefinition.
+From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties UntypedConvSoundness UntypedTypedConv.
 
 From LogRel.Decidability Require Import Functions Views UntypedFunctions Soundness UntypedSoundness Completeness UntypedCompleteness.
 From PartialFun Require Import Monad PartialFun MonadExn.
@@ -711,7 +711,7 @@ Proof.
     2: now eapply algo_conv_dnorm in Hpost1.
     subst.
     eapply neuConvRed in Hpost1 ; refold ; tea. 
-    eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuNatElimCong_prem1 in Hpost1 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
@@ -736,7 +736,7 @@ Proof.
     2: now eapply algo_conv_dnorm in Hpost1.
     subst.
     eapply neuConvRed in Hpost1 ; refold ; tea. 
-    eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuEmptyElimCong_prem1 in Hpost1 ; eauto.
 
   - intros * Hn ? * wu' [Hconcl]%dup.
@@ -767,7 +767,7 @@ Proof.
     2: now eapply algo_conv_dnorm in Hpost1.
     subst.
     eapply neuConvRed in Hpost1 ; refold ; tea. 
-    eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuIdElimCong_prem1 in Hpost1 as [[]]%dup ; eauto.
     repeat erewrite <- wk1_ren_on.
     split ; [eauto | intros [] ; cbn ; [|easy]].

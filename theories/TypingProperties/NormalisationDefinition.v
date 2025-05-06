@@ -1,4 +1,4 @@
-(** * LogRel.TypingProperties.Normalisation: definition and basic properties of deep, typed normalisation. *)
+(** * LogRel.TypingProperties.NormalisationDefinition: definition and basic properties of deep, typed normalisation. *)
 From Coq Require Import CRelationClasses ssrbool.
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
 

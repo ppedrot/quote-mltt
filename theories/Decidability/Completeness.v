@@ -1,8 +1,8 @@
 (** * LogRel.Decidability.Completeness: the inductive predicates imply the implementation answer positively. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import Normalisation DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
+From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
+From LogRel.TypingProperties Require Import NormalisationDefinition DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
 From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties.
 From LogRel Require Import Utils.
 
@@ -373,7 +373,7 @@ Proof.
     cbn; patch_rec_ret; econstructor.
     1: exact ihy.
     now econstructor.
-  - intros * ?? HM [IHM []] **.
+  - intros * ?? HM [IHM ?] **.
     unfold graph.
     simp _conv conv_ty_red ; cbn.
     rewrite whne_ty_view2.
@@ -388,7 +388,7 @@ Proof.
     rewrite Nat.eqb_refl ; cbn.
     erewrite ctx_access_complete ; tea ; cbn.
     now econstructor.
-  - intros * Hm [IHm []] Ht [IHt] **.
+  - intros * Hm [IHm ?] Ht [IHt] **.
     unfold graph.
     simp _conv conv_ne ; cbn.
     econstructor.
@@ -397,7 +397,7 @@ Proof.
     econstructor.
     1: exact IHt.
     now constructor.
-  - intros * ? [IHn []] ? [IHP] ? [IHz] ? [IHs] **.
+  - intros * ? [IHn ?] ? [IHP] ? [IHz] ? [IHs] **.
     unfold graph.
     simp _conv conv_ne ; cbn.
     econstructor.
@@ -409,7 +409,7 @@ Proof.
     econstructor.
     1: exact IHs.
     now econstructor.
-  - intros * ? [IHe []] ? [IHP] **.
+  - intros * ? [IHe ?] ? [IHP] **.
     unfold graph.
     simp _conv conv_ne ; cbn.
     econstructor.
@@ -417,19 +417,19 @@ Proof.
     econstructor.
     1: exact (IHP tt).
     now econstructor.
-  - intros * ? [IH []] **.
+  - intros * ? [IH ?] **.
     unfold graph.
     simp _conv conv_ne; cbn.
     econstructor.
     1: exact (IH tt).
     econstructor.
-  - intros * ? [IH []] **.
+  - intros * ? [IH ?] **.
     unfold graph.
     simp _conv conv_ne; cbn.
     econstructor.
     1: exact (IH tt).
     econstructor.
-  - intros * ? [ihe []] ? [ihP] ? [ihhr] **.
+  - intros * ? [ihe ?] ? [ihP] ? [ihhr] **.
     unfold graph.
     simp _conv conv_ne; cbn.
     econstructor.
@@ -439,7 +439,7 @@ Proof.
     econstructor.
     1: exact ihhr.
     cbn; patch_rec_ret; econstructor.
-  - intros * ? [IHm []] **.
+  - intros * ? [IHm ?] **.
     unfold graph.
     simp _conv conv_ne_red ; cbn.
     econstructor.
@@ -521,7 +521,7 @@ Proof.
     unfold graph.
     simp _conv conv_tm_red ; cbn.
     now econstructor.
-  - intros * ? [IHm []] wP **.
+  - intros * ? [IHm ?] wP **.
     unfold graph.
     simp _conv conv_tm_red ; cbn.
     unshelve erewrite whne_nf_view3 ; tea.

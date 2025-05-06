@@ -1,12 +1,12 @@
 (** * LogRel.Algorithmic.Strengthening: proof of the strengthening property. *)
-From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties Normalisation.
+From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
+From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationDefinition.
 From LogRel.Algorithmic Require Import Bundled.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData BundledTypingData.
 
-  (** ** Strengthening *)
-  (** Removing unused variables from a context preserves typing. *)
+(** ** Strengthening *)
+(** Removing unused variables from a context preserves typing. *)
 
 Section ConvStr.
   
@@ -221,3 +221,120 @@ Section ConvStr.
   Qed.
 
 End ConvStr.
+
+
+(** ** Strengthening of untyped conversion *)
+(** This will be useful in the coming implication, when we get an induction hypothesis
+  that is weakened because of η-expansions. *)
+
+  Section UConvStr.
+  
+  Let PEq (A B : term) := forall Γ Δ (ρ : Γ ≤ Δ) A' B',
+    A = A'⟨ρ⟩ -> B = B'⟨ρ⟩ ->
+    [A' ≅ B'].
+  Let PRedEq (A B : term) := forall Γ Δ (ρ : Γ ≤ Δ) A' B',
+    A = A'⟨ρ⟩ -> B = B'⟨ρ⟩ ->
+    [A' ≅h B'].
+  Let PNeEq (t u : term) := forall Γ Δ (ρ : Γ ≤ Δ) t' u',
+    t = t'⟨ρ⟩ -> u = u'⟨ρ⟩ ->
+    [t' ~ u'].
+
+  #[local] Ltac push_renaming :=
+    repeat match goal with
+    | eq : _ = ?t⟨_⟩ |- _ =>
+        destruct t ; cbn in * ; try solve [congruence] ;
+        inversion eq ; subst ; clear eq
+    end.
+
+  Theorem algo_uconv_str :
+    UAlgoConvInductionConcl PEq PRedEq PNeEq.
+  Proof.
+    subst PEq PRedEq PNeEq.
+    apply UAlgoConvInduction.
+    - intros * Hred Hred' ? IH * -> ->.
+      eapply credalg_str in Hred as [? [->]] , Hred' as [? [->]].
+      now econstructor.
+    - solve [intros ; push_renaming ; now econstructor].
+    - intros * ? IHA ? IHB ? **.
+      push_renaming.
+      econstructor.
+      + now eapply IHA.
+      + now unshelve eapply IHB with(ρ := wk_up _ ρ).
+    - solve [intros ; push_renaming ; now econstructor].
+    - solve [intros ; push_renaming ; now econstructor].
+    - intros * ? IH ** ; push_renaming ; econstructor ; now eapply IH.
+    - solve [intros ; push_renaming ; now econstructor].
+    - intros * ? IH ** ; push_renaming ; econstructor ; now
+        unshelve eapply IH with (ρ := wk_up _ ρ).
+    - intros * ?? IH ** ; subst ; push_renaming ; econstructor.
+      + now eapply whne_ren.
+      + unshelve eapply IH with (ρ := wk_up _ ρ).
+        1: assumption.
+        all: now bsimpl.
+    - intros * ?? IH ** ; subst ; push_renaming ; econstructor.
+      + now eapply whne_ren.
+      + unshelve eapply IH with (ρ := wk_up _ ρ).
+        1: assumption.
+        all: now bsimpl.
+    - intros * ? IHA ? IHB ** ; push_renaming ; econstructor.
+      + now eapply IHA.
+      + unshelve eapply IHB with (ρ := wk_up _ ρ).
+        1: assumption.
+        all: now bsimpl.
+    - intros * ? IHf ? IHs ** ; push_renaming ; econstructor.
+      + now eapply IHf.
+      + now eapply IHs.
+    - intros * ?? IHf ? IHs ** ; subst ; push_renaming ; econstructor.
+      + now eapply whne_ren.
+      + now eapply IHf.
+      + now eapply IHs.
+    - intros * ?? IHf ? IHs ** ; subst ; push_renaming ; econstructor.
+      + now eapply whne_ren.
+      + now eapply IHf.
+      + now eapply IHs.
+    - intros * ? IHA ? IHa ? IHa' ** ; push_renaming ; econstructor.
+      + now eapply IHA.
+      + now eapply IHa.
+      + now eapply IHa'.
+    - solve [intros ; push_renaming ; now econstructor].
+    - intros * ? IH ** ; subst.
+      econstructor.
+      now eapply IH.
+    - intros ; push_renaming.
+      eapply section_inj in H1 as ->.
+      2: eapply section_wk.
+      now econstructor.
+    - intros * ? IH ? IH' ** ; push_renaming.
+      econstructor.
+      + now eapply IH.
+      + now eapply IH'.
+    - intros * ? IHn ? IHP ? IHz ? IHs ** ; push_renaming.
+      econstructor.
+      + now eapply IHn.
+      + unshelve eapply IHP with (ρ := wk_up _ ρ).
+        1: assumption.
+        all: now bsimpl.
+      + now eapply IHz.
+      + now eapply IHs.
+    - intros * ? IHn ? IHP ** ; push_renaming.
+      econstructor.
+      + now eapply IHn.
+      + unshelve eapply IHP with (ρ := wk_up _ ρ).
+        1: assumption.
+        all: now bsimpl.
+    - intros * ? IH ** ; push_renaming.
+      econstructor.
+      now eapply IH.
+    - intros * ? IH ** ; push_renaming.
+      econstructor.
+      now eapply IH.
+    - intros * ? IHn ? IHP ? IHr ** ; push_renaming.
+      econstructor.
+      + now eapply IHn.
+      + unshelve eapply IHP with (ρ := wk_up _ (wk_up _ ρ)).
+        1-2: assumption.
+        all: now bsimpl.
+      + now eapply IHr.
+  Qed.
+
+End UConvStr.

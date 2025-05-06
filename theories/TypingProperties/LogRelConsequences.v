@@ -1,6 +1,6 @@
 (** * LogRel.TypingProperties.LogRelConsequences: the properties from PropertiesDefinition are consequences of the logical relation. *)
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
-From LogRel.TypingProperties Require Import Normalisation PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationConsequences.
+From LogRel.TypingProperties Require Import NormalisationDefinition PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationConsequences.
 
 From LogRel Require Import LogicalRelation Fundamental.
 From LogRel.LogicalRelation Require Import Properties.
