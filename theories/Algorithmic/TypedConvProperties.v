@@ -1,4 +1,4 @@
-(** * LogRel.AlgorithmicConvProperties: properties of algorithmic conversion. *)
+(** * LogRel.TypedConvProperties: properties of typed algorithmic conversion. *)
 From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationDefinition.
 From LogRel.Algorithmic Require Import Bundled.

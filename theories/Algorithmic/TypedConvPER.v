@@ -1,7 +1,7 @@
-(** * LogRel.AlgorithmicConvPER: algorithmic conversion is symmetric and transitive. *)
+(** * LogRel.TypedConvPER: algorithmic conversion is symmetric and transitive. *)
 From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationDefinition.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData BundledTypingData.
 

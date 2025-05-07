@@ -91,9 +91,9 @@ theories/Fundamental.v
 
 theories/AlgorithmicJudgments.v
 theories/Algorithmic/Bundled.v
-theories/Algorithmic/AlgorithmicConvProperties.v
-theories/Algorithmic/AlgorithmicConvPER.v
-theories/Algorithmic/AlgorithmicConvInstances.v
+theories/Algorithmic/TypedConvProperties.v
+theories/Algorithmic/TypedConvPER.v
+theories/Algorithmic/TypedConvInstances.v
 theories/Algorithmic/UntypedConvSoundness.v
 theories/Algorithmic/UntypedTypedConv.v
 theories/Algorithmic/AlgorithmicTypingProperties.v

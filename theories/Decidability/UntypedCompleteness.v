@@ -3,7 +3,7 @@ From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties UntypedConvSoundness.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties UntypedConvSoundness.
 From LogRel.Decidability Require Import Functions Views UntypedFunctions Soundness UntypedSoundness Completeness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 

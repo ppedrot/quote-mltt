@@ -4,7 +4,7 @@ From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping
   DeclarativeProperties GenericTyping PropertiesDefinition.
 From LogRel Require Import SubstConsequences TypeInjectivityConsequences NeutralConvProperties AlgorithmicJudgments NormalisationDefinition.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties UntypedConvSoundness UntypedTypedConv.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties UntypedConvSoundness UntypedTypedConv.
 
 From LogRel.Decidability Require Import Functions Views UntypedFunctions Soundness UntypedSoundness Completeness UntypedCompleteness.
 From PartialFun Require Import Monad PartialFun MonadExn.
