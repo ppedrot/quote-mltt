@@ -1,15 +1,18 @@
-(** * LogRel.Decidability.UntypedCompleteness: the inductive predicates imply the implementation answer positively. *)
+(** * LogRel.Checkers.UntypedCompleteness: the inductive predicate implies the implementation answer positively. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
 From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties UntypedConvSoundness.
-From LogRel.Decidability Require Import Functions Views UntypedFunctions Soundness UntypedSoundness Completeness.
+From LogRel.Checkers Require Import Functions Views CtxAccessCorrectness ReductionCorrectness Soundness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData.
+
+(** Since we do not define a bundled induction principle for untyped conversion, we have to do
+a bit more work here compared to the case of typed conversion and typing. *)
 
 Section ConversionComplete.
   Context

@@ -95,6 +95,20 @@ Notation "[ × P1 , P2 , P3 , P4 , P5 , P6 , P7 , P8 , P9 & P10 ]" := (and10 P1 
 
 #[global] Hint Constructors prod and3 and3 and5 and6 and7 and8 and9 : core.
 
+Hint Extern 10 =>
+  match goal with
+    | H : _ × _ |- _ => destruct H
+    | H : ~ _ |- False => apply H
+    | H : [× _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _, _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _, _, _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _, _, _, _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _, _, _, _, _, _, _, _ & _] |- _ => destruct H
+  end : core.
+
 Inductive sigT {A : Type} (P : A -> Type) : Type :=
   | existT (projT1 : A) (projT2 : P projT1) : sigT P.
 

@@ -116,6 +116,14 @@ Section RedDefinitions.
       | isterm A => [Γ |- t : A]
     end.
 
+  Definition term_class_ty Γ A t :
+    [Γ |- t : A] -> WellClass Γ (isterm A) t :=
+    fun H => H.
+
+  Definition type_class_ty Γ A :
+    [Γ |- A] -> WellClass Γ istype A :=
+    fun H => H.
+
   Record well_typed Γ t :=
   {
     well_typed_type : term ;

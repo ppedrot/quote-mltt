@@ -218,10 +218,12 @@ Proof.
   inversion Hcan ; subst ; inversion Hne.
 Qed.
 
-Lemma whnf_can_whne t : whnf t -> isCanonical t + whne t.
+Lemma whnf_can_whne t : whnf t <~> isCanonical t + whne t.
 Proof.
-  intros [].
-  all: try solve [left ; now constructor | now right].
+  split.
+  - intros [].
+    all: try solve [left ; now constructor | now right].
+  - intros [[]|[]] ; now repeat constructor. 
 Qed.
 
 Lemma not_can_whne t : whnf t -> ~ isCanonical t -> whne t.

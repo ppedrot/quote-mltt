@@ -584,9 +584,7 @@ Section Boundary.
     - intros * ? [] ? [].
       split ; gen_typing.
     - intros * ? [].
-      split; gen_typing.
-    - intros * ?[]?[].
-      split; gen_typing.
+      eauto.
   Qed.
 
   Corollary boundary_tm Γ A t : [Γ |- t : A] -> [Γ |- A].

@@ -1,29 +1,22 @@
-(** * LogRel.Decidability.UntypedTermination: the implementation always terminates on well-typed inputs. *)
+(** * LogRel.Checkers.UntypedTermination: the implementation always terminates on well-typed inputs. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All DeclarativeTyping
+From LogRel Require Import Utils Syntax.All Sections DeclarativeTyping
   DeclarativeProperties GenericTyping PropertiesDefinition.
 From LogRel Require Import SubstConsequences TypeInjectivityConsequences NeutralConvProperties AlgorithmicJudgments NormalisationDefinition.
 From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties UntypedConvSoundness UntypedTypedConv.
 
-From LogRel.Decidability Require Import Functions Views UntypedFunctions Soundness UntypedSoundness Completeness UntypedCompleteness.
+From LogRel.Checkers Require Import Functions Views CtxAccessCorrectness ReductionCorrectness Soundness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData.
 
 Set Universe Polymorphism.
 
-Section AlgoStr.
+(** ** Strengthening of the conversion function, necessary to strengthen conversion between neutrals
+  in the case of a function type. *)
 
-  Definition dest_entry_rename (ρ : nat -> nat) (d : dest_entry) : dest_entry :=
-    match d with
-    | eEmptyElim P => eEmptyElim P⟨upRen_term_term ρ⟩
-    | eNatElim P hs hz => eNatElim P⟨upRen_term_term ρ⟩ hs⟨ρ⟩ hz⟨ρ⟩
-    | eApp u => eApp u⟨ρ⟩
-    | eFst => eFst
-    | eSnd => eSnd
-    | eIdElim A x P hr y => eIdElim A⟨ρ⟩ x⟨ρ⟩ P⟨upRen_term_term (upRen_term_term ρ)⟩ hr⟨ρ⟩ y⟨ρ⟩
-    end.
+Section AlgoStr.
 
   Lemma map_eq_cons [A B : Type] (f : A -> B) (l : list A) [l' : list B] [b : B] :
     list_map f l = (b :: l')%list ->
@@ -33,13 +26,6 @@ Section AlgoStr.
     intros e.
     destruct l ; cbn in * ; inversion e ; subst ; clear e.
     do 2 eexists ; split ; reflexivity.
-  Qed.
-
-  Lemma zip_rename ρ t π : (zip t π)⟨ρ⟩ = zip t⟨ρ⟩ (list_map (dest_entry_rename ρ) π).
-  Proof.
-    induction π as [|[]] in t |- * ; cbn.
-    1: reflexivity.
-    all: now erewrite IHπ.
   Qed.
 
   Lemma red_stack_str :
@@ -205,13 +191,6 @@ Section AlgoStr.
     now easy.
   Qed.
 
-  Lemma up_inj ρ : ssrfun.injective ρ -> ssrfun.injective (upRen_term_term ρ).
-  Proof.
-    intros H x y e.
-    destruct x,y ; cbn in * ; try congruence.
-    easy.
-  Qed.
-
   #[local] Ltac crush :=
     repeat match goal with
       | |- context [build_nf_view1 _] => erewrite ncan_nf_view1 ; cbn
@@ -226,17 +205,17 @@ Section AlgoStr.
       | |- graph _uconv (_,_,_) _ => unfold graph ; simp _uconv uconv_tm_red uconv_ne build_nf_view2 ; cbn
       | H : _ |- orec_graph ?f (?f ?t) ?r => simple eapply H ; [..|reflexivity|reflexivity]
       | |- orec_graph _ _ _ => cbn ; patch_rec_ret ; econstructor
-      | |- ssrfun.injective (upRen_term_term _) => apply up_inj
-      | |- ssrfun.injective _ => assumption
+      | |- section (upRen_term_term _) => apply section_up
+      | |- section _ => assumption
     end.
 
   Lemma _uconv_str :
     funrec _uconv (fun _ => True)
-      (fun '(s,t,u) r => forall (ρ : nat -> nat) t' u', ssrfun.injective ρ ->
+      (fun '(s,t,u) r => forall (ρ : nat -> nat) t' u', section ρ ->
         t = t'⟨ρ⟩ -> u = u'⟨ρ⟩ -> graph _uconv (s,t',u') r).
   Proof.
     intros ? _ ; cbn.
-    funelim (_uconv _) ; cbn.
+    funelim (_uconv _) ; cbn ; try easy.
 
     - funelim (uconv_tm _) ; cbn.
       intros ? red ? red'.
@@ -255,15 +234,15 @@ Section AlgoStr.
 
     - funelim (uconv_tm_red _) ; cbn.
       1-7,10-16: solve [crush].
+    
+      + crush.
+        all: eapply H0 ; [now eapply section_up | reflexivity|..].
+        all: now asimpl.
+
+      + crush.
+        all: eapply H0 ; [now eapply section_up |idtac|reflexivity].
+        all: now asimpl.
       
-      + crush.
-        all: eapply H0 ; [now eapply up_inj | reflexivity|..].
-        all: now asimpl.
-
-      + crush.
-        all: eapply H0 ; [now eapply up_inj |idtac|reflexivity].
-        all: now asimpl.
-
       + intros.
         inversion eqargs ; subst ; clear eqargs.
         rewrite build_nf_view2_rename in Heq.
@@ -285,7 +264,7 @@ Section AlgoStr.
 
       + crush.
         eapply Nat.eqb_eq in Heq ; subst.
-        match goal with | H : ssrfun.injective _ |- _ => apply H in Heq end.
+        apply section_inj in Heq ; tea.
         subst.
         rewrite Nat.eqb_refl ; cbn.
         now constructor.
@@ -306,7 +285,7 @@ Section AlgoStr.
   Qed.
 
   Corollary uconv_str ρ s t u r :
-    ssrfun.injective ρ ->
+    section ρ ->
     graph _uconv (s,t⟨ρ⟩,u⟨ρ⟩) r ->
     graph _uconv (s,t,u) r.
   Proof.
@@ -349,8 +328,7 @@ Context `{!TypingSubst de} `{!TypeConstructorsInj de} `{!TypeReductionComplete d
     apply (orec_graph_rec_inv _uconv) in g as [r [g _]] ; cbn in *.
     eapply uconv_str in g.
     - now eexists.
-    - intros ??.
-      auto.
+    - apply section_S.
   Qed.
   
   Lemma uconv_expand_ne_fst n n' :

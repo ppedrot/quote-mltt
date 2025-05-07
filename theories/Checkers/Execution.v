@@ -1,10 +1,10 @@
-(** * LogRel.Decidability.Execution: example executions of the type checker, in Coq. *)
+(** * LogRel.Checkers.Execution: example executions of the type checker, in Coq. *)
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
 From LogRel.Algorithmic Require Import Bundled AlgorithmicTypingProperties.
 From LogRel.TypingProperties Require Import LogRelConsequences.
 
 From PartialFun Require Import Monad PartialFun MonadExn.
-From LogRel.Decidability Require Import Functions Soundness.
+From LogRel.Checkers Require Import Functions Soundness.
 
 From LogRel Require TermNotations.
 

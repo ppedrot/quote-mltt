@@ -1,9 +1,9 @@
-(** * LogRel.Decidability.Views: properties of the view-building functions. *)
+(** * LogRel.Checkers.Views: properties of the view-building functions. *)
 From Coq Require Import Nat Lia.
 From Equations Require Import Equations.
 From PartialFun Require Import Monad PartialFun MonadExn.
 From LogRel Require Import Utils BasicAst AutoSubst.Extra Context NormalForms Notations PropertiesDefinition DeclarativeTyping NeutralConvProperties.
-From LogRel.Decidability Require Import Functions UntypedFunctions.
+From LogRel.Checkers Require Import Functions.
 
 Import MonadNotations.
 Set Universe Polymorphism.
@@ -16,6 +16,23 @@ Lemma zip_can t s : ~ isCanonical (zip1 t s).
 Proof.
   destruct s ; cbn.
   all: now intros c ; inversion c.
+Qed.
+
+Definition dest_entry_rename (ρ : nat -> nat) (d : dest_entry) : dest_entry :=
+  match d with
+  | eEmptyElim P => eEmptyElim P⟨upRen_term_term ρ⟩
+  | eNatElim P hs hz => eNatElim P⟨upRen_term_term ρ⟩ hs⟨ρ⟩ hz⟨ρ⟩
+  | eApp u => eApp u⟨ρ⟩
+  | eFst => eFst
+  | eSnd => eSnd
+  | eIdElim A x P hr y => eIdElim A⟨ρ⟩ x⟨ρ⟩ P⟨upRen_term_term (upRen_term_term ρ)⟩ hr⟨ρ⟩ y⟨ρ⟩
+  end.
+
+Lemma zip_rename ρ t π : (zip t π)⟨ρ⟩ = zip t⟨ρ⟩ (list_map (dest_entry_rename ρ) π).
+Proof.
+  induction π as [|[]] in t |- * ; cbn.
+  1: reflexivity.
+  all: now erewrite IHπ.
 Qed.
 
 Lemma isType_tm_view1 t e :
@@ -36,6 +53,15 @@ Proof.
   all: split ; [ now econstructor | intros H' ; inversion H'].
 Qed.
 
+Lemma build_ty_view1_anomaly t :
+  build_ty_view1 t = ty_view1_anomaly ->
+  ~ isType t × isCanonical t.
+Proof.
+  intros.
+  destruct t ; cbn in * ; try solve [congruence].
+  all: split ; [..|now constructor] ; intros H' ; inversion H' ;
+  eapply can_whne_exclusive ; [..|eassumption] ; constructor.
+Qed.
 
 Lemma ty_view1_small_can T n : build_ty_view1 T = ty_view1_small n -> ~ isCanonical T.
 Proof.
@@ -233,6 +259,64 @@ Proof.
   all: now eapply tm_view1_neutral_can.
 Qed.
 
+
+Lemma mismatch2_hd_view_ty Γ T V (tT : isType T) (tV : isType V) :
+  build_nf_view2 T V = mismatch2 T V ->
+  type_hd_view Γ tT tV = False.
+Proof.
+  destruct tT, tV ; cbn ; try reflexivity.
+  all: simp build_nf_view2 ; cbn.
+  1-6: congruence.
+  do 2 (unshelve erewrite whne_nf_view1 ; tea ; cbn).
+  congruence.
+Qed.
+
+Lemma mismatch2_hd_view_tm Γ A t u :
+  [Γ |-[de] t : A] -> [Γ |-[de] u : A] ->
+  whnf t -> whnf u ->
+  build_nf_view2 t u = mismatch2 t u ->
+  (∑ (nft : isType t) (nfu : isType u), type_hd_view Γ nft nfu = False) +
+  ((∑ (nft : isNat t) (nfu : isNat u), nat_hd_view Γ nft nfu = False) +
+  (∑ (nft : isId t) (nfu : isId u) , forall Γ A' x y, id_hd_view Γ A' x y nft nfu = False)).
+Proof.
+  intros Ht Hu wt wu.
+  funelim (build_nf_view2 t u).
+  all: try solve [
+    congruence |
+    match goal with
+      | H : [_ |-[de] (tSort _) : _] |- _ => eapply termGen' in H as (?&[]&?)
+    end |
+    left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
+    now apply not_can_whne ; [..|eapply tm_view1_neutral_can] |
+    right ; left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
+    now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
+
+    1,4: unshelve (right ; right ; unshelve (do 2 eexists) ; econstructor ;
+      [now apply not_can_whne ; [..|eapply tm_view1_neutral_can]|..] ;
+      do 2 eexists ; reflexivity) ; easy.
+    
+    - destruct t1 ; try solve [congruence |
+      left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
+      now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
+
+    - destruct n ;
+      try solve [
+      congruence |
+      right ; left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
+      now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
+
+Qed.
+
+Lemma mismatch2_hd_view_ne t u :
+  whne t -> whne u ->
+  ~ build_nf_view2 t u = mismatch2 t u.
+Proof.
+  intros Ht Hu.
+  funelim (build_nf_view2 _ _) ; try solve [congruence|inversion Hu|inversion Ht].
+  - destruct t1 ; inversion Hu.
+  - destruct n ; inversion Hu.
+Qed.
+
 Definition nf_view2_rename (ρ : nat -> nat) {t t' : term} (v : nf_view2 t t') : nf_view2 t⟨ρ⟩ t'⟨ρ⟩ :=
   match v in nf_view2 x x' return nf_view2 x⟨ρ⟩ x'⟨ρ⟩ with
   | sorts2 s s' => sorts2 s s'
@@ -281,15 +365,4 @@ Definition ne_view2_rename (ρ : nat -> nat) {t t' : term} (v : ne_view2 t t') :
 Lemma build_ne_view2_rename ρ t t' : build_ne_view2 t⟨ρ⟩ t'⟨ρ⟩ = ne_view2_rename ρ (build_ne_view2 t t').
 Proof.
   destruct t, t' ; reflexivity.
-Qed.
-
-Lemma mismatch2_hd_view_ty Γ T V (tT : isType T) (tV : isType V) :
-  build_nf_view2 T V = mismatch2 T V ->
-  type_hd_view Γ tT tV = False.
-Proof.
-  destruct tT, tV ; cbn ; try reflexivity.
-  all: simp build_nf_view2 ; cbn.
-  1-6: congruence.
-  do 2 (unshelve erewrite whne_nf_view1 ; tea ; cbn).
-  congruence.
 Qed.
