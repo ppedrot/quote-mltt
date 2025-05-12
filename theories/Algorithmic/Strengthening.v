@@ -1,5 +1,5 @@
 (** * LogRel.Algorithmic.Strengthening: proof of the strengthening property for algorithmic conversions. *)
-From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationDefinition.
 From LogRel.Algorithmic Require Import Bundled.
 

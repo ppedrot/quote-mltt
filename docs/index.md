@@ -18,6 +18,8 @@ Syntax
 
 Primarily in the [Syntax](https://github.com/CoqHott/logrel-coq/tree/coq-8.20/theories/Syntax) folder, contains definitions related to the syntax of terms, independent of typing: contexts, untyped reduction, normal forms, weakenings… See also the [AutoSubst](https://github.com/CoqHott/logrel-coq/tree/coq-8.20/theories/AutoSubst) folder, which contains everything related to the [AutoSubst] tool.
 
+| File | Description |
+|---|----|
 [Syntax.BasicAst] | Definitions preceding those of the AST of terms (for now, only sorts)
 [AutoSubst.Ast] | Abstract syntax tree, definitions of renamings, substitutions and many lemmas. Generated using the [AutoSubst] tool.
 [Notations] | Notations for all judgments used throughout the development. It can be used as an index for notations!
@@ -49,7 +51,7 @@ Finally, [Fundamental] derives the fundamental theorem of the logical relation. 
 
 | File | Description |
 |---|----|
-[LogicalRelation.Def] | Contains the logical relation's definition. |
+[LogicalRelation.Definition.Def] | Contains the logical relation's definition. |
 [LogicalRelation.Induction] | We derive by hand better induction principles for the logical relation, which handle some repacking and universe-related shenanigans once and for all. |
 [LogicalRelation.Escape] | The escape lemma: the logical relation implies conversion/typing. |
 [Validity.Validity] | Definition of validity: closure of the logical relation under substitution. |
@@ -67,7 +69,7 @@ The second big part of the formalisation explores algorithmic presentations of t
 [Algorithmic.Bundled] | Algorithmic judgments bundled with their pre-conditions, and tailored induction principles showing invariant preservation in the "algorithm".
 
 
-Implementations
+Checkers
 ----------------
 
 The various functions for conversion-checking and type-checking are defined and verified in the [Checkers]() folder.
@@ -104,7 +106,7 @@ The [Misc]() folder contains files that are not strictly necessary for the devel
 [TypingProperties.PropertiesDefinition]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.TypingProperties.PropertiesDefinition.html
 [TypingProperties.LogRelConsequences]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.TypingProperties.LogRelConsequences.html
 
-[LogicalRelation.Def]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.LogicalRelation.Definition.Def.html
+[LogicalRelation.Definition.Def]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.LogicalRelation.Definition.Def.html
 [LogicalRelation.Induction]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.LogicalRelation.Induction.html
 [LogicalRelation.Escape]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.LogicalRelation.Escape.html
 [Validity.Validity]: https://coqhott.github.io/logrel-coq/coqdoc/LogRel.Validity.Validity.html

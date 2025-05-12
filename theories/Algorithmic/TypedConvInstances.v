@@ -1,5 +1,5 @@
 (** * LogRel.TypedConvInstances: typed algorithmic conversion is an instance of generic typing. *)
-From LogRel Require Import Utils Sections Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationDefinition.
 From LogRel.Algorithmic Require Import Bundled TypedConvProperties TypedConvPER.
 

@@ -2,7 +2,7 @@
 From Coq Require Import Nat Lia.
 From Equations Require Import Equations.
 From PartialFun Require Import Monad PartialFun MonadExn.
-From LogRel Require Import Utils BasicAst AutoSubst.Extra Context NormalForms Notations PropertiesDefinition DeclarativeTyping NeutralConvProperties.
+From LogRel Require Import Utils BasicAst AutoSubst.Extra Context NormalForms Notations PropertiesDefinition DeclarativeTyping.
 From LogRel.Checkers Require Import Functions.
 
 Import MonadNotations.
@@ -10,7 +10,7 @@ Set Universe Polymorphism.
 Set Polymorphic Inductive Cumulativity.
 Set Printing Universes.
 
-Import DeclarativeTypingProperties.
+Import DeclarativeTypingData.
 
 Lemma zip_can t s : ~ isCanonical (zip1 t s).
 Proof.
