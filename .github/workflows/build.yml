@@ -6,8 +6,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches:
-      - 'coq.*'
-      - 'rocq.*'
+      - 'coq-*'
+      - 'rocq-*'
 
 permissions:
   contents: read
