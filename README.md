@@ -11,6 +11,7 @@ Parts of the formalisation has been described in the following papers:
 - [*What does it take to certify conversion?*](https://arxiv.org/abs/2502.15500) focuses more on the verification of the properties of the algorithms, including the term-directed one.
 
 The project has also been used as a base for the following work:
+- [*Definitional Functoriality for Dependent (Sub)Types*](https://hal.science/hal-04160858v3), which extends the type system with lists and a definitionally functorial map operator (with applications to subtyping for dependent types);
 - [*“Upon This Quote I Will Build My Church Thesis”*](https://dl.acm.org/doi/10.1145/3661814.3662070), which extends the type system with primitives for quoting;
 - [*Continuity in Type Theory*, Chapter 4](https://theses.hal.science/tel-04617881v1), which extends the system with sheaf-like conditions to obtain continuity properties.
 
@@ -75,7 +76,7 @@ Proof.
 
 End Section.
 ```
-The names of the arguments printed when querying `About XXXInductionConcl` should make it clear 
+The names of the arguments printed when querying `About XXXInductionConcl` should make it clear
 to which mutually-defined relation each predicate corresponds.
 
 [Utils]: ./theories/Utils.v
