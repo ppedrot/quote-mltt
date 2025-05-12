@@ -1,89 +1,15 @@
-(** * LogRel.Decidability.Soundness: the implementations imply the inductive predicates. *)
+(** * LogRel.Checkers.Soundness: the implementations imply the inductive predicates. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicTyping.
+From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicJudgments.
 
-From LogRel.Decidability Require Import Functions Views.
+From LogRel.Checkers Require Import Functions Views CtxAccessCorrectness ReductionCorrectness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
 
-Section RedImplemSound.
-
-Lemma zip_ored t t' π : [t ⤳ t'] -> [zip t π ⤳ zip t' π].
-Proof.
-  intros Hred.
-  induction π as [|[]] in t, t', Hred |- * ; cbn in *.
-  1: eassumption.
-  all: apply IHπ ; now econstructor.
-Qed.
-
-Lemma zip_red t t' π : [t ⤳* t'] -> [zip t π ⤳* zip t' π].
-Proof.
-  induction 1.
-  1: reflexivity.
-  econstructor ; tea.
-  now eapply zip_ored.
-Qed.
-
-Lemma red_stack_sound :
-  funrec wh_red_stack (fun _ => True) (fun '(t,π) t' => [zip t π ⤳* t']).
-Proof.
-  intros ? _.
-  funelim (wh_red_stack _).
-  all: cbn ; econstructor ; try eauto.
-  all: intros v ?.
-  all: etransitivity ; [..|eassumption].
-  all: eapply zip_red.
-  all: econstructor ; [..|reflexivity].
-  all: now econstructor.
-Qed.
-
-Lemma stack_ne n π :
-  whne n -> whne (zip n π).
-Proof.
-  intros Hne.
-  induction π as [|[]] in n, Hne |- * ; cbn.
-  1: eassumption.
-  all: eapply IHπ ; now econstructor.
-Qed.
-
-Lemma red_stack_whnf :
-funrec wh_red_stack (fun _ => True) (fun '(t,π) t' => whnf t').
-Proof.
-  intros ? _.
-  funelim (wh_red_stack _).
-  all: cbn ; try solve [constructor ; eauto]. 
-  - now eapply isType_whnf, isType_tm_view1.
-  - econstructor. eapply stack_ne.
-    now econstructor.
-  - now eapply whnf_tm_view1_nat.
-Qed.
-
-Corollary _red_sound :
-  funrec wh_red (fun _ => True) (fun t t' => [t ⤳* t'] × whnf t').
-Proof.
-  intros ? _.
-  cbn; intros ? H; split.
-  - eapply funrec_graph in H.
-    2: exact red_stack_sound. (* apply fails !? *)
-    all: easy.
-  - eapply funrec_graph in H.
-    2: exact red_stack_whnf.
-    all: easy.
-Qed.
-
-#[universes(polymorphic)]Corollary red_sound t t' :
-  graph wh_red t t' ->
-  [t ⤳* t'] × whnf t'.
-Proof.
-  intros H.
-  eapply (funrec_graph wh_red _ _ _ _ _red_sound). (* weird universe inconsistency? *)
-  1: easy.
-  eassumption.
-Qed.
-
-End RedImplemSound.
+(** ** Correctness of context access *)
+(** The function is equivalent to the in_ctx predicate. *)
 
 Section CtxAccessCorrect.
 
@@ -122,6 +48,11 @@ Section CtxAccessCorrect.
 
 End CtxAccessCorrect.
 
+
+(** ** Soundness of typed conversion *)
+(** If the function returns positively, the algorithmic judgment holds. *)
+
+
 Ltac funelim_conv :=
   funelim (_conv _); 
     [ funelim (conv_ty _) | funelim (conv_ty_red _) | 
@@ -131,7 +62,7 @@ Ltac funelim_conv :=
 Section ConversionSound.
   Import AlgorithmicTypedConvData.
 
-  #[universes(polymorphic)]Definition conv_sound_type
+  #[universes(polymorphic)]Definition tconv_sound_type
     (x : conv_full_dom)
     (r : conv_full_cod x) : Type :=
   match x, r with
@@ -145,12 +76,12 @@ Section ConversionSound.
   | (ne_red_state;Γ;_;m;n), (success T) => whne m -> whne n -> [Γ |-[al] m ~h n ▹ T] × whnf T
   end.
 
-  Lemma _implem_conv_sound :
-    funrec _conv (fun _ => True) conv_sound_type.
+  Lemma _implem_tconv_sound :
+    funrec _conv (fun _ => True) tconv_sound_type.
   Proof.
     intros x _.
     funelim_conv ; cbn.
-    all: intros ; simp conv_sound_type ; try easy ; cbn.
+    all: intros ; simp tconv_sound_type ; try easy ; cbn.
     all: repeat (
       match goal with
       | |- True * _ => split ; [easy|..]
@@ -184,12 +115,12 @@ Section ConversionSound.
   Arguments conv_full_cod _ /.
   Arguments conv_cod _/.
 
-  Corollary implem_conv_graph x r :
+  Corollary implem_tconv_graph x r :
     graph _conv x r ->
-    conv_sound_type x r.
+    tconv_sound_type x r.
   Proof.
     eapply funrec_graph.
-    1: now apply _implem_conv_sound.
+    1: now apply _implem_tconv_sound.
     easy.
   Qed.
 
@@ -204,7 +135,7 @@ Section ConversionSound.
      funelim (tconv _) ; cbn.
      intros [] ; cbn ; [|easy].
      eintros ?%funrec_graph.
-     2: now apply _implem_conv_sound.
+     2: now apply _implem_tconv_sound.
      all: now cbn in *.
     }
     eintros ?%funrec_graph.
@@ -213,6 +144,79 @@ Section ConversionSound.
   Qed.
 
 End ConversionSound.
+
+Section UntypedConversionSound.
+
+  #[universes(polymorphic)]Definition uconv_sound_type
+    (x : conv_state × term × term)
+    (r : exn errors unit) : Type :=
+  match x, r with
+  | _, (exception _) => True
+  | (tm_state,t,u), (success _) =>  [t ≅ u]
+  | (tm_red_state,t,u), (success _) =>
+      whnf t -> whnf u -> [t ≅h u]
+  | (ne_state,m,n), (success _) => [m ~ n]
+  | _, _ => True
+  end.
+
+  Lemma _implem_uconv_sound :
+    funrec _uconv (fun _ => True) uconv_sound_type.
+  Proof.
+    intros x _.
+    funelim (_uconv _) ; cbn ; try easy ;
+      [ funelim (uconv_tm _) | funelim (uconv_tm_red _) | funelim (uconv_ne _) ].
+    all: intros ; cbn ; try easy ; cbn.
+    all: repeat (
+      match goal with
+      | |- True * _ => split ; [easy|..]
+      | |- forall x : exn _ _, _ => intros [|] ; [..|easy] ; cbn
+      | |- _ -> _ => cbn ; intros ?
+      | |- context [match ?t with | _ => _ end] => destruct t ; cbn ; try easy
+      | s : sort |- _ => destruct s
+      | H : graph wh_red _ _ |- _ => eapply red_sound in H as []
+      | H : (_,_) = (_,_) |- _ => injection H; clear H; intros; subst 
+      end).
+    all: try solve [now econstructor].
+    1-4: econstructor ; eauto.
+    1-4: match goal with | H : whnf ?t |- whne ?t =>
+      now destruct H ; simp build_nf_view3 build_ty_view1 in Heq ; try solve [inversion Heq]
+      end.
+    eapply Nat.eqb_eq in Heq as ->.
+    now constructor.
+  Qed.
+
+  Corollary implem_uconv_graph x r :
+    graph _uconv x r ->
+    uconv_sound_type x r.
+  Proof.
+    eapply funrec_graph.
+    1: now apply _implem_uconv_sound.
+    easy.
+  Qed.
+
+  Corollary implem_uconv_sound Γ T V :
+    graph uconv (Γ,T,V) ok ->
+    [T ≅ V].
+  Proof.
+    assert (funrec uconv (fun _ => True)
+      (fun '(Γ,T,V) r => match r with | success _ => [T ≅ V] | _ => True end)) as Hrect.
+    {
+     intros ? _.
+     funelim (uconv _) ; cbn.
+     intros [] ; cbn ; [|easy].
+     eintros ?%funrec_graph.
+     2: now apply _implem_uconv_sound.
+     all: now cbn in *.
+    }
+    eintros ?%funrec_graph.
+    2: eassumption.
+    all: now cbn in *.
+  Qed.
+
+End UntypedConversionSound.
+
+(** ** Soundness of typing *)
+(** Parameterised over the conversion function used and its soundness. *)
 
 Ltac funelim_typing :=
   funelim (typing _ _); 

@@ -1,11 +1,206 @@
 (** * LogRel.AlgorithmicTypingProperties: properties of algorithmic typing. *)
-From LogRel Require Import Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
+From LogRel Require Import Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties TypedConvInstances.
 
 From LogRel Require Import Utils.
 
-Import DeclarativeTypingProperties AlgorithmicTypingData.
+Section TypingWk.
+
+  Context `{ta : tag} `{! ConvType ta}.
+  Hypothesis conv_wk :
+    forall Γ A B, [Γ |-[ta] A ≅ B] ->
+    forall Δ (ρ : Δ ≤ Γ), [Δ |- A⟨ρ⟩ ≅ B⟨ρ⟩].
+
+  Import AlgorithmicTypingData.
+
+  Let PTy (Γ : context) (A : term) := forall Δ (ρ : Δ ≤ Γ), [Δ |-[ta] A⟨ρ⟩].
+  Let PInf (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
+    [Δ |-[ta] t⟨ρ⟩ ▹ A⟨ρ⟩].
+  Let PInfRed (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
+    [Δ |-[ta] t⟨ρ⟩ ▹h A⟨ρ⟩].
+  Let PCheck (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
+  [Δ |-[ta] t⟨ρ⟩ ◃ A⟨ρ⟩].
+
+  Theorem algo_typing_wk :
+    AlgoTypingInductionConcl PTy PInf PInfRed PCheck.
+  Proof.
+    subst PTy PInf PInfRed PCheck.
+    apply AlgoTypingInduction.
+    - constructor.
+    - intros * ? ? ? IHB **.
+      cbn.
+      econstructor.
+      + now eauto.
+      + now eapply IHB with(ρ := wk_up _ ρ).
+    - intros.
+      now econstructor.
+    - now constructor.
+    - intros * ? ? ? IHB **.
+      rewrite <-wk_sig.
+      econstructor.
+      + now eauto.
+      + now eapply IHB.
+    - intros; rewrite <- wk_Id; econstructor; eauto.
+    - constructor.
+      + now intros ?%isCanonical_ren.
+      + eauto. 
+    - intros.
+      eapply typing_meta_conv.
+      + now econstructor ; eapply in_ctx_wk.
+      + reflexivity.
+    - intros * ? ? ? IHB.
+      cbn.
+      econstructor.
+      + eauto.
+      + now eapply IHB with(ρ := wk_up _ ρ).
+    - intros * ? ? ? IHt ? ?.
+      cbn.
+      econstructor.
+      + now eauto.
+      + now eapply IHt with(ρ := wk_up _ ρ).
+    - intros.
+      cbn in *.
+      eapply typing_meta_conv.
+      + now econstructor.
+      + now asimpl.
+    - now econstructor.
+    - now econstructor.
+    - now econstructor.
+    - intros * ? IHn ? IHP ? IHz ? IHs *.
+      cbn in *.
+      eapply typing_meta_conv.
+      1: econstructor.
+      + eauto.
+      + eapply IHP with (ρ := wk_up _ ρ).
+      + eapply typing_meta_conv.
+        1: eapply IHz.
+        now bsimpl.
+      + eapply typing_meta_conv.
+        1: eapply IHs.
+        unfold elimSuccHypTy.
+        now bsimpl.
+      + now bsimpl.
+    - intros.
+      now econstructor.
+    - intros * ? IHe ? IHP *.
+      cbn in *.
+      eapply typing_meta_conv.
+      1: econstructor.
+      + eauto.
+      + eapply IHP with (ρ := wk_up _ ρ).
+      + now bsimpl. 
+    - intros * ??? IHB *.
+      rewrite <- wk_sig.
+      econstructor; eauto.
+    - intros * ???????? *.
+      rewrite <- wk_pair, <-wk_sig.
+      econstructor.
+      1-3: now eauto.
+      rewrite <- subst_ren_wk_up; eauto.
+    - intros * ?? *.
+      rewrite <- wk_fst; now econstructor.
+    - intros ? A ?? ? IH *.
+      rewrite <- wk_snd, (subst_ren_wk_up (A:=A)).
+      econstructor.
+      now eapply IH.
+    - intros; rewrite <- wk_Id; econstructor; eauto.
+    - intros; rewrite <- wk_refl; econstructor; eauto.
+    - intros; erewrite <- wk_idElim, subst_ren_wk_up2; econstructor; eauto.
+      + rewrite 2!(wk_up_wk1 ρ); eauto.
+      + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
+    - intros.
+      econstructor.
+      + eauto.
+      + eauto using credalg_wk.
+      + now eapply whnf_ren. 
+    - intros.
+      econstructor.
+      + eauto.
+      + now eapply conv_wk.
+  Qed.
+
+  Corollary algo_typing_shift : AlgoTypingInductionConcl
+  (fun (Γ : context) (A : term) => forall T, [Γ,, T |-[ta] A⟨↑⟩])
+  (fun (Γ : context) (A t : term) => forall T, [Γ,, T |-[ta] t⟨↑⟩ ▹ A⟨↑⟩])
+  (fun (Γ : context) (A t : term) => forall T, [Γ,, T |-[ta] t⟨↑⟩ ▹h A⟨↑⟩])
+  (fun (Γ : context) (A t : term) => forall T, [Γ,, T |-[ta] t⟨↑⟩ ◃ A⟨↑⟩]).
+  Proof.
+  red.
+  repeat match goal with |- _ × _ => split end.
+  all: intros Γ * Hty T.
+  all: eapply algo_typing_wk in Hty.
+  all: specialize (Hty _ (@wk1 Γ T)).
+  all: repeat rewrite <- (extRen_term _ _ (@wk1_ren Γ T)) ; refold.
+  all: now eapply Hty.
+  Qed.
+
+End TypingWk.
+
+
+Section AlgoTypingDet.
+
+Context `{ta : tag} `{! ConvType ta}.
+
+Import AlgorithmicTypingData.
+
+Theorem algo_typing_det :
+  AlgoTypingInductionConcl
+    (fun _ _ => True)
+    (fun Γ A t => forall A', [Γ |-[ta] t ▹ A'] -> A' = A)
+    (fun Γ A t => forall A', [Γ |-[ta] t ▹h A'] -> A' = A)
+    (fun _ _ _ => True).
+Proof.
+  apply AlgoTypingInduction.
+  all: try easy.
+  - intros * ? ? Hinf.
+    inversion Hinf ; subst ; clear Hinf.
+    now eapply in_ctx_inj.
+  - intros * ? IHA ? IHB ? Hconv.
+    now inversion Hconv.
+  - intros * ?? ? IHt ? Hconv.
+    inversion Hconv ; subst ; clear Hconv ; refold.
+    eapply IHt in H7 ; subst.
+    now reflexivity.
+  - intros * ? IHf ?? ? Hconv.
+    inversion Hconv ; subst ; clear Hconv ; refold.
+    eapply IHf in H6.
+    congruence.
+  - intros * Hconv.
+    now inversion Hconv.
+  - intros * Hconv.
+    now inversion Hconv.
+  - intros * ?? ? Hconv.
+    now inversion Hconv.
+  - intros * ? IH ?????? ? Hconv.
+    now inversion Hconv.
+  - intros * Hconv.
+    now inversion Hconv.
+  - intros * ? IH ?? ? Hconv.
+    now inversion Hconv.
+  - intros * ? IH ??? Hconv.
+    now inversion Hconv.
+  - intros * ????????? Hconv.
+    now inversion Hconv.
+  - intros * ? IH ? Hconv.
+    inversion Hconv; subst; refold.
+    apply IH in H3; try constructor.
+    now inversion H3.
+  - intros * ? IH ? Hconv.
+    inversion Hconv; subst; refold.
+    apply IH in H3; try constructor.
+    now inversion H3.
+  - intros * ?????? * Hconv; inversion Hconv; now subst.
+  - intros * ???? * Hconv; now inversion Hconv.
+  - intros * ???????????? * Hconv; now inversion Hconv.
+  - intros * ? IH ?? ? Hconv.
+    inversion Hconv ; subst ; clear Hconv ; refold.
+    eapply IH in H2 ; subst.
+    eapply whred_det ; tea.
+Qed.
+
+End AlgoTypingDet.
+
 
 (** ** Small types are large types *)
 
@@ -15,7 +210,7 @@ type (in which case it has to be small).
 So we need to show admissibility of the more general rule. *)
 
 Section SmallLarge.
-  Import AlgorithmicTypedConvData BundledTypingData.
+  Import DeclarativeTypingProperties AlgorithmicTypingData AlgorithmicTypedConvData BundledTypingData.
   Context `{!TypingSubst de} `{!TypeReductionComplete de} `{!TypeConstructorsInj de}.
 
   Lemma algo_typing_small_large Γ A :
@@ -53,7 +248,7 @@ End SmallLarge.
 (** The shape of the inferred type is the same as that of any type *)
 
 Section InferShape.
-  Import AlgorithmicTypingData.
+  Import DeclarativeTypingProperties AlgorithmicTypingData.
   Context `{ta : tag} `{! ConvType ta}.
   Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 
@@ -162,7 +357,7 @@ Import BundledIntermediateData IntermediateTypingProperties.
 we easily derive our third instance. *)
 
 Module AlgorithmicTypingProperties.
-  Import AlgorithmicTypedConvData.
+  Import AlgorithmicTypedConvData DeclarativeTypingProperties.
   Export BundledTypingData AlgorithmicConvProperties.
 
   #[local] Ltac intros_bn :=
@@ -521,7 +716,7 @@ End AlgorithmicTypingProperties.
 
 (** ** Consequences *)
 
-Import AlgorithmicTypingData AlgorithmicTypingProperties.
+Import AlgorithmicTypingData AlgorithmicTypingProperties DeclarativeTypingProperties.
 
 (** *** Uniqueness of types *)
 

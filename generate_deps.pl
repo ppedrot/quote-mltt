@@ -5,9 +5,9 @@ print "  subgraph cluster_autosubst { label=\"AutoSubst\" \n}";
 print "  subgraph cluster_syntax { label=\"Syntax\" \n}";
 print "  subgraph cluster_logrel { label=\"LogicalRelation\" \n}";
 print "  subgraph cluster_subst { label=\"Validity\" \n}";
-print "  subgraph cluster_typing { label=\"Typing Properties\" \n}";
+print "  subgraph cluster_typing { label=\"TypingProperties\" \n}";
 print "  subgraph cluster_algo { label=\"Algorithmic\" \n}";
-print "  subgraph cluster_dec { label=\"Decidability\" \n}";
+print "  subgraph cluster_check { label=\"Checkers\" \n}";
 while (<>) {
   if (m/.*?theories\/([^\s]*)\.vo.*:(.*)/) {
     $dests = $2 ;
@@ -24,8 +24,8 @@ while (<>) {
       print "subgraph cluster_typing { \"$path$src\"[label=\"$src\",fillcolor=5]}"
     }elsif ($path =~ m/Algorithmic\./) {
       print "subgraph cluster_algo { \"$path$src\"[label=\"$src\",fillcolor=9]}"
-    }elsif ($path =~ m/Decidability\./) {
-      print "subgraph cluster_dec { \"$path$src\"[label=\"$src\",fillcolor=10,fontcolor=white]}"
+    }elsif ($path =~ m/Checkers\./) {
+      print "subgraph cluster_check { \"$path$src\"[label=\"$src\",fillcolor=10,fontcolor=white]}"
     }else {
       print "\"$path$src\"[label=\"$src\",fillcolor=6,fontcolor=white]"
     }

@@ -1,4 +1,4 @@
-(** * LogRel.AlgorithmicTyping: definition of type-directed conversion and algorithmic typing, as inductive predicates. *)
+(** * LogRel.AlgorithmicJudgments: definition of conversion (typed and untyped) and algorithmic typing, as inductive predicates. *)
 From Coq Require Import ssrbool.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 
@@ -8,7 +8,7 @@ Section Definitions.
   here before declaring the right instance. *)
   Close Scope typing_scope.
 
-(** ** Conversion *)
+(** ** Typed conversion *)
 
   (** **** Conversion of types *)
   Inductive ConvTypeAlg : context -> term -> term  -> Type :=
@@ -145,6 +145,8 @@ Section Definitions.
 
 (** ** Typing *)
 
+  (** Algorithmic typing is a parametrised by *any* conversion, so that we can use both typed and
+    untyped conversion. *)
   Context `{ConvType}.
 
   (** **** Type well-formation *)
@@ -269,6 +271,106 @@ Section Definitions.
   where "[ |- Γ ]" := (WfContextAlg Γ).
 
 End Definitions.
+
+(** ** Untyped conversion *)
+
+(** **** Conversion of types/terms: there is no distinction here *)
+Inductive UConvAlg : term -> term  -> Type :=
+  | termUConvRed {t t' u u'} :
+    [t ⤳* t'] ->
+    [u ⤳* u' ] ->
+    [t' ≅h u'] ->
+    [t ≅ u]
+(** **** Conversion of types/terms reduced to a weak-head normal form *)
+with UConvRedAlg : term -> term -> Type :=
+  | UnivReflUAlg :
+      [U ≅h U]
+  | PiCongUAlg {A B A' B'} :
+    [A ≅ A'] ->
+    [B ≅ B'] ->
+    [tProd A B ≅h tProd A' B']
+  | NatReflUAlg :
+    [tNat ≅h tNat]
+  | ZeroReflUAlg :
+    [tZero ≅h tZero]
+  | SuccCongUAlg {t t'} :
+    [t ≅ t'] ->
+    [tSucc t ≅h tSucc t']
+  | EmptyReflUAlg :
+    [tEmpty ≅h tEmpty]
+  | LamCongUAlg {A t A' t'} :
+    [t ≅ t'] ->
+    [tLambda A t ≅h tLambda A' t']
+  | LambNeUAlg {A t n'} :
+    whne n' ->
+    [t ≅ eta_expand n'] -> 
+    [tLambda A t ≅h n']
+  | NeLamUAlg {n A' t'} :
+    whne n ->
+    [eta_expand n ≅ t'] -> 
+    [n ≅h tLambda A' t']
+  | SigCongUAlg {A B A' B'} :
+    [A ≅ A'] ->
+    [ B ≅ B'] ->
+    [tSig A B ≅h tSig A' B']
+  | PairCongUAlg {A B p q A' B' p' q'} :
+    [p ≅ p'] ->
+    [q ≅ q'] ->
+    [tPair A B p q ≅h tPair A' B' p' q']
+  | PairNeUAlg {A B p q n'} :
+    whne n' ->
+    [p ≅ tFst n'] ->
+    [q ≅ tSnd n'] ->
+    [tPair A B p q ≅h n']
+  | NePairUAlg {n A' B' p' q'} :
+    whne n ->
+    [tFst n ≅ p'] ->
+    [tSnd n ≅ q'] ->
+    [n ≅h tPair A' B' p' q']
+  | IdCongUAlg {A A' x x' y y'} :
+    [A ≅ A'] ->
+    [x ≅ x'] ->
+    [y ≅ y'] ->
+    [tId A x y ≅h tId A' x' y']
+  | IdReflCongUAlg {A x A' x'} :
+    [tRefl A x ≅h tRefl A' x']
+  | NeuConvUAlg {m n} :
+    [m ~ n] ->
+    [m ≅h n]
+
+(** **** Conversion of neutral terms *)
+with UConvNeuAlg : term  -> term -> Type :=
+  | VarConvUAlg {n} :
+    [tRel n ~ tRel n]
+  | AppCongUAlg {m n t u} :
+    [m ~ n] ->
+    [t ≅ u] ->
+    [tApp m t ~ tApp n u]
+  | NatElimCongUAlg {n n' P P' hz hz' hs hs'} :
+    [n ~ n'] ->
+    [P ≅ P'] ->
+    [hz ≅ hz'] ->
+    [hs ≅ hs'] ->
+    [tNatElim P hz hs n ~ tNatElim P' hz' hs' n']
+  | EmptyElimCongUAlg {P P' e e'} :
+    [e ~ e'] ->
+    [P ≅ P'] ->
+    [tEmptyElim P e ~ tEmptyElim P' e']
+  | FstCongUAlg {m n} :
+    [m ~ n] ->
+    [tFst m ~ tFst n]
+  | SndCongUAlg {m n} :
+    [m ~ n] ->
+    [tSnd m ~ tSnd n]
+  | IdElimCongUAlg {A A' x x' P P' hr hr' y y' e e'} :
+    [e ~ e'] ->
+    [P ≅ P'] ->
+    [hr ≅ hr'] ->
+    [tIdElim A x P hr y e ~ tIdElim A' x' P' hr' y' e']
+
+where "[ A ≅ B ]" := (UConvAlg A B)
+and "[ A ≅h B ]" := (UConvRedAlg A B)
+and "[ m ~ n ]" := (UConvNeuAlg m n).
 
 (** ** Instances *)
 
@@ -411,440 +513,29 @@ Definition AlgoTypingInductionConcl :=
     let t' := remove_steps t in
     exact t').
 
+
+Scheme 
+Minimality for UConvAlg Sort Type with
+Minimality for UConvRedAlg Sort Type with
+Minimality for UConvNeuAlg Sort Type.
+
+Combined Scheme UAlgoConvInduction from
+UConvAlg_rect_nodep,
+UConvRedAlg_rect_nodep,
+UConvNeuAlg_rect_nodep.
+
+Arguments UAlgoConvInduction PEq PRedEq PNeEq : rename.
+
+
+Definition UAlgoConvInductionConcl :=
+ltac:(
+let t := type of UAlgoConvInduction in
+let t' := remove_steps t in
+exact t').
+
 End InductionPrinciples.
 
 Arguments AlgoConvInductionConcl PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq : rename.
 Arguments AlgoConvInduction PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq : rename.
 Arguments AlgoTypingInductionConcl {ta conv} PTy PInf PInfRed PCheck : rename.
 Arguments AlgoTypingInduction {ta conv} PTy PInf PInfRed PCheck : rename.
-
-(** ** Stability by weakening *)
-
-Section ConvWk.
-  Import AlgorithmicTypedConvData.
-  
-  Let PTyEq (Γ : context) (A B : term) := forall Δ (ρ : Δ ≤ Γ),
-    [Δ |- A⟨ρ⟩ ≅ B⟨ρ⟩].
-  Let PTyRedEq (Γ : context) (A B : term) := forall Δ (ρ : Δ ≤ Γ),
-      [Δ |- A⟨ρ⟩ ≅h B⟨ρ⟩].
-  Let PNeEq (Γ : context) (A t u : term) := forall Δ (ρ : Δ ≤ Γ),
-    [Δ |- t⟨ρ⟩ ~ u⟨ρ⟩ ▹ A⟨ρ⟩].
-  Let PNeRedEq (Γ : context) (A t u : term) := forall Δ (ρ : Δ ≤ Γ),
-    [Δ |- t⟨ρ⟩ ~h u⟨ρ⟩ ▹ A⟨ρ⟩].
-  Let PTmEq (Γ : context) (A t u : term) := forall Δ (ρ : Δ ≤ Γ),
-    [Δ |- t⟨ρ⟩ ≅ u⟨ρ⟩ : A⟨ρ⟩].
-  Let PTmRedEq (Γ : context) (A t u : term) := forall Δ (ρ : Δ ≤ Γ),
-      [Δ |- t⟨ρ⟩ ≅h u⟨ρ⟩ : A⟨ρ⟩].
-
-  Theorem algo_conv_wk :
-    AlgoConvInductionConcl PTyEq PTyRedEq
-      PNeEq PNeRedEq PTmEq PTmRedEq.
-  Proof.
-    subst PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
-    apply AlgoConvInduction.
-    - intros.
-      econstructor.
-      all: eauto using credalg_wk.
-    - intros * ? ? ? IHB ? *.
-      cbn.
-      econstructor.
-      1: now eauto.
-      now eapply IHB with(ρ := wk_up _ ρ).
-    - econstructor.
-    - intros.
-      now econstructor.
-    - intros.
-      now econstructor.
-    - intros * ??? IHB ? *; do 2 rewrite <- wk_sig.
-      econstructor.
-      1: eauto.
-      now eapply IHB.
-    - intros; now econstructor.
-    - intros.
-      econstructor.
-      3: easy.
-      all: now apply whne_ren.
-    - intros * ? ? ?.
-      eapply convne_meta_conv.
-      1: econstructor ; eauto using in_ctx_wk.
-      all: reflexivity.
-    - intros * ? IHm ? IHt ? ?.
-      cbn in *.
-      eapply convne_meta_conv ; [econstructor|..] ; refold.
-      + eauto.
-      + eauto.
-      + now asimpl.
-      + reflexivity.
-    - intros * ? IHn ? IHP ? IHz ? IHs *.
-      cbn.
-      eapply convne_meta_conv ; [econstructor|..] ; refold.
-      + eauto.
-      + now eapply (IHP _ (wk_up tNat ρ)).
-      + eapply convtm_meta_conv.
-        * eapply IHz.
-        * now bsimpl.
-        * reflexivity.
-      + eapply convtm_meta_conv.
-        * eapply IHs.
-        * unfold elimSuccHypTy.
-          now bsimpl.
-        * reflexivity.
-      + now bsimpl.
-      + now bsimpl.
-    - intros * ? IHe ? IHP *.
-      cbn.
-      eapply convne_meta_conv ; [econstructor|..] ; refold.
-      + eauto.
-      + now eapply (IHP _ (wk_up tEmpty ρ)).
-      + now bsimpl.
-      + now bsimpl.
-    - intros * ? IH *; cbn.
-      econstructor; now eapply IH.
-    - intros ??? A? ? IH *; cbn.
-      rewrite (subst_ren_wk_up (A:=A)).
-      econstructor; now eapply IH.
-    - intros * ? IHe ? IHp **; erewrite <-2!wk_idElim, subst_ren_wk_up2.
-      econstructor; eauto.
-      + rewrite 2!(wk_up_wk1 ρ).
-        eapply IHp; constructor; tea.
-      + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
-    - intros.
-      econstructor.
-      + eauto.
-      + eauto using credalg_wk.
-      + gen_typing. 
-    - intros.
-      econstructor.
-      1-3: eauto using credalg_wk.
-      now eauto.
-    - intros * ? ? ? IHB ? ?.
-      cbn.
-      econstructor.
-      1: now eauto.
-      now eapply IHB with(ρ := wk_up _ ρ).
-    - now econstructor.
-    - now econstructor.
-    - now econstructor.
-    - now econstructor.
-    - intros * ? ? ? IH ? ?.
-      cbn.
-      econstructor.
-      1-2: gen_typing.
-      specialize IH with(ρ := wk_up _ ρ).
-      cbn in *.
-      assert (eq: forall t, t⟨ρ⟩⟨↑⟩ = t⟨↑⟩⟨up_ren ρ⟩) by now asimpl.
-      do 2 rewrite eq.
-      apply IH.
-    - intros * ??? IHB *. 
-      do 2 rewrite <- wk_sig.
-      econstructor.
-      1: now eauto.
-      now eapply IHB.
-    - intros * ??? IHfst ? IHsnd *.
-      rewrite <- wk_sig.
-      econstructor.
-      1,2: gen_typing.
-      1: eauto.
-      rewrite wk_fst, <- subst_ren_wk_up; eauto.
-    - intros; econstructor; eauto.
-    - intros; econstructor; eauto.
-    - intros.
-      econstructor.
-      + eauto.
-      + now eapply isPosType_ren.
-  Qed.
-
-
-  Corollary algo_conv_shift : AlgoConvInductionConcl
-      (fun (Γ : context) (A B : term) => forall T, [Γ,, T |- A⟨↑⟩ ≅ B⟨↑⟩])
-      (fun (Γ : context) (A B : term) => forall T, [Γ,, T |- A⟨↑⟩ ≅h B⟨↑⟩])
-      (fun (Γ : context) (A m n : term) => forall T, [Γ,, T |- m⟨↑⟩ ~ n⟨↑⟩ ▹ A⟨↑⟩])
-      (fun (Γ : context) (A m n : term) => forall T, [Γ,, T |- m⟨↑⟩ ~h n⟨↑⟩ ▹ A⟨↑⟩])
-      (fun (Γ : context) (A t u : term) => forall T, [Γ,, T |- t⟨↑⟩ ≅ u⟨↑⟩ : A⟨↑⟩])
-      (fun (Γ : context) (A t u : term) => forall T, [Γ,, T |- t⟨↑⟩ ≅h u⟨↑⟩ : A⟨↑⟩]).
-  Proof.
-    red.
-    repeat match goal with |- _ × _ => split end.
-    all: intros Γ * Hty T.
-    all: eapply algo_conv_wk in Hty.
-    all: specialize (Hty _ (@wk1 Γ T)).
-    all: repeat rewrite <- (extRen_term _ _ (@wk1_ren Γ T)) ; refold.
-    all: now eapply Hty.
-  Qed.
-
-End ConvWk.
-
-Section TypingWk.
-
-  Context `{ta : tag} `{! ConvType ta}.
-  Hypothesis conv_wk :
-    forall Γ A B, [Γ |-[ta] A ≅ B] ->
-    forall Δ (ρ : Δ ≤ Γ), [Δ |- A⟨ρ⟩ ≅ B⟨ρ⟩].
-
-  Import AlgorithmicTypingData.
-
-  Let PTy (Γ : context) (A : term) := forall Δ (ρ : Δ ≤ Γ), [Δ |- A⟨ρ⟩].
-  Let PInf (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
-    [Δ |- t⟨ρ⟩ ▹ A⟨ρ⟩].
-  Let PInfRed (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
-    [Δ |- t⟨ρ⟩ ▹h A⟨ρ⟩].
-  Let PCheck (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
-  [Δ |- t⟨ρ⟩ ◃ A⟨ρ⟩].
-
-  Theorem algo_typing_wk :
-    AlgoTypingInductionConcl PTy PInf PInfRed PCheck.
-  Proof.
-    subst PTy PInf PInfRed PCheck.
-    apply AlgoTypingInduction.
-    - constructor.
-    - intros * ? ? ? IHB **.
-      cbn.
-      econstructor.
-      + now eauto.
-      + now eapply IHB with(ρ := wk_up _ ρ).
-    - intros.
-      now econstructor.
-    - now constructor.
-    - intros * ? ? ? IHB **.
-      rewrite <-wk_sig.
-      econstructor.
-      + now eauto.
-      + now eapply IHB.
-    - intros; rewrite <- wk_Id; econstructor; eauto.
-    - constructor.
-      + now intros ?%isCanonical_ren.
-      + eauto. 
-    - intros.
-      eapply typing_meta_conv.
-      + now econstructor ; eapply in_ctx_wk.
-      + reflexivity.
-    - intros * ? ? ? IHB.
-      cbn.
-      econstructor.
-      + eauto.
-      + now eapply IHB with(ρ := wk_up _ ρ).
-    - intros * ? ? ? IHt ? ?.
-      cbn.
-      econstructor.
-      + now eauto.
-      + now eapply IHt with(ρ := wk_up _ ρ).
-    - intros.
-      cbn in *.
-      eapply typing_meta_conv.
-      + now econstructor.
-      + now asimpl.
-    - now econstructor.
-    - now econstructor.
-    - now econstructor.
-    - intros * ? IHn ? IHP ? IHz ? IHs *.
-      cbn in *.
-      eapply typing_meta_conv.
-      1: econstructor.
-      + eauto.
-      + eapply IHP with (ρ := wk_up _ ρ).
-      + eapply typing_meta_conv.
-        1: eapply IHz.
-        now bsimpl.
-      + eapply typing_meta_conv.
-        1: eapply IHs.
-        unfold elimSuccHypTy.
-        now bsimpl.
-      + now bsimpl.
-    - intros.
-      now econstructor.
-    - intros * ? IHe ? IHP *.
-      cbn in *.
-      eapply typing_meta_conv.
-      1: econstructor.
-      + eauto.
-      + eapply IHP with (ρ := wk_up _ ρ).
-      + now bsimpl. 
-    - intros * ??? IHB *.
-      rewrite <- wk_sig.
-      econstructor; eauto.
-    - intros * ???????? *.
-      rewrite <- wk_pair, <-wk_sig.
-      econstructor.
-      1-3: now eauto.
-      rewrite <- subst_ren_wk_up; eauto.
-    - intros * ?? *.
-      rewrite <- wk_fst; now econstructor.
-    - intros ? A ?? ? IH *.
-      rewrite <- wk_snd, (subst_ren_wk_up (A:=A)).
-      econstructor.
-      now eapply IH.
-    - intros; rewrite <- wk_Id; econstructor; eauto.
-    - intros; rewrite <- wk_refl; econstructor; eauto.
-    - intros; erewrite <- wk_idElim, subst_ren_wk_up2; econstructor; eauto.
-      + rewrite 2!(wk_up_wk1 ρ); eauto.
-      + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
-    - intros.
-      econstructor.
-      + eauto.
-      + eauto using credalg_wk.
-      + now eapply whnf_ren. 
-    - intros.
-      econstructor.
-      + eauto.
-      + now eapply conv_wk.
-  Qed.
-
-  Corollary algo_typing_shift : AlgoTypingInductionConcl
-  (fun (Γ : context) (A : term) => forall T, [Γ,, T |- A⟨↑⟩])
-  (fun (Γ : context) (A t : term) => forall T, [Γ,, T |- t⟨↑⟩ ▹ A⟨↑⟩])
-  (fun (Γ : context) (A t : term) => forall T, [Γ,, T |- t⟨↑⟩ ▹h A⟨↑⟩])
-  (fun (Γ : context) (A t : term) => forall T, [Γ,, T |- t⟨↑⟩ ◃ A⟨↑⟩]).
-  Proof.
-  red.
-  repeat match goal with |- _ × _ => split end.
-  all: intros Γ * Hty T.
-  all: eapply algo_typing_wk in Hty.
-  all: specialize (Hty _ (@wk1 Γ T)).
-  all: repeat rewrite <- (extRen_term _ _ (@wk1_ren Γ T)) ; refold.
-  all: now eapply Hty.
-  Qed.
-
-End TypingWk.
-
-(** ** Relation to weak-head normal forms *)
-
-(** We show that the predicates that should apply only to weak-head normal forms/neutrals
-indeed imply that the relevant arguments are such weak-head normal forms/neutrals. *)
-Section AlgoConvWh.
-
-  Let PTyEq (Γ : context) (A B : term) := True.
-  Let PTyRedEq (Γ : context) (A B : term) := 
-    isType A × isType B.
-  Let PNeEq (Γ : context) (A t u : term) := 
-    whne t × whne u.
-  Let PNeRedEq (Γ : context) (A t u : term) :=
-    [× whne t, whne u & whnf A].
-  Let PTmEq (Γ : context) (A t u : term) := True.
-  Let PTmRedEq (Γ : context) (A t u : term) := 
-    [× whnf t, whnf u & isType A].
-
-  Theorem algo_conv_wh :
-    AlgoConvInductionConcl PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
-  Proof.
-    subst PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq; cbn.
-    apply AlgoConvInduction.
-    all: intros ; prod_splitter ; prod_hyp_splitter.
-    all: try solve [now constructor].
-    all: gen_typing.
-  Qed.
-End AlgoConvWh.
-
-(** ** Determinism: there is at most one inferred type *)
-
-Section AlgoConvDet.
-
-Import AlgorithmicTypedConvData.
-
-Let PTyEq (Γ : context) (A B : term) := True.
-Let PTyRedEq (Γ : context) (A B : term) := True.
-Let PNeEq (Γ : context) (A t u : term) := 
-  forall A' u', [Γ |-[al] t ~ u' ▹ A'] -> A' = A.
-Let PNeRedEq (Γ : context) (A t u : term) :=
-  forall A' u', [Γ |-[al] t ~h u' ▹ A'] -> A' = A.
-Let PTmEq (Γ : context) (A t u : term) := True.
-Let PTmRedEq (Γ : context) (A t u : term) := True.
-
-Theorem algo_conv_det :
-  AlgoConvInductionConcl PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq.
-Proof.
-  subst PTyEq PTyRedEq PNeEq PNeRedEq PTmEq PTmRedEq; cbn.
-  apply AlgoConvInduction.
-  all: try easy.
-  - intros * ? * Hconv.
-    inversion Hconv ; subst ; clear Hconv.
-    now eapply in_ctx_inj.
-  - intros * ? IH ? ? ?? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    apply IH in H6.
-    now inversion H6.
-  - intros * ? IH ?????? ?? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    now reflexivity.
-  - intros * ? IH ?? ?? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    now reflexivity.
-  - intros * ? IH ?? Hconv.
-    inversion Hconv; subst; clear Hconv; refold.
-    apply IH in H3.
-    now inversion H3.
-  - intros * ? IH ?? Hconv.
-    inversion Hconv; subst; clear Hconv; refold.
-    apply IH in H3.
-    now inversion H3.
-  - intros * _ * _ * _ * ? ? ? _ ? _ * Hconv.
-    inversion Hconv; now subst.
-  - intros * ? IH ???? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    eapply IH in H2 as ->.
-    now eapply whred_det.
-Qed.
-
-End AlgoConvDet.
-
-Section AlgoTypingDet.
-
-Context `{ta : tag} `{! ConvType ta}.
-
-Import AlgorithmicTypingData.
-
-Theorem algo_typing_det :
-  AlgoTypingInductionConcl
-    (fun _ _ => True)
-    (fun Γ A t => forall A', [Γ |-[ta] t ▹ A'] -> A' = A)
-    (fun Γ A t => forall A', [Γ |-[ta] t ▹h A'] -> A' = A)
-    (fun _ _ _ => True).
-Proof.
-  apply AlgoTypingInduction.
-  all: try easy.
-  - intros * ? ? Hinf.
-    inversion Hinf ; subst ; clear Hinf.
-    now eapply in_ctx_inj.
-  - intros * ? IHA ? IHB ? Hconv.
-    now inversion Hconv.
-  - intros * ?? ? IHt ? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    eapply IHt in H7 ; subst.
-    now reflexivity.
-  - intros * ? IHf ?? ? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    eapply IHf in H6.
-    congruence.
-  - intros * Hconv.
-    now inversion Hconv.
-  - intros * Hconv.
-    now inversion Hconv.
-  - intros * ?? ? Hconv.
-    now inversion Hconv.
-  - intros * ? IH ?????? ? Hconv.
-    now inversion Hconv.
-  - intros * Hconv.
-    now inversion Hconv.
-  - intros * ? IH ?? ? Hconv.
-    now inversion Hconv.
-  - intros * ? IH ??? Hconv.
-    now inversion Hconv.
-  - intros * ????????? Hconv.
-    now inversion Hconv.
-  - intros * ? IH ? Hconv.
-    inversion Hconv; subst; refold.
-    apply IH in H3; try constructor.
-    now inversion H3.
-  - intros * ? IH ? Hconv.
-    inversion Hconv; subst; refold.
-    apply IH in H3; try constructor.
-    now inversion H3.
-  - intros * ?????? * Hconv; inversion Hconv; now subst.
-  - intros * ???? * Hconv; now inversion Hconv.
-  - intros * ???????????? * Hconv; now inversion Hconv.
-  - intros * ? IH ?? ? Hconv.
-    inversion Hconv ; subst ; clear Hconv ; refold.
-    eapply IH in H2 ; subst.
-    eapply whred_det ; tea.
-Qed.
-
-End AlgoTypingDet.

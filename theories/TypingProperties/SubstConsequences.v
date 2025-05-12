@@ -344,6 +344,9 @@ Proof.
   rewrite wk1_ren_on; eapply TermRefl; now eapply ty_var0.
 Qed.
 
+(** ** Boundary lemmas *)
+(**  From a judgment we can derive well formation of its boundary, eg
+  from [Γ |- t : A] we can deduce [Γ |- A]. *)
 Section Boundary.
   Context `{!TypingSubst de}.
 
@@ -581,9 +584,7 @@ Section Boundary.
     - intros * ? [] ? [].
       split ; gen_typing.
     - intros * ? [].
-      split; gen_typing.
-    - intros * ?[]?[].
-      split; gen_typing.
+      eauto.
   Qed.
 
   Corollary boundary_tm Γ A t : [Γ |- t : A] -> [Γ |- A].
@@ -657,7 +658,8 @@ Proof.
   eapply ctx_refl ; boundary.
 Qed.
 
-Section Stability.
+Section ConvCtx.
+
   Context `{!TypingSubst de}.
 
   Lemma conv_well_subst (Γ Δ : context) :
@@ -712,7 +714,48 @@ Section Stability.
     now eapply stability.
   Qed.
 
-End Stability.
+
+Lemma in_ctx_conv_r Γ' Γ n decl :
+  [|-[de] Γ' ≅ Γ] ->
+  in_ctx Γ n decl ->
+  ∑ decl', (in_ctx Γ' n decl') × ([Γ' |-[de] decl' ≅ decl]).
+Proof.
+  intros Hconv Hin.
+  induction Hin in Γ', Hconv |- *.
+  all: inversion Hconv ; subst ; clear Hconv.
+  1: eexists ; split.
+  - now econstructor.
+  - cbn.
+    renToWk.
+    eapply typing_wk ; tea.
+    econstructor.
+    all: now boundary.
+  - edestruct IHHin as [d'' [??]].
+    1: eassumption.
+    cbn in *.
+    econstructor ; split.
+    1: now econstructor.
+    cbn.
+    renToWk.
+    eapply typing_wk ; tea.
+    econstructor.
+    all: now boundary.
+Qed.
+
+Lemma in_ctx_conv_l Γ' Γ n decl' :
+  [|-[de] Γ' ≅ Γ] ->
+  in_ctx Γ' n decl' ->
+  ∑ decl, (in_ctx Γ n decl) × ([Γ' |-[de] decl' ≅ decl]).
+Proof.
+  intros ? Hin.
+  eapply in_ctx_conv_r in Hin as [? []].
+  2: now symmetry.
+  eexists ; split ; tea.
+  symmetry.
+  now eapply stability.
+Qed.
+
+End ConvCtx.
 
 Section TypingStronger.
   Context `{!TypingSubst de}.

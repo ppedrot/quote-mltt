@@ -1,11 +1,11 @@
-(** * LogRel.Decidability.NegativeSoundness: implementation failure implies negation of typing. *)
+(** * LogRel.Checkers.NegativeSoundness: implementation failure implies negation of typing. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties.
 
-From LogRel.Decidability Require Import Functions Views Soundness Completeness.
+From LogRel.Checkers Require Import Functions Views Soundness CtxAccessCorrectness ReductionCorrectness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
@@ -13,6 +13,8 @@ Set Printing Primitive Projection Parameters.
 Set Structural Injection.
 
 Import DeclarativeTypingProperties.
+
+(** ** Negative soundness of typed conversion *)
 
 Section ConvSoundNeg.
   Import AlgorithmicTypedConvData.
@@ -77,7 +79,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] Hty ? ; cbn.
       2: now intros []%prod_ty_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty ; cbn in * ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty ; cbn in * ; tea.
       eapply dup in pre as [pre ?%typePiCongAlg_prem1] ; tea.
       split ; [easy|..].
       intros [|] _ Hty' ; [easy|..].
@@ -88,7 +90,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] Hty ? ; cbn in *.
       2: now intros []%sig_ty_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty ; tea.
       eapply dup in pre as [pre ?%typeSigCongAlg_prem1] ; tea.
       split ; [easy|..].
       intros [|] ? Hty' ; [easy|..].
@@ -98,12 +100,12 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] Hty ? ; cbn.
       2: now intros [? _]%id_ty_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty ; tea.
       eapply dup in pre as [pre [[]]%typeIdCongAlg_prem1%dup] ; tea.
       split ; [easy|..].
       intros [|] Hty' ? ; cbn in *.
       2: now intros []%id_ty_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty' ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty' ; tea.
       eapply dup in pre as [pre ?%typeIdCongAlg_prem2] ; tea.
       split ; [easy|..].
       intros [|] ? Hty'' ; cbn in * ; [easy|..].
@@ -146,7 +148,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] Hty ? ; cbn in *.
       2:now intros []%prod_tm_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty ; tea.
       eapply dup in pre as [pre ?%termPiCongAlg_prem1] ; tea.
       split ; [easy|..].
       intros [|] ? Hty' ; [easy|..].
@@ -159,7 +161,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] Hty ? ; cbn in *.
       2:now intros []%sig_tm_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty ; tea.
       eapply dup in pre as [pre ?%termSigCongAlg_prem1] ; tea.
       split ; [easy|..].
       intros [|] ? Hty' ; [easy|..].
@@ -170,10 +172,10 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] Hty ? ; cbn in *.
       2:now intros []%id_tm_inj.
-      eapply implem_conv_graph, algo_conv_sound in Hty ; tea.
+      eapply implem_tconv_graph, algo_conv_sound in Hty ; tea.
       eapply dup in pre as [pre [? []]%termIdCongAlg_prem1%dup] ; tea.
       split ; [easy|..].
-      intros [|] Hty'%implem_conv_graph ? ; cbn in *.
+      intros [|] Hty'%implem_tconv_graph ? ; cbn in *.
       2: now intros []%id_tm_inj.
       eapply dup in Hty' as [Hty' ?%algo_conv_sound] ; tea.
       eapply dup in pre as [pre ?%termIdCongAlg_prem2] ; tea.
@@ -232,7 +234,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] ; cbn in *.
       + eintros Hpost ? ; tea.
-        eapply implem_conv_graph, algo_conv_sound in Hpost ; tea.
+        eapply implem_tconv_graph, algo_conv_sound in Hpost ; tea.
         eapply termPairConvAlg_prem3 in Hpost ; tea.
         split ; [easy|..].
         intros [|].
@@ -278,8 +280,8 @@ Section ConvSoundNeg.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
       intros [T|] ; cbn in *.
-      + intros [Hpost]%implem_conv_graph ; tea ; refold.
-        eapply algo_conv_sound in Hpost as [Hconv Hfu ?] ; tea.
+      + intros [Hpost]%implem_tconv_graph ; tea ; refold.
+        eapply algo_conv_sound in Hpost as Hconv ; tea.
         eapply dup in pre as [pre [[? (?&[? [? [-> Hf]]]&?)%termGen'] _]].
         destruct T ; cbn ; try easy.
         edestruct neuAppCongAlg_prem1 ; eauto.
@@ -291,8 +293,8 @@ Section ConvSoundNeg.
         intros Hneg [? (?&?&?&?&[[=]])%neuConvGen] ; subst.
         apply Hneg.
         eapply TermConv ; refold ; tea.
-        eapply prod_ty_inj, Hfu.
-        eauto using conv_neu_sound with boundary.
+        eapply prod_ty_inj, conv_neu_typing ; tea.
+        boundary.
 
       + intros ? Hneg [? (?&?&?&?&[[=]])%neuConvGen] ; subst.
         apply Hneg.
@@ -305,8 +307,8 @@ Section ConvSoundNeg.
       intros [T|] ; cbn in *.
       2: shelve.
 
-      intros [Hpost]%implem_conv_graph ; tea.
-      eapply algo_conv_sound in Hpost as [Hconv Hfu ?] ; tea.
+      intros [Hpost]%implem_tconv_graph ; tea.
+      eapply algo_conv_sound in Hpost as Hconv ; tea.
       eapply dup in pre as [pre [[? (?&[-> ??? Hn]&?)%termGen'] _]].
       destruct T ; try easy.
       eapply dup in pre as [pre [ []]%neuNatElimCong_prem1%dup] ; eauto.
@@ -315,13 +317,13 @@ Section ConvSoundNeg.
       intros [|] ; cbn.
       2: shelve.
 
-      eintros [Hpost1]%implem_conv_graph%algo_conv_sound%dup ; tea ; cbn in *.
+      eintros [Hpost1]%implem_tconv_graph%algo_conv_sound%dup ; tea ; cbn in *.
       eapply neuNatElimCong_prem2, dup in Hpost1 as [Hpost1 []] ; eauto.
       split ; [easy|..].
       intros [|] ; cbn.
       2: shelve.
       
-      intros [Hpost2]%implem_conv_graph%algo_conv_sound%dup ; tea.
+      intros [Hpost2]%implem_tconv_graph%algo_conv_sound%dup ; tea.
       eapply neuNatElimCong_prem3, dup in Hpost2 as [Hpost2 []] ; eauto.
       split ; [easy|..].
       intros [|] ; cbn ; [easy|..].
@@ -337,8 +339,8 @@ Section ConvSoundNeg.
       intros [T|] ; cbn.
       2: shelve.
 
-      intros [Hpost]%implem_conv_graph ; tea.
-      eapply algo_conv_sound in Hpost as [Hconv Hfu ?] ; tea.
+      intros [Hpost]%implem_tconv_graph ; tea.
+      eapply algo_conv_sound in Hpost as Hconv ; tea.
       eapply dup in pre as [pre [[? (?&[-> ? Hn]&?)%termGen'] _]].
       destruct T ; try easy.
       eapply dup in pre as [pre [ []]%neuEmptyElimCong_prem1%dup] ; eauto.
@@ -356,8 +358,8 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [T|] ; cbn.
       
-      + intros [Hpost]%implem_conv_graph ; tea.
-        eapply algo_conv_sound in Hpost as [Hconv Hfu ?] ; tea.
+      + intros [Hpost]%implem_tconv_graph ; tea.
+        eapply algo_conv_sound in Hpost as Hconv ; tea.
         eapply dup in pre as [pre [[? (?&(?&?&->&Hp)&?)%termGen'] _]].
         now destruct T.
 
@@ -370,8 +372,8 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [T|] ; cbn.
       
-      + intros [Hpost]%implem_conv_graph ; tea.
-        eapply algo_conv_sound in Hpost as [Hconv Hfu ?] ; tea.
+      + intros [Hpost]%implem_tconv_graph ; tea.
+        eapply algo_conv_sound in Hpost as Hconv ; tea.
         eapply dup in pre as [pre [[? (?&(?&?&->&Hp)&?)%termGen'] _]].
         now destruct T.
 
@@ -385,8 +387,8 @@ Section ConvSoundNeg.
       intros [T|] ; cbn.
       2: shelve.
 
-      intros [Hpost]%implem_conv_graph ; tea.
-      eapply algo_conv_sound in Hpost as [Hconv Hfu ?] ; tea.
+      intros [Hpost]%implem_tconv_graph ; tea.
+      eapply algo_conv_sound in Hpost as Hconv ; tea.
       eapply dup in pre as [pre [[? (?&[-> ????? He]&?)%termGen'] _]].
       destruct T ; try easy.
       eapply dup in pre as [pre [ []]%neuIdElimCong_prem1%dup] ; eauto.
@@ -395,7 +397,7 @@ Section ConvSoundNeg.
       intros [|] ; cbn.
       2: shelve.
 
-      intros []%implem_conv_graph%algo_conv_sound%dup.
+      intros []%implem_tconv_graph%algo_conv_sound%dup.
       2-3: now erewrite <- !wk1_ren_on.
       eapply neuIdElimCong_prem2 in pre ; eauto.
       2: now rewrite !wk1_ren_on.
@@ -442,6 +444,8 @@ Section ConvSoundNeg.
 
 End ConvSoundNeg.
 
+(** ** Negative soundness of typing *)
+
 Section TypingSoundNeg.
   Import AlgorithmicTypingData.
   Context `{ta : tag} `{! ConvType ta}.
@@ -481,26 +485,6 @@ Section TypingSoundNeg.
   | (check_state;Γ;T;t) => [Γ |-[de] T]
   end.
 
-  Lemma term_univ_can Γ t :
-    [Γ |-[de] t : U] ->
-    ~ isType t ->
-    ~ isCanonical t.
-  Proof.
-    intros Hty His Hcan.
-    destruct Hcan ; try solve [apply His ; constructor].
-    all: eapply termGen' in Hty as (?&?&Hconv) ; cbn in * ; prod_hyp_splitter ; subst.
-    all: unshelve eapply ty_conv_inj in Hconv ; try solve [constructor] ; now cbn in *.
-  Qed.
-
-  Lemma build_ty_view1_anomaly t :
-    build_ty_view1 t = ty_view1_anomaly ->
-    ~ isType t × isCanonical t.
-  Proof.
-    intros.
-    destruct t ; cbn in * ; try solve [congruence].
-    all: split ; [..|now constructor] ; intros H' ; inversion H' ;
-      eapply can_whne_exclusive ; [..|eassumption] ; constructor.
-  Qed.
 
   Lemma _implem_typing_sound_neg :
     funrec (typing conv) typing_sound_neg_pre typing_sound_neg_type.
@@ -810,9 +794,10 @@ Section TypingSoundNeg.
     - intros Hty.
       inversion Hty ; subst ; refold.
       1-6: now inversion He.
-      eapply build_ty_view1_anomaly in He as [].
-      now eapply term_univ_can ; tea.
-
+      eapply build_ty_view1_anomaly in He as [n i].
+      eapply n, Uterm_isType ; tea.
+      now apply whnf_can_whne.
+      
   Qed.
 
   Lemma implem_typing_sound_neg x r:

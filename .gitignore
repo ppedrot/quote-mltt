@@ -21,3 +21,7 @@ _opam
 docs/dependency_graph.png
 
 docs/dependency_graph.pre
+
+docs/coqdoc/coqdoc.css
+
+docs/coqdoc/resources/

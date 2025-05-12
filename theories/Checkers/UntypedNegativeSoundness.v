@@ -1,66 +1,25 @@
-(** * LogRel.Decidability.UntypedNegativeSoundness: implementation failure implies negation of typing for untyped conversion. *)
+(** * LogRel.Checkers.UntypedNegativeSoundness: implementation failure implies negation of untyped conversion. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicTyping.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties.
-From LogRel Require Import UntypedConversion.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties UntypedConvSoundness.
 
-From LogRel.Decidability Require Import Functions UntypedFunctions Views Soundness
-  UntypedSoundness Completeness UntypedCompleteness.
+From LogRel.Checkers Require Import Functions Views Soundness CtxAccessCorrectness ReductionCorrectness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 Set Structural Injection.
 
-Hint Extern 10 =>
-  match goal with
-    | H : _ × _ |- _ => destruct H
-    | H : ~ _ |- False => apply H
-    | H : [× _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _, _, _, _ & _] |- _ => destruct H
-  end : core.
-
 Import DeclarativeTypingProperties.
 
-Section ConvSoundNeg.
+(** ** Preliminary lemmas *)
+
+Section Preliminaries.
 
   Context `{!TypingSubst de} `{!TypeConstructorsInj de}
     `{!TermConstructorsInj de} `{!ConvNeutralConv de}.
-
-  #[universes(polymorphic)]Definition uconv_sound_neg_pre
-    (x : uconv_state × term × term) : Type :=
-  match x with
-  | (tm_state,t,u) => ∑ Γ A, [Γ |- t ∈ A] × [Γ |- u ∈ A]
-  | (tm_red_state,t,u) => ∑ Γ A, [× whnf t, whnf u & ([Γ |- t ∈ A] × [Γ |- u ∈ A])]
-  | (ne_state,m,n) => ∑ Γ, [× whne m, whne n & (well_typed Γ m × well_typed Γ n)]
-  end.
-
-  #[universes(polymorphic)]Definition uconv_sound_neg_type
-    (x : uconv_state × term × term)
-    (r : exn errors unit)
-    (p : uconv_sound_neg_pre x) : Type :=
-  match x, p, r with
-  | _, _, (success _) => True
-  | (tm_state,t,u), (Γ;(A;_)), (exception _) =>  ~ [Γ |-[de] t ≅ u ∈ A]
-  | (tm_red_state,t,u), (Γ;(A;_)), (exception _) => ~ [Γ |-[de] t ≅ u ∈ A]
-  | (ne_state,m,n), (Γ;_), (exception _) => ~ ∑ T, [Γ |-[de] m ~ n : T]
-  end.
-
-  Definition term_class_ty `{ta : tag} `{WfType ta} `{Typing ta} Γ A t :
-    [Γ |-[ta] t : A] -> [Γ |-[ta] t ∈ (isterm A)] :=
-    fun H => H.
-
-  Definition type_class_ty `{ta : tag} `{WfType ta} `{Typing ta} Γ A :
-    [Γ |-[ta] A] -> [Γ |-[ta] A ∈ istype] :=
-    fun H => H.
 
   Lemma convtm_red' Γ A A' t t' u u' :
     [t ⤳* t'] ->
@@ -142,101 +101,73 @@ Section ConvSoundNeg.
     constructor ; boundary.
   Qed.
 
-Lemma pair_conv_ne_fst Γ n A' B' t' u' T :
-  [Γ |-[ de ] n ≅ tPair A' B' t' u' : T] ->
-  [Γ |- tFst n ≅ t' : A'].
-Proof.
-  intros Hty.
-  eapply convtm_red'.
-  1,3: reflexivity.
-  1: eapply redalg_one_step, fstPair.
-  econstructor.
-  eapply convtm_conv ; tea.
-  eapply boundary_tm_conv_r in Hty as (?&[->]&?)%termGen'.
-  now symmetry.
-Qed.
+  Lemma pair_conv_ne_fst Γ n A' B' t' u' T :
+    [Γ |-[ de ] n ≅ tPair A' B' t' u' : T] ->
+    [Γ |- tFst n ≅ t' : A'].
+  Proof.
+    intros Hty.
+    eapply convtm_red'.
+    1,3: reflexivity.
+    1: eapply redalg_one_step, fstPair.
+    econstructor.
+    eapply convtm_conv ; tea.
+    eapply boundary_tm_conv_r in Hty as (?&[->]&?)%termGen'.
+    now symmetry.
+  Qed.
 
-Lemma pair_conv_ne_snd Γ n A' B' t' u' T :
-  [Γ |-[ de ] n ≅ tPair A' B' t' u' : T] ->
-  [Γ |- tSnd n ≅ u' : B'[t'..]].
-Proof.
-  intros Hty.
-  eapply convtm_red'.
-  1,3: reflexivity.
-  1: eapply redalg_one_step, sndPair.
-  econstructor.
-  1: econstructor.
-  1: eapply convtm_conv ; tea.
-  2: eapply typing_subst1.
-  2: now eapply pair_conv_ne_fst.
-  all: eapply boundary_tm_conv_r in Hty as (?&[->]&?)%termGen'.
-  1: now symmetry.
-  constructor ; boundary.
-Qed.
+  Lemma pair_conv_ne_snd Γ n A' B' t' u' T :
+    [Γ |-[ de ] n ≅ tPair A' B' t' u' : T] ->
+    [Γ |- tSnd n ≅ u' : B'[t'..]].
+  Proof.
+    intros Hty.
+    eapply convtm_red'.
+    1,3: reflexivity.
+    1: eapply redalg_one_step, sndPair.
+    econstructor.
+    1: econstructor.
+    1: eapply convtm_conv ; tea.
+    2: eapply typing_subst1.
+    2: now eapply pair_conv_ne_fst.
+    all: eapply boundary_tm_conv_r in Hty as (?&[->]&?)%termGen'.
+    1: now symmetry.
+    constructor ; boundary.
+  Qed.
 
+End Preliminaries.
 
-Lemma mismatch2_hd_view_ty Γ T V (tT : isType T) (tV : isType V) :
-  build_nf_view2 T V = mismatch2 T V ->
-  type_hd_view Γ tT tV = False.
-Proof.
-  destruct tT, tV ; cbn ; try reflexivity.
-  all: simp build_nf_view2 ; cbn.
-  1-6: congruence.
-  do 2 (unshelve erewrite whne_nf_view1 ; tea ; cbn).
-  congruence.
-Qed.
+(** ** Negative soundness of untyped conversion *)
 
-Lemma mismatch2_hd_view_tm Γ A t u :
-  [Γ |-[de] t : A] -> [Γ |-[de] u : A] ->
-  whnf t -> whnf u ->
-  build_nf_view2 t u = mismatch2 t u ->
-  (∑ (nft : isType t) (nfu : isType u), type_hd_view Γ nft nfu = False) +
-  ((∑ (nft : isNat t) (nfu : isNat u), nat_hd_view Γ nft nfu = False) +
-  (∑ (nft : isId t) (nfu : isId u) , forall Γ A' x y, id_hd_view Γ A' x y nft nfu = False)).
-Proof.
-  intros Ht Hu wt wu.
-  funelim (build_nf_view2 t u).
-  all: try solve [
-    congruence |
-    match goal with
-      | H : [_ |-[de] (tSort _) : _] |- _ => eapply termGen' in H as (?&[]&?)
-    end |
-    left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
-    now apply not_can_whne ; [..|eapply tm_view1_neutral_can] |
-    right ; left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
-    now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
+Section ConvSoundNeg.
 
-    1,4: unshelve (right ; right ; unshelve (do 2 eexists) ; econstructor ;
-      [now apply not_can_whne ; [..|eapply tm_view1_neutral_can]|..] ;
-      do 2 eexists ; reflexivity) ; easy.
-    
-    - destruct t1 ; try solve [congruence |
-      left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
-      now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
+  Context `{!TypingSubst de} `{!TypeConstructorsInj de}
+    `{!TermConstructorsInj de} `{!ConvNeutralConv de}.
 
-    - destruct n ;
-      try solve [
-      congruence |
-      right ; left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
-      now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
+  #[universes(polymorphic)]Definition uconv_sound_neg_pre
+  (x : conv_state × term × term) : Type :=
+  match x with
+  | (tm_state,t,u) => ∑ Γ A, [Γ |- t ∈ A] × [Γ |- u ∈ A]
+  | (tm_red_state,t,u) => ∑ Γ A, [× whnf t, whnf u & ([Γ |- t ∈ A] × [Γ |- u ∈ A])]
+  | (ne_state,m,n) => ∑ Γ, [× whne m, whne n & (well_typed Γ m × well_typed Γ n)]
+  | (_,_,_) => True
+  end.
 
-Qed.
-
-Lemma mismatch2_hd_view_ne t u :
-  whne t -> whne u ->
-  ~ build_nf_view2 t u = mismatch2 t u.
-Proof.
-  intros Ht Hu.
-  funelim (build_nf_view2 _ _) ; try solve [congruence|inversion Hu|inversion Ht].
-  - destruct t1 ; inversion Hu.
-  - destruct n ; inversion Hu.
-Qed. 
+  #[universes(polymorphic)]Definition uconv_sound_neg_type
+  (x : conv_state × term × term)
+  (r : exn errors unit)
+  (p : uconv_sound_neg_pre x) : Type :=
+  match x, p, r with
+  | _, _, (success _) => True
+  | (tm_state,t,u), (Γ;(A;_)), (exception _) =>  ~ [Γ |-[de] t ≅ u ∈ A]
+  | (tm_red_state,t,u), (Γ;(A;_)), (exception _) => ~ [Γ |-[de] t ≅ u ∈ A]
+  | (ne_state,m,n), (Γ;_), (exception _) => ~ ∑ T, [Γ |-[de] m ~ n : T]
+  | (_,_,_),_,_ => True
+  end.
 
   Lemma _implem_uconv_neg_sound :
     funrect _uconv uconv_sound_neg_pre uconv_sound_neg_type.
   Proof.
     intros x pre.
-    funelim (_uconv x) ; cbn in pre |- *.
+    funelim (_uconv x) ; cbn in pre |- * ; try easy.
 
     3: simp uconv_ne ; cbn ; destruct (build_ne_view2 _ _) eqn:e ; cbn ; try easy.
     2: simp uconv_tm_red ; cbn ; destruct (build_nf_view2 _ _) eqn:e ; cbn ; try easy.
@@ -628,7 +559,7 @@ Qed.
       intros [? (?&?&?&?&[[=]])%neuConvGen] ; subst.
       eapply Hnty'.
       econstructor ; tea.
-      eapply prod_ty_inj, Hty.
+      eapply prod_ty_inj, conv_neu_typing ; tea.
       boundary.
 
     - edestruct neuNatElimCong_prem0 ; eauto.

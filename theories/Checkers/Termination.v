@@ -1,12 +1,12 @@
-(** * LogRel.Decidability.Termination: the implementation always terminates on well-typed inputs. *)
+(** * LogRel.Checkers.Termination: the implementation always terminates on well-typed inputs. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicTyping.
-From LogRel.TypingProperties Require Import Normalisation DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationConsequences.
-From LogRel.Algorithmic Require Import Bundled AlgorithmicConvProperties AlgorithmicTypingProperties.
+From LogRel Require Import Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
+From LogRel.TypingProperties Require Import NormalisationDefinition DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties NormalisationConsequences.
+From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties.
 From LogRel Require Import Utils.
 
-From LogRel.Decidability Require Import Functions Views Soundness Completeness.
+From LogRel.Checkers Require Import Functions Views CtxAccessCorrectness ReductionCorrectness Soundness.
 From PartialFun Require Import Monad PartialFun MonadExn.
 
 Set Universe Polymorphism.
@@ -85,7 +85,7 @@ Proof.
     eapply termPiCongAlg_prem0 in Hconcl as [Hpre0 []]%dup.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros Hpost0%implem_conv_graph%algo_conv_sound ; eauto.
+    intros Hpost0%implem_tconv_graph%algo_conv_sound ; eauto.
     eapply termPiCongAlg_prem1 in Hpost0 ; eauto.
 
   - intros * wu' [Hconcl []]%dup.
@@ -134,7 +134,7 @@ Proof.
     eapply termSigCongAlg_prem0 in Hconcl as [Hpre0 []]%dup.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros Hpost0%implem_conv_graph%algo_conv_sound ; eauto.
+    intros Hpost0%implem_tconv_graph%algo_conv_sound ; eauto.
     eapply termSigCongAlg_prem1 in Hpost0 ; eauto.
 
   - intros * ?? ?? ?? * wu' [Hconcl []]%dup.
@@ -144,7 +144,7 @@ Proof.
     eapply termPairConvAlg_prem2 in Hconcl as [Hpre2 []]%dup ; tea.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost2]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost2]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     eapply termPairConvAlg_prem3 in Hpost2 ; eauto.
 
   - intros * ?? ?? ?? ? wu' [Hconcl []]%dup.
@@ -157,11 +157,11 @@ Proof.
     eapply termIdCongAlg_prem0 in Hconcl as [Hpre0 []]%dup.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost0]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost0]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     eapply termIdCongAlg_prem1 in Hpost0 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros Hpost1%implem_conv_graph%algo_conv_sound ; eauto.
+    intros Hpost1%implem_tconv_graph%algo_conv_sound ; eauto.
     eapply termIdCongAlg_prem2 in Hpost1 ; eauto.
 
   - intros * wu' [Hconcl []]%dup.
@@ -239,7 +239,7 @@ Proof.
     eapply neuAppCongAlg_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     split ; [eauto|intros [] ; cbn ; [|easy]].
 
-    intros [Hpost1]%implem_conv_graph ; eauto.
+    intros [Hpost1]%implem_tconv_graph ; eauto.
     1: now eapply dnf_whnf in Hm as [].
     eapply dnf_det in Hm.
     2: now eapply algo_conv_dnorm in Hpost1.
@@ -256,19 +256,19 @@ Proof.
     eapply neuNatElimCong_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost1]%implem_conv_graph ; eauto.
+    intros [Hpost1]%implem_tconv_graph ; eauto.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
-    subst ; eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    subst ; eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuNatElimCong_prem1 in Hpost1 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost2]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost2]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     eapply neuNatElimCong_prem2 in Hpost2 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost3]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost3]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     eapply neuNatElimCong_prem3 in Hpost3 ; eauto.
     now split ; [eauto | intros [] ; cbn].
 
@@ -282,11 +282,11 @@ Proof.
     eapply neuEmptyElimCong_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost1]%implem_conv_graph ; eauto.
+    intros [Hpost1]%implem_tconv_graph ; eauto.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
-    subst ; eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    subst ; eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuEmptyElimCong_prem1 in Hpost1 ; eauto.
     now split ; [eauto | intros [] ; cbn].
 
@@ -300,7 +300,7 @@ Proof.
     eapply neuFstCongAlg_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost1]%implem_conv_graph ; eauto.
+    intros [Hpost1]%implem_tconv_graph ; eauto.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
@@ -316,7 +316,7 @@ Proof.
     eapply neuSndCongAlg_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost1]%implem_conv_graph ; eauto.
+    intros [Hpost1]%implem_tconv_graph ; eauto.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
@@ -332,20 +332,20 @@ Proof.
     eapply neuIdElimCong_prem0 in Hconcl as [Hpre0 []]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost1]%implem_conv_graph ; eauto.
+    intros [Hpost1]%implem_tconv_graph ; eauto.
     1: now eapply dnf_whnf in Hn as [].
     eapply dnf_det in Hn.
     2: now eapply algo_conv_dnorm in Hpost1.
-    subst ; eapply algo_conv_sound in Hpost1 as [[] [Hpost1]%dup]%dup ; eauto.
+    subst ; eapply algo_conv_sound in Hpost1 as [? Hpost1]%dup ; eauto.
     eapply neuIdElimCong_prem1 in Hpost1 as [[]]%dup ; eauto.
     repeat erewrite <- wk1_ren_on.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost2]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost2]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     eapply neuIdElimCong_prem2 in Hpost2 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros ?%implem_conv_graph%algo_conv_sound ; eauto.
+    intros ?%implem_tconv_graph%algo_conv_sound ; eauto.
 
   - intros * Hn ? ? ? * wu' [Hconcl []]%dup.
     apply compute_domain.
@@ -353,7 +353,7 @@ Proof.
 
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost0 []]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost0 ?]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     2: now eapply dnf_whnf in Hn.
     split ; [..|easy].
     eapply wh_red_complete ; [exists istype|eapply ty_norm] ; cbn ; boundary.
@@ -393,7 +393,7 @@ Proof.
     eapply typePiCongAlg_prem0 in Hconcl as [Hpre0 []]%dup.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros Hpost0%implem_conv_graph%algo_conv_sound ; eauto.
+    intros Hpost0%implem_tconv_graph%algo_conv_sound ; eauto.
     eapply typePiCongAlg_prem1 in Hpost0 ; eauto.
 
   - intros * wB' ?.
@@ -420,7 +420,7 @@ Proof.
     eapply typeSigCongAlg_prem0 in Hconcl as [Hpre0 []]%dup.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros Hpost0%implem_conv_graph%algo_conv_sound ; eauto.
+    intros Hpost0%implem_tconv_graph%algo_conv_sound ; eauto.
     eapply typeSigCongAlg_prem1 in Hpost0 ; eauto.
 
   - intros * ? ? ? ? ? ? * wB' [Hconcl]%dup.
@@ -433,11 +433,11 @@ Proof.
     eapply typeIdCongAlg_prem0 in Hconcl as [Hpre0 []]%dup.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros [Hpost0]%implem_conv_graph%algo_conv_sound%dup ; eauto.
+    intros [Hpost0]%implem_tconv_graph%algo_conv_sound%dup ; eauto.
     eapply typeIdCongAlg_prem1 in Hpost0 as [[]]%dup ; eauto.
     split ; [eauto | intros [] ; cbn ; [|easy]].
 
-    intros Hpost1%implem_conv_graph%algo_conv_sound ; eauto.
+    intros Hpost1%implem_tconv_graph%algo_conv_sound ; eauto.
     eapply typeIdCongAlg_prem2 in Hpost1 ; eauto.
     
   - intros * ?%dnf_whnf ? ?? * wB' [Hconcl]%dup.

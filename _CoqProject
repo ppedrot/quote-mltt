@@ -24,7 +24,7 @@ theories/GenericTyping.v
 theories/DeclarativeTyping.v
 
 theories/TypingProperties/DeclarativeProperties.v
-theories/TypingProperties/Normalisation.v
+theories/TypingProperties/NormalisationDefinition.v
 theories/TypingProperties/PropertiesDefinition.v
 theories/TypingProperties/SubstConsequences.v
 theories/TypingProperties/TypeInjectivityConsequences.v
@@ -89,24 +89,27 @@ theories/Validity/Introductions/Id.v
 
 theories/Fundamental.v
 
-theories/AlgorithmicTyping.v
-theories/Algorithmic/UntypedConversion.v
+theories/AlgorithmicJudgments.v
 theories/Algorithmic/Bundled.v
-theories/Algorithmic/AlgorithmicConvProperties.v
+theories/Algorithmic/TypedConvProperties.v
+theories/Algorithmic/TypedConvPER.v
+theories/Algorithmic/TypedConvInstances.v
+theories/Algorithmic/UntypedConvSoundness.v
+theories/Algorithmic/UntypedTypedConv.v
 theories/Algorithmic/AlgorithmicTypingProperties.v
 theories/Algorithmic/Strengthening.v
 
-theories/Decidability/Functions.v
-theories/Decidability/UntypedFunctions.v
-theories/Decidability/Views.v
-theories/Decidability/Soundness.v
-theories/Decidability/UntypedSoundness.v
-theories/Decidability/NegativeSoundness.v
-theories/Decidability/UntypedNegativeSoundness.v
-theories/Decidability/Completeness.v
-theories/Decidability/UntypedCompleteness.v
-theories/Decidability/Termination.v
-theories/Decidability/UntypedTermination.v
+theories/Checkers/Functions.v
+theories/Checkers/Views.v
+theories/Checkers/CtxAccessCorrectness.v
+theories/Checkers/ReductionCorrectness.v
+theories/Checkers/Soundness.v
+theories/Checkers/NegativeSoundness.v
+theories/Checkers/UntypedNegativeSoundness.v
+theories/Checkers/Completeness.v
+theories/Checkers/UntypedCompleteness.v
+theories/Checkers/Termination.v
+theories/Checkers/UntypedTermination.v
 theories/Decidability.v
 
-theories/Decidability/Execution.v
+theories/Checkers/Execution.v
