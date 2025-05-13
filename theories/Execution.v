@@ -67,6 +67,7 @@ Goal ⟪ ε |- (0 : ℕ; 0 : ℕ) : ℕ × ℕ⟫.
 Proof.
   infer_auto.
 Qed.
+From LogRel.TypingProperties Require Import LogRelConsequences.
 
 Succeed Check ((fun x => nat_rec (fun _ => nat) 0 (fun _ ih => S (S ih)) x) : nat -> nat).
 

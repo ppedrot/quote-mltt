@@ -1,9 +1,8 @@
 (** * LogRel.Algorithmic.UntypedConvSoundness: untyped conversion implies declarative typing. *)
 
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping AlgorithmicJudgments.
-From LogRel Require Import Sections.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences NeutralConvProperties.
-From LogRel.Algorithmic Require Import Bundled TypedConvProperties.
+From LogRel.Algorithmic Require Import Bundled.
 
 Import DeclarativeTypingProperties AlgorithmicTypedConvData AlgorithmicTypingData.
 

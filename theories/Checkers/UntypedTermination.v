@@ -1,7 +1,7 @@
 (** * LogRel.Checkers.UntypedTermination: the implementation always terminates on well-typed inputs. *)
 From Coq Require Import Nat Lia Arith.
 From Equations Require Import Equations.
-From LogRel Require Import Utils Syntax.All Sections DeclarativeTyping
+From LogRel Require Import Utils Syntax.All DeclarativeTyping
   DeclarativeProperties GenericTyping PropertiesDefinition.
 From LogRel Require Import SubstConsequences TypeInjectivityConsequences NeutralConvProperties AlgorithmicJudgments NormalisationDefinition.
 From LogRel.Algorithmic Require Import Bundled TypedConvProperties AlgorithmicTypingProperties UntypedConvSoundness UntypedTypedConv.

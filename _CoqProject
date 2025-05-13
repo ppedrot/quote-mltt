@@ -110,6 +110,6 @@ theories/Checkers/Completeness.v
 theories/Checkers/UntypedCompleteness.v
 theories/Checkers/Termination.v
 theories/Checkers/UntypedTermination.v
-theories/Decidability.v
 
-theories/Checkers/Execution.v
+theories/Execution.v
+theories/Decidability.v
