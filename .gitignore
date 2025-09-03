@@ -8,10 +8,13 @@
 .vscode
 
 .Makefile.coq.d
+.Makefile.rocq.d
 
 Makefile.coq
+Makefile.rocq
 
 Makefile.coq.conf
+Makefile.rocq.conf
 
 *.cache
 
