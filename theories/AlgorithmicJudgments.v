@@ -1,5 +1,5 @@
 (** * LogRel.AlgorithmicJudgments: definition of conversion (typed and untyped) and algorithmic typing, as inductive predicates. *)
-From Coq Require Import ssrbool.
+From Stdlib Require Import ssrbool.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 
 Section Definitions.

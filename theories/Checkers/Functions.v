@@ -1,5 +1,5 @@
 (** * LogRel.Checkers.Functions: conversion and type-checker implementation. *)
-From Coq Require Import Nat Lia.
+From Stdlib Require Import Nat Lia.
 From Equations Require Import Equations.
 From PartialFun Require Import Monad PartialFun MonadExn.
 From LogRel Require Import Utils BasicAst AutoSubst.Extra Context NormalForms.

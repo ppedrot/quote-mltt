@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.Definition.Prelude: Structures employed to define the logical relation *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 
 Set Primitive Projections.

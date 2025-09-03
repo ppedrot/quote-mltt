@@ -1,5 +1,5 @@
 From Ltac2 Require Import Ltac2 Printf.
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation PERTactics.
 From LogRel.Validity Require Import Validity Irrelevance Properties.
 

@@ -1,5 +1,5 @@
 (** * LogRel.DeclarativeTyping: specification of conversion and typing, in a declarative fashion. *)
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 From smpl Require Import Smpl.
 From LogRel Require Import Utils Syntax.All.
 

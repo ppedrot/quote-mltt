@@ -2,7 +2,7 @@
 *)
 
 From LogRel.AutoSubst Require Import core.
-From Coq Require Import Setoid Morphisms Relation_Definitions.
+From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 
 Definition ap {X Y} (f : X -> Y) {x y : X} (p : x = y) : f x = f y :=
   match p with eq_refl => eq_refl end.

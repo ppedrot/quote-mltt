@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.Definition.Ne : Definition of the logical relation for neutal types and terms *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 From LogRel.LogicalRelation.Definition Require Import Prelude.
 

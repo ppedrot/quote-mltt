@@ -1,5 +1,5 @@
 (** * LogRel.Checkers.CtxAccessCorrectness: correctness of the context accessing function. *)
-From Coq Require Import Nat Lia Arith.
+From Stdlib Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All.
 

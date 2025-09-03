@@ -1,4 +1,4 @@
-From Coq Require Import ssrbool CRelationClasses.
+From Stdlib Require Import ssrbool CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Escape Irrelevance Symmetry Transitivity.
 From Equations Require Import Equations.

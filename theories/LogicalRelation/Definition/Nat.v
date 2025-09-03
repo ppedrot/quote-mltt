@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.Definition.Nat : Definition of the logical relation for nat *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 From LogRel.LogicalRelation.Definition Require Import Prelude Ne.
 

@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.Escape: the logical relation implies conversion/typing. *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All LogicalRelation GenericTyping.
 From LogRel.LogicalRelation Require Import Induction.
 

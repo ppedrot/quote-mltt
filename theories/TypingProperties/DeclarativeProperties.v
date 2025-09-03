@@ -1,5 +1,5 @@
 (** * LogRel.TypingProperties.DeclarativeProperties: basic properties of declarative typing, showing it is an instance of generic typing. *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
 
 Import DeclarativeTypingData.

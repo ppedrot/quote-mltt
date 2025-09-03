@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.Definition.Id : Definition of the logical relation for indentity types *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 From LogRel.LogicalRelation.Definition Require Import Prelude Ne.
 

@@ -7,20 +7,20 @@ autosubst:
 partial-fun:
 	@+$(MAKE) -C coq-partialfun all
 
-logrel: partial-fun Makefile.coq
-	@+$(MAKE) -f Makefile.coq all
+logrel: partial-fun Makefile.rocq
+	@+$(MAKE) -f Makefile.rocq all
 
-clean: Makefile.coq
+clean: Makefile.rocq
 	@+$(MAKE) -C coq-partialfun clean
-	@+$(MAKE) -f Makefile.coq cleanall
-	@rm -f Makefile.coq Makefile.coq.conf
+	@+$(MAKE) -f Makefile.rocq cleanall
+	@rm -f Makefile.rocq Makefile.rocq.conf
 
-Makefile.coq: _CoqProject
-	$(COQBIN)coq_makefile -f _CoqProject -o Makefile.coq
+Makefile.rocq: _CoqProject
+	$(COQBIN)rocq makefile -f _CoqProject -o Makefile.rocq
 
 force _CoqProject Makefile: ;
 
-%: Makefile.coq force
-	@+$(MAKE) -f Makefile.coq $@
+%: Makefile.rocq force
+	@+$(MAKE) -f Makefile.rocq $@
 
 .PHONY: all clean force partial-fun logrel autosubst

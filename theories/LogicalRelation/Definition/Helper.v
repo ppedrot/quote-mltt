@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.Definition.Helper: Auxilliary definitions and rebundling of structures from the logical relation *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping.
 From LogRel.LogicalRelation.Definition Require Import Prelude Ne Universe Poly Pi Sig Nat Empty Id Def.
 

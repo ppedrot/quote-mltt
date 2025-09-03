@@ -1,6 +1,6 @@
 (** * LogRel.Utils: basic generically useful definitions, notations, tactics… *)
-From Coq Require Import Morphisms List CRelationClasses.
-From Coq Require Import ssrbool.
+From Stdlib Require Import Morphisms List CRelationClasses.
+From Stdlib Require Import ssrbool.
 From smpl Require Import Smpl.
 
 Set Universe Polymorphism.

@@ -1,5 +1,5 @@
 (** * LogRel.TypingProperties.SubstConsequences: consequences of stability by substitution. *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition.
 

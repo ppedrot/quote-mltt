@@ -1,5 +1,5 @@
 (** * LogRel.Checkers.UntypedTermination: the implementation always terminates on well-typed inputs. *)
-From Coq Require Import Nat Lia Arith.
+From Stdlib Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping
   DeclarativeProperties GenericTyping PropertiesDefinition.

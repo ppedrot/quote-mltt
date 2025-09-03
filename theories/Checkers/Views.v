@@ -1,5 +1,5 @@
 (** * LogRel.Checkers.Views: properties of the view-building functions. *)
-From Coq Require Import Nat Lia.
+From Stdlib Require Import Nat Lia.
 From Equations Require Import Equations.
 From PartialFun Require Import Monad PartialFun MonadExn.
 From LogRel Require Import Utils BasicAst AutoSubst.Extra Context NormalForms Notations PropertiesDefinition DeclarativeTyping.

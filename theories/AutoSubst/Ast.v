@@ -2,7 +2,7 @@
 
 From LogRel.AutoSubst Require Import core unscoped.
 From LogRel.Syntax Require Import BasicAst.
-From Coq Require Import Setoid Morphisms Relation_Definitions.
+From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 
 
 Module Core.

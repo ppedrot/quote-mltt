@@ -1,4 +1,4 @@
-From Coq Require Import ssrbool CRelationClasses.
+From Stdlib Require Import ssrbool CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Properties.
 From LogRel.LogicalRelation.Introductions Require Import Universe Poly Sigma.

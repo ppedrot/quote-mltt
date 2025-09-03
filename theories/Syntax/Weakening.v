@@ -1,5 +1,5 @@
 (** * LogRel.Syntax.Weakening: definition of well-formed weakenings, and some properties. *)
-From Coq Require Import Lia ssrbool.
+From Stdlib Require Import Lia ssrbool.
 From LogRel Require Import Utils AutoSubst.Extra Notations.
 From LogRel.Syntax Require Import BasicAst Context NormalForms.
 

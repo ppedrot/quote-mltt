@@ -1,5 +1,5 @@
 (** * LogRel.NeutralConvProperties: properties of declarative neutral conversion, using type constructor injectivity. *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping.
 From LogRel.TypingProperties Require Import PropertiesDefinition DeclarativeProperties SubstConsequences TypeInjectivityConsequences.

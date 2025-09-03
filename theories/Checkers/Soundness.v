@@ -1,5 +1,5 @@
 (** * LogRel.Checkers.Soundness: the implementations imply the inductive predicates. *)
-From Coq Require Import Nat Lia Arith.
+From Stdlib Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All GenericTyping AlgorithmicJudgments.
 

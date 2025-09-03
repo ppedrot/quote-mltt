@@ -2,7 +2,7 @@
 
 (** This is the only file in the AutoSubst submodule that is not automatically generated. *)
 From smpl Require Import Smpl.
-From Coq Require Import ssrbool List.
+From Stdlib Require Import ssrbool List.
 From Equations Require Import Equations.
 From LogRel.AutoSubst Require Export core unscoped Ast.
 From LogRel Require Import Utils.

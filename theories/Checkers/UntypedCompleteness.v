@@ -1,5 +1,5 @@
 (** * LogRel.Checkers.UntypedCompleteness: the inductive predicate implies the implementation answer positively. *)
-From Coq Require Import Nat Lia Arith.
+From Stdlib Require Import Nat Lia Arith.
 From Equations Require Import Equations.
 From LogRel Require Import Utils Syntax.All DeclarativeTyping GenericTyping AlgorithmicJudgments.
 From LogRel.TypingProperties Require Import DeclarativeProperties PropertiesDefinition SubstConsequences TypeInjectivityConsequences NeutralConvProperties.

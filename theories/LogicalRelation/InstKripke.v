@@ -1,5 +1,5 @@
 (** * LogRel.LogicalRelation.InstKripke: combinators to instantiate Kripke-style quantifications *)
-From Coq Require Import CRelationClasses.
+From Stdlib Require Import CRelationClasses.
 From LogRel Require Import Utils Syntax.All GenericTyping LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Escape Irrelevance Symmetry Transitivity Weakening Neutral.
 
