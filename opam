@@ -12,7 +12,7 @@ homepage: "https://github.com/CoqHott/logrel-coq"
 synopsis:"A formalisation of meta-theory for a dependent type system, in Coq"
 license: "MIT"
 depends: [
-  "rocq" { >= "9.0" & < "9.1~" }
+  "rocq-prover" { >= "9.0" & < "9.1~" }
   "rocq-smpl"
   "rocq-equations" { >= "1.3" }
 ]
