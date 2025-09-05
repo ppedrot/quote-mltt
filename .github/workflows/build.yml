@@ -39,12 +39,12 @@ jobs:
           ocaml_version: ${{ env.ocaml_version }}
           before_install: |
             startGroup "Print opam config"
-              sudo chown -R coq:coq .
+              sudo chown -R rocq:rocq .
               opam config list; opam repo list; opam list
             endGroup
           before_script: |
             startGroup "Workaround permission issue"
-              sudo chown -R coq:coq .  # <--
+              sudo chown -R rocq:rocq .  # <--
               opam exec -- ocamlfind list
             endGroup
           script: |
