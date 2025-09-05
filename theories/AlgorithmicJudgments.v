@@ -41,7 +41,7 @@ Section Definitions.
     | typeNeuConvAlg {Γ M N T} :
       whne M ->
       whne N ->
-      [ Γ |- M ~ N ▹ T] -> 
+      [ Γ |- M ~ N ▹ T] ->
       [ Γ |- M ≅h N]
   (** **** Conversion of neutral terms *)
   with ConvNeuAlg : context -> term -> term  -> term -> Type :=
@@ -110,7 +110,7 @@ Section Definitions.
     | termFunConvAlg {Γ : context} {f g A B} :
       whnf f ->
       whnf g ->
-      [ Γ,, A |- eta_expand f ≅ eta_expand g : B] -> 
+      [ Γ,, A |- eta_expand f ≅ eta_expand g : B] ->
       [ Γ |- f ≅h g : tProd A B]
     | termSigCongAlg {Γ A B A' B'} :
       [ Γ |- A ≅ A' : U] ->
@@ -119,8 +119,8 @@ Section Definitions.
     | termPairConvAlg {Γ : context} {p q A B} :
       whnf p ->
       whnf q ->
-      [ Γ |- tFst p ≅ tFst q : A] -> 
-      [ Γ |- tSnd p ≅ tSnd q : B[(tFst p)..]] -> 
+      [ Γ |- tFst p ≅ tFst q : A] ->
+      [ Γ |- tSnd p ≅ tSnd q : B[(tFst p)..]] ->
       [ Γ |- p ≅h q : tSig A B]
     | termIdCongAlg {Γ A A' x x' y y'} :
       [Γ |- A ≅ A' : U] ->
@@ -170,7 +170,7 @@ Section Definitions.
       [Γ |- y ◃ A] ->
       [Γ |- tId A x y]
     | wfTypeUniv {Γ A} :
-      ~ isCanonical A ->
+      ¬ isCanonical A ->
       [Γ |- A ▹h U] ->
       [Γ |- A]
   (** **** Type inference *)
@@ -179,16 +179,16 @@ Section Definitions.
       in_ctx Γ n decl ->
       [Γ |- tRel n ▹ decl]
     | infProd {Γ} {A B} :
-      [ Γ |- A ▹h U] -> 
+      [ Γ |- A ▹h U] ->
       [Γ ,, A |- B ▹h U ] ->
       [ Γ |- tProd A B ▹ U ]
     | infLam {Γ} {A B t} :
       [ Γ |- A] ->
-      [ Γ ,, A |- t ▹ B ] -> 
+      [ Γ ,, A |- t ▹ B ] ->
       [ Γ |- tLambda A t ▹ tProd A B]
     | infApp {Γ} {f a A B} :
-      [ Γ |- f ▹h tProd A B ] -> 
-      [ Γ |- a ◃ A ] -> 
+      [ Γ |- f ▹h tProd A B ] ->
+      [ Γ |- a ◃ A ] ->
       [ Γ |- tApp f a ▹ B[a..] ]
     | infNat {Γ} :
       [Γ |- tNat ▹ U]
@@ -210,11 +210,11 @@ Section Definitions.
       [Γ ,, tEmpty |- P ] ->
       [Γ |- tEmptyElim P e ▹ P[e..]]
     | infSig {Γ} {A B} :
-      [ Γ |- A ▹h U] -> 
+      [ Γ |- A ▹h U] ->
       [Γ ,, A |- B ▹h U ] ->
       [ Γ |- tSig A B ▹ U ]
     | infPair {Γ A B a b} :
-      [ Γ |- A] -> 
+      [ Γ |- A] ->
       [Γ ,, A |- B] ->
       [Γ |- a ◃ A] ->
       [Γ |- b ◃ B[a..]] ->
@@ -252,7 +252,7 @@ Section Definitions.
   (** **** Type-checking *)
   with CheckAlg : context -> term -> term -> Type :=
     | checkConv {Γ t A A'} :
-      [ Γ |- t ▹ A ] -> 
+      [ Γ |- t ▹ A ] ->
       conv_type Γ A A' ->
       [ Γ |- t ◃ A' ]
 
@@ -303,11 +303,11 @@ with UConvRedAlg : term -> term -> Type :=
     [tLambda A t ≅h tLambda A' t']
   | LambNeUAlg {A t n'} :
     whne n' ->
-    [t ≅ eta_expand n'] -> 
+    [t ≅ eta_expand n'] ->
     [tLambda A t ≅h n']
   | NeLamUAlg {n A' t'} :
     whne n ->
-    [eta_expand n ≅ t'] -> 
+    [eta_expand n ≅ t'] ->
     [n ≅h tLambda A' t']
   | SigCongUAlg {A B A' B'} :
     [A ≅ A'] ->
@@ -423,13 +423,13 @@ End AlgorithmicTypedConvData.
 
 (** ** Induction principles *)
 
-(** Similarly to declarative typing, we need some massaging to turn the output of 
+(** Similarly to declarative typing, we need some massaging to turn the output of
 Scheme to something that fits our purpose, and we also define a function that computes
 the conclusion of a proof by induction. *)
 Section InductionPrinciples.
   Import AlgorithmicTypingData AlgorithmicTypedConvData.
 
-Scheme 
+Scheme
     Minimality for ConvTypeAlg Sort Type with
     Minimality for ConvTypeRedAlg Sort Type with
     Minimality for ConvNeuAlg Sort Type with
@@ -514,7 +514,7 @@ Definition AlgoTypingInductionConcl :=
     exact t').
 
 
-Scheme 
+Scheme
 Minimality for UConvAlg Sort Type with
 Minimality for UConvRedAlg Sort Type with
 Minimality for UConvNeuAlg Sort Type.

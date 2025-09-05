@@ -26,12 +26,12 @@ Context `{!TypingSubst de} `{!TypeConstructorsInj de}.
 Let PTyEq (Γ : context) (A B : term) :=
   forall v, graph _conv (ty_state;Γ;v;A;B) ok.
 Let PTyRedEq (Γ : context) (A B : term) :=
-  forall v, graph _conv (ty_red_state;Γ;v;A;B) ok. 
+  forall v, graph _conv (ty_red_state;Γ;v;A;B) ok.
 Let PNeEq (Γ : context) (A t u : term) :=
   forall v, graph _conv (ne_state;Γ;v;t;u) (success A).
 Let PNeRedEq (Γ : context) (A t u : term) :=
   forall v, graph _conv (ne_red_state;Γ;v;t;u) (success A).
-Let PTmEq (Γ : context) (A t u : term) := 
+Let PTmEq (Γ : context) (A t u : term) :=
   graph _conv (tm_state;Γ;A;t;u) ok.
 Let PTmRedEq (Γ : context) (A t u : term) :=
   graph _conv (tm_red_state;Γ;A;t;u) ok.
@@ -278,7 +278,7 @@ Hypothesis conv_complete : forall Γ T V,
   [Γ |-[de] T ≅ V] ->
   graph conv (Γ,T,V) ok.
 
-Definition isCanonical_ty_view1 t (c : ~ isCanonical t) : ne_view1 t.
+Definition isCanonical_ty_view1 t (c : ¬ isCanonical t) : ne_view1 t.
 Proof.
 revert c.
 case t ; intros.
@@ -292,7 +292,7 @@ all: try solve [case c ; constructor].
 - eapply (ne_view1_dest _ (eIdElim _ _ _ _ _)).
 Defined.
 
-Lemma can_ty_view1_small T (c : ~ isCanonical T) :
+Lemma can_ty_view1_small T (c : ¬ isCanonical T) :
   build_ty_view1 T = ty_view1_small (isCanonical_ty_view1 T c).
 Proof.
   destruct T ; cbn.
@@ -365,7 +365,7 @@ Proof.
     1: exact g0.
     econstructor.
     1: exact g.
-    now constructor. 
+    now constructor.
   - now constructor.
   - econstructor.
     1: exact (g0 tt whnf_tEmpty).

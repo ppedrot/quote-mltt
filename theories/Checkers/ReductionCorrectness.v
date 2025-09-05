@@ -63,7 +63,7 @@ funrec wh_red_stack (fun _ => True) (fun '(t,π) t' => whnf t').
 Proof.
   intros ? _.
   funelim (wh_red_stack _).
-  all: cbn ; try solve [constructor ; eauto]. 
+  all: cbn ; try solve [constructor ; eauto].
   - now eapply isType_whnf, isType_tm_view1.
   - econstructor. eapply stack_ne.
     now econstructor.
@@ -205,8 +205,8 @@ Section RedImplemComplete.
 
   Lemma zip1_notType Γ T t π :
     isType t ->
-    ~ whne t ->
-    ~ [Γ |-[de] zip1 t π : T].
+    ¬ whne t ->
+    ¬ [Γ |-[de] zip1 t π : T].
   Proof.
     intros Ht Ht' Hty.
     destruct π ; cbn in * ;
@@ -216,9 +216,9 @@ Section RedImplemComplete.
       [now econstructor| now eapply not_whne_can ; tea ; eapply isType_whnf | now cbn in *].
   Qed.
 
-  Ltac termInvContradiction Hty := 
+  Ltac termInvContradiction Hty :=
     eapply termGen' in Hty; cbn in Hty; prod_hyp_splitter; subst;
-    now match goal with 
+    now match goal with
     | [H : [_ |-[de] _ : _] |- _] =>
       eapply termGen' in H; cbn in H; prod_hyp_splitter; subst;
       now match goal with
@@ -283,7 +283,7 @@ Section RedImplemComplete.
     eapply IH.
     + do 2 red; cbn.
       left; constructor; eapply zip_ored; constructor.
-    + cbn. 
+    + cbn.
       eapply well_typed_zip in Hty as (?&[??Hu]).
       eapply Hu, RedConvTeC, subject_reduction ; tea.
       now do 2 econstructor.
@@ -291,7 +291,7 @@ Section RedImplemComplete.
     eapply IH.
     + do 2 red; cbn.
       left; constructor; eapply zip_ored; constructor.
-    + cbn. 
+    + cbn.
       eapply well_typed_zip in Hty as (?&[??Hu]).
       eapply Hu, RedConvTeC, subject_reduction ; tea.
       now do 2 econstructor.
@@ -347,7 +347,7 @@ Section RedImplemComplete.
     eapply whred_det ; tea.
     all: now eapply red_sound, def_graph_sound.
   Qed.
-  
+
   Corollary wh_red_complete_whnf_ty Γ A A' :
   [Γ |-[de] A] ->
   [A ⤳* A'] ->
@@ -358,7 +358,7 @@ Section RedImplemComplete.
     eapply subject_reduction_type in Hred ; tea.
     now eapply wh_red_complete_whnf_class.
   Qed.
-  
+
   Corollary wh_red_complete_whnf_tm Γ A t t' :
   [Γ |-[de] t : A] ->
   [t ⤳* t'] ->

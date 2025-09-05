@@ -19,14 +19,14 @@ Import IntermediateTypingProperties BundledTypingData.
 
 Definition inspect {A} (a : A) : ∑ b, a = b :=
   (a;eq_refl).
-  
+
 Notation "x 'eqn:' p" := ((x;p)) (only parsing, at level 20).
 
 #[global]
 Obligation Tactic := idtac.
 
 Equations check (Γ : context) (t T : term) (hΓ : [|-[de] Γ]) (hT : [Γ |-[de] T]) :
-  [Γ |-[de] t : T] + ~[Γ |-[de] t : T] :=
+  [Γ |-[de] t : T] + ¬ [Γ |-[de] t : T] :=
 
 check Γ t T hΓ hT with (inspect (def (typing tconv) (check_state;Γ;T;t) _)) :=
   {
@@ -36,7 +36,7 @@ check Γ t T hΓ hT with (inspect (def (typing tconv) (check_state;Γ;T;t) _)) :
 Next Obligation.
   intros.
   apply (typing_terminates (ta := al)) ; tea.
-  - now intros * ?? ?%algo_conv_sound. 
+  - now intros * ?? ?%algo_conv_sound.
   - intros. now apply implem_tconv_sound.
   - now intros ; eapply tconv_terminates.
 Qed.

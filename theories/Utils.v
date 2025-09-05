@@ -16,13 +16,7 @@ Notation "`=2`" := (pointwise_relation _ (pointwise_relation _ Logic.eq)) (at le
 Infix "=2" := (pointwise_relation _ (pointwise_relation _ Logic.eq)) (at level 70).
 Infix "<~>" := iffT (at level 90).
 
-(** Since we work a lot with type-level propositions,
-we override the notation for negation from the
-standard library. **)
-#[export] Set Warnings "-notation-overridden".
-Notation "~ x" := (notT x) : type_scope.
-#[export] Set Warnings "notation-overridden".
-
+Notation "¬ x" := (notT x) (at level 75, right associativity) : type_scope.
 
 #[global]Hint Unfold notT: core.
 
@@ -99,13 +93,13 @@ Hint Extern 10 =>
   match goal with
     | H : _ × _ |- _ => destruct H
     | H : ~ _ |- False => apply H
-    | H : [× _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _, _ & _] |- _ => destruct H 
-    | H : [× _, _, _, _, _, _, _, _ & _] |- _ => destruct H 
+    | H : [× _, _ & _] |- _ => destruct H
+    | H : [× _, _, _ & _] |- _ => destruct H
+    | H : [× _, _, _, _ & _] |- _ => destruct H
+    | H : [× _, _, _, _, _ & _] |- _ => destruct H
+    | H : [× _, _, _, _, _, _ & _] |- _ => destruct H
+    | H : [× _, _, _, _, _, _, _ & _] |- _ => destruct H
+    | H : [× _, _, _, _, _, _, _, _ & _] |- _ => destruct H
     | H : [× _, _, _, _, _, _, _, _, _ & _] |- _ => destruct H
   end : core.
 

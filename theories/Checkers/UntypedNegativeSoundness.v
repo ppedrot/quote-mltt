@@ -157,9 +157,9 @@ Section ConvSoundNeg.
   (p : uconv_sound_neg_pre x) : Type :=
   match x, p, r with
   | _, _, (success _) => True
-  | (tm_state,t,u), (Γ;(A;_)), (exception _) =>  ~ [Γ |-[de] t ≅ u ∈ A]
-  | (tm_red_state,t,u), (Γ;(A;_)), (exception _) => ~ [Γ |-[de] t ≅ u ∈ A]
-  | (ne_state,m,n), (Γ;_), (exception _) => ~ ∑ T, [Γ |-[de] m ~ n : T]
+  | (tm_state,t,u), (Γ;(A;_)), (exception _) =>  ¬ [Γ |-[de] t ≅ u ∈ A]
+  | (tm_red_state,t,u), (Γ;(A;_)), (exception _) => ¬ [Γ |-[de] t ≅ u ∈ A]
+  | (ne_state,m,n), (Γ;_), (exception _) => ¬ ∑ T, [Γ |-[de] m ~ n : T]
   | (_,_,_),_,_ => True
   end.
 
@@ -176,7 +176,7 @@ Section ConvSoundNeg.
     all:
       repeat (match goal with | H : ∑ _, _ |- _ => destruct H as [? pre] end) ;
       repeat (match goal with | A : class |- _ => destruct A ; cbn in * end) ; try easy.
-    
+
     - intros T' []%red_sound V' []%red_sound.
       eapply typeConvRed_prem2 in pre ; tea.
       unshelve eexists.
@@ -186,10 +186,10 @@ Section ConvSoundNeg.
       eapply Hnty.
       etransitivity.
       2: etransitivity ; tea.
-      1: symmetry. 
+      1: symmetry.
       all: eapply RedConvTyC, subject_reduction_type ; eauto.
       all: boundary.
-    
+
     - intros ? []%red_sound ? []%red_sound.
       eapply termConvRed_prem3 in pre ; tea.
       2: reflexivity.
@@ -230,7 +230,7 @@ Section ConvSoundNeg.
       unshelve eexists.
       1: repeat eexists ; eauto using term_class_ty.
       intros [|] Hty Hnty ; cbn in *.
-      2:{ 
+      2:{
         intros ?.
         eapply Hnty, prod_tm_inj.
         econstructor ; now symmetry.
@@ -270,7 +270,7 @@ Section ConvSoundNeg.
       unshelve eexists.
       1: repeat eexists ; eauto using term_class_ty.
       intros [|] Hty Hnty ; cbn in *.
-      2:{ 
+      2:{
         intros ?.
         eapply Hnty, sig_tm_inj.
         now econstructor ; [..|symmetry].
@@ -283,7 +283,7 @@ Section ConvSoundNeg.
       intros ?.
       eapply Hnty', sig_tm_inj.
       now eapply convtm_conv ; [..|symmetry].
-    
+
     - epose proof pre as [_ _ [pre' []%typeIdCongAlg_prem0]%dup].
       unshelve eexists.
       1: repeat eexists ; eauto using type_class_ty.
@@ -301,7 +301,7 @@ Section ConvSoundNeg.
       1: repeat eexists ; eauto using term_class_ty.
       intros [|] ? Hty'' ; cbn in * ; [easy|..].
       now intros []%id_ty_inj.
-    
+
     - epose proof pre as [?? [pre' [(?&[-> _ _]&?)%termGen' _]]%dup].
       assert ([projT1 |-[ de ] tId A x y : U] × [projT1 |-[ de ] tId A' x' y' : U]) as pre''.
       {
@@ -350,7 +350,7 @@ Section ConvSoundNeg.
       eapply typing_wk ; boundary.
       Unshelve.
       now bsimpl.
-      
+
     - destruct pre as [wt wu [Ht Hu]].
       eapply type_isType in Ht ; tea.
       inversion Ht ; inversion H.
@@ -375,7 +375,7 @@ Section ConvSoundNeg.
       eapply typing_wk ; boundary.
       Unshelve.
       now bsimpl.
-    
+
     - destruct pre as [wt wu [Ht Hu]].
       eapply type_isType in Hu ; tea.
       inversion Hu ; inversion H.
@@ -404,7 +404,7 @@ Section ConvSoundNeg.
     - destruct pre as [wt wu [Ht Hu]].
       eapply type_isType in Hu ; tea.
       inversion Hu ; inversion H.
-        
+
     - epose proof pre as [?? [pre' [(?&[->]&?)%termGen']]%dup].
       edestruct termSuccCongAlg_prem0.
       1: split ; eapply ty_conv ; eauto ; now symmetry.
@@ -447,7 +447,7 @@ Section ConvSoundNeg.
       1: repeat eexists ; eauto using term_class_ty.
       intros [|] Hty Hnty' ; cbn in * ; [easy|..].
       now eintros ?%pair_conv_snd_ne.
-      
+
     - destruct pre as [wt wu [Ht Hu]].
       epose proof Hu as Hu'%type_isType ; tea.
       inversion Hu' ; inversion H.
@@ -646,19 +646,19 @@ Section ConvSoundNeg.
       all: prod_hyp_splitter ; subst.
       all: simp build_ne_view2 in e ; cbn in *.
       all: congruence.
-    
+
   Qed.
 
   Corollary implem_uconv_sound_neg Γ T V e :
     graph uconv (Γ,T,V) (exception e) ->
     [Γ |-[de] T] -> [Γ |-[de] V] ->
-    ~ [Γ |-[de] T ≅ V].
+    ¬ [Γ |-[de] T ≅ V].
   Proof.
     intros Hgraph **.
     eapply (funrec_graph _
       (fun '(Γ',T',V') => [Γ' |-[de] T'] × [Γ' |-[de] V'])
-      (fun '(Γ',T',V') r => match r with | success _ => True | exception _ => ~ [Γ' |-[de] T' ≅ V'] end)) in Hgraph ; try easy.
-    
+      (fun '(Γ',T',V') r => match r with | success _ => True | exception _ => ¬ [Γ' |-[de] T' ≅ V'] end)) in Hgraph ; try easy.
+
     intros (?&?&?) [].
     funelim (uconv _) ; cbn.
     inversion_clear eqargs.
@@ -666,7 +666,7 @@ Section ConvSoundNeg.
     unshelve eintros ?%funrect_graph.
     5: now apply _implem_uconv_neg_sound.
     - cbn. eexists _, istype ; cbn ; easy.
-    - now cbn in *. 
+    - now cbn in *.
   Qed.
 
 End ConvSoundNeg.

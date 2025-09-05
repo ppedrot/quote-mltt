@@ -223,16 +223,16 @@ Proof.
   split.
   - intros [].
     all: try solve [left ; now constructor | now right].
-  - intros [[]|[]] ; now repeat constructor. 
+  - intros [[]|[]] ; now repeat constructor.
 Qed.
 
-Lemma not_can_whne t : whnf t -> ~ isCanonical t -> whne t.
+Lemma not_can_whne t : whnf t -> ¬ isCanonical t -> whne t.
 Proof.
   intros []%whnf_can_whne ; eauto.
   now intros [].
 Qed.
 
-Lemma not_whne_can t : whnf t -> ~ whne t -> isCanonical t.
+Lemma not_whne_can t : whnf t -> ¬ whne t -> isCanonical t.
 Proof.
   intros []%whnf_can_whne ; eauto.
   now intros [].

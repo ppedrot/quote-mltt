@@ -26,12 +26,12 @@ Section ConvSoundNeg.
       (x : conv_full_dom)
       (r : conv_full_cod x) : Type :=
     match x, r with
-    | (ty_state;Γ;_;T;V), (exception _) => ~ [Γ |-[de] T ≅ V]
-    | (ty_red_state;Γ;_;T;V), (exception _) => ~ [Γ |-[de] T ≅ V]
-    | (tm_state;Γ;A;t;u), (exception _) => ~ [Γ |-[de] t ≅ u : A]
-    | (tm_red_state;Γ;A;t;u), (exception _) => ~ [Γ |-[de] t ≅ u : A]
-    | (ne_state;Γ;_;m;n), (exception _) => ~ ∑ T, [Γ |-[de] m ~ n : T]
-    | (ne_red_state;Γ;_;m;n), (exception _) => ~ ∑ T, ([Γ |-[de] m ~ n : T] × whnf T)
+    | (ty_state;Γ;_;T;V), (exception _) => ¬ [Γ |-[de] T ≅ V]
+    | (ty_red_state;Γ;_;T;V), (exception _) => ¬ [Γ |-[de] T ≅ V]
+    | (tm_state;Γ;A;t;u), (exception _) => ¬ [Γ |-[de] t ≅ u : A]
+    | (tm_red_state;Γ;A;t;u), (exception _) => ¬ [Γ |-[de] t ≅ u : A]
+    | (ne_state;Γ;_;m;n), (exception _) => ¬ ∑ T, [Γ |-[de] m ~ n : T]
+    | (ne_red_state;Γ;_;m;n), (exception _) => ¬ ∑ T, ([Γ |-[de] m ~ n : T] × whnf T)
     | _, success _ =>  True
     end.
 
@@ -52,7 +52,7 @@ Section ConvSoundNeg.
   Proof.
     intros x pre.
     funelim (_conv x) ; cbn in pre |- *.
-    
+
     6: simp conv_ne_red ; cbn.
     5: simp conv_ne ; destruct (build_ne_view2 _ _) eqn:e ; cbn ; try easy.
     4: simp conv_tm_red ; destruct (build_nf_view3 _ _ _) as [??? [] | | | | | | | | ]  eqn:e ;
@@ -61,7 +61,7 @@ Section ConvSoundNeg.
     2: simp conv_ty_red ; cbn ; destruct (build_nf_ty_view2 _ _) eqn:e ; cbn.
     1: simp conv_ty ; cbn.
     all: try easy.
-    
+
     - intros T' []%red_sound V' []%red_sound.
       eapply typeConvRed_prem2 in pre as [[] Hpost2]%dup ; tea.
       split ; [split|..] ; tea.
@@ -71,7 +71,7 @@ Section ConvSoundNeg.
       eapply Hnty.
       etransitivity.
       2: etransitivity ; tea.
-      1: symmetry. 
+      1: symmetry.
       all: eapply RedConvTyC, subject_reduction_type ; eauto.
       all: boundary.
 
@@ -95,7 +95,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] ? Hty' ; [easy|..].
       now intros []%sig_ty_inj.
-    
+
     - destruct pre as [_ _ [pre [[]]%typeIdCongAlg_prem0%dup]%dup].
       split ; [easy|..].
       intros [|] Hty ? ; cbn.
@@ -155,7 +155,7 @@ Section ConvSoundNeg.
       intros []%prod_tm_inj.
       eapply Hty', stability1 ; tea.
       now econstructor.
-      
+
     - destruct s.
       destruct pre as [??? [pre [[]]%termSigCongAlg_prem0%dup]%dup].
       split ; [easy|..].
@@ -187,7 +187,7 @@ Section ConvSoundNeg.
       eapply whnf_view3_ty_neutral_can in e as [?%not_can_whne ?%not_can_whne] ; tea.
       split ; [now split|..].
       intros [|] ? Hty ; cbn ; [easy|..].
-      
+
       destruct s.
       unshelve eintros ?%conv_neu_conv_p ; eauto.
       gen_typing.
@@ -221,7 +221,7 @@ Section ConvSoundNeg.
         constructor.
         all: now bsimpl.
       + now bsimpl.
-    
+
     - destruct pre as [??? [pre [[]]%termSuccCongAlg_prem0%dup]%dup] ; tea.
       split ; [easy|..].
       intros [|] ? Hty ; cbn in * ; [easy|..].
@@ -229,7 +229,7 @@ Section ConvSoundNeg.
       1-2: now constructor.
       cbn in *.
       eauto.
-        
+
     - destruct pre as [??? [pre [[]]%termPairConvAlg_prem2%dup]%dup] ; tea.
       split ; [easy|..].
       intros [|] ; cbn in *.
@@ -245,7 +245,7 @@ Section ConvSoundNeg.
       + intros ? Hnty Hty.
         eapply Hnty.
         now econstructor.
-    
+
     - destruct pre as [??? [pre [[]]%termNeuConvAlg_prem0%dup]%dup] ; tea.
       eapply whnf_view3_neutrals_can in e as [Wa Wn Wn'] ; tea.
       split.
@@ -256,7 +256,7 @@ Section ConvSoundNeg.
       eapply Hnty.
       exists A.
       now eapply conv_neu_conv_p.
-    
+
     - destruct pre as [w ?? []].
       eapply type_isType in w.
       2: boundary.
@@ -272,10 +272,10 @@ Section ConvSoundNeg.
         erewrite ctx_access_complete ; cbn.
         1: econstructor.
         all: eassumption.
-        
+
       + intros [? (?&[[= ->]])%neuConvGen].
         eauto.
-      
+
     - destruct pre as [[wn wn'] [pre [[] ]%neuAppCongAlg_prem0%dup]%dup] ; eauto.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
@@ -300,7 +300,7 @@ Section ConvSoundNeg.
         apply Hneg.
         eexists ; split ; eauto.
         now constructor.
-  
+
     - destruct pre as [[wn wn'] [pre [[] ]%neuNatElimCong_prem0%dup]%dup] ; eauto.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
@@ -322,7 +322,7 @@ Section ConvSoundNeg.
       split ; [easy|..].
       intros [|] ; cbn.
       2: shelve.
-      
+
       intros [Hpost2]%implem_tconv_graph%algo_conv_sound%dup ; tea.
       eapply neuNatElimCong_prem3, dup in Hpost2 as [Hpost2 []] ; eauto.
       split ; [easy|..].
@@ -332,7 +332,7 @@ Section ConvSoundNeg.
       all: intros ? Hneg [? (?&?&?&?&[[= <- <- <-]])%neuConvGen] ; subst.
       all: apply Hneg ; eauto.
       eexists ; split ; gen_typing.
-    
+
     - destruct pre as [[wn wn'] [pre [[] ]%neuEmptyElimCong_prem0%dup]%dup] ; eauto.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
@@ -352,12 +352,12 @@ Section ConvSoundNeg.
       all: intros ? Hneg [? (?&?&[[=]])%neuConvGen] ; subst.
       all: apply Hneg ; eauto.
       eexists ; split ; gen_typing.
-    
+
     - destruct pre as [[wn wn'] [pre [[] ]%neuFstCongAlg_prem0%dup]%dup] ; eauto.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
       intros [T|] ; cbn.
-      
+
       + intros [Hpost]%implem_tconv_graph ; tea.
         eapply algo_conv_sound in Hpost as Hconv ; tea.
         eapply dup in pre as [pre [[? (?&(?&?&->&Hp)&?)%termGen'] _]].
@@ -366,12 +366,12 @@ Section ConvSoundNeg.
       + intros ? Hneg [? (?&?&?&[[= <-]])%neuConvGen].
         eapply Hneg.
         eexists ; split ; gen_typing.
-    
+
     - destruct pre as [[wn wn'] [pre [[] ]%neuSndCongAlg_prem0%dup]%dup] ; eauto.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
       intros [T|] ; cbn.
-      
+
       + intros [Hpost]%implem_tconv_graph ; tea.
         eapply algo_conv_sound in Hpost as Hconv ; tea.
         eapply dup in pre as [pre [[? (?&(?&?&->&Hp)&?)%termGen'] _]].
@@ -380,7 +380,7 @@ Section ConvSoundNeg.
       + intros ? Hneg [? (?&?&?&[[= <-]])%neuConvGen].
         eapply Hneg.
         eexists ; split ; gen_typing.
-    
+
     - destruct pre as [[wn wn'] [pre [[] ]%neuIdElimCong_prem0%dup]%dup] ; eauto.
       inversion wn ; inversion wn' ; subst.
       split ; [easy|..].
@@ -408,14 +408,14 @@ Section ConvSoundNeg.
       all: intros ? Hneg [? (?&?&?&?&?&?&[[= <- <- <-]])%neuConvGen] ; subst.
       all: apply Hneg ; eauto.
       + eexists ; split ; gen_typing.
-      + now erewrite <- !wk1_ren_on. 
+      + now erewrite <- !wk1_ren_on.
 
     - intros [? ?%neuConvGen].
       destruct t ; cbn in * ; try solve [easy].
       all: prod_hyp_splitter ; subst.
       all: simp build_ne_view2 in e ; cbn in *.
       all: congruence.
-    
+
     - split ; [easy|..].
       intros [|] ? Hty ; cbn ; [easy|..].
       intros [? []].
@@ -426,13 +426,13 @@ Section ConvSoundNeg.
   Corollary implem_tconv_sound_neg Γ T V e :
     graph tconv (Γ,T,V) (exception e) ->
     [Γ |-[de] T] -> [Γ |-[de] V] ->
-    ~ [Γ |-[de] T ≅ V].
+    ¬ [Γ |-[de] T ≅ V].
   Proof.
     intros Hgraph **.
     eapply (funrec_graph _
       (fun '(Γ',T',V') => [Γ' |-[de] T'] × [Γ' |-[de] V'])
-      (fun '(Γ',T',V') r => match r with | success _ => True | exception _ => ~ [Γ' |-[de] T' ≅ V'] end)) in Hgraph ; try easy.
-    
+      (fun '(Γ',T',V') r => match r with | success _ => True | exception _ => ¬ [Γ' |-[de] T' ≅ V'] end)) in Hgraph ; try easy.
+
     intros (?&?&?) [].
     funelim (tconv _) ; cbn.
     inversion_clear eqargs.
@@ -463,17 +463,17 @@ Section TypingSoundNeg.
   Hypothesis implem_neg_sound : forall Γ T V e,
     graph conv (Γ,T,V) (exception e) ->
     [Γ |-[de] T] -> [Γ |-[de] V] ->
-    ~ [Γ |-[de] T ≅ V].
+    ¬ [Γ |-[de] T ≅ V].
 
   #[universes(polymorphic)]Definition typing_sound_neg_type
     (x : ∑ (c : typing_state) (_ : context) (_ : tstate_input c), term)
     (r : exn errors (tstate_output x.π1)) : Type :=
   match x, r with
   | _, (success _) => True
-  | (wf_ty_state;Γ;_;T), (exception _) => ~ [Γ |-[de] T]
-  | (inf_state;Γ;_;t), (exception _) => forall T, ~ [Γ |-[de] t : T]
-  | (inf_red_state;Γ;_;t), (exception _) => forall T, ~ [Γ |-[de] t : T]
-  | (check_state;Γ;T;t), (exception _) => ~ [Γ |-[de] t : T]
+  | (wf_ty_state;Γ;_;T), (exception _) => ¬ [Γ |-[de] T]
+  | (inf_state;Γ;_;t), (exception _) => forall T, ¬ [Γ |-[de] t : T]
+  | (inf_red_state;Γ;_;t), (exception _) => forall T, ¬ [Γ |-[de] t : T]
+  | (check_state;Γ;T;t), (exception _) => ¬ [Γ |-[de] t : T]
   end.
 
   #[universes(polymorphic)]Definition typing_sound_neg_pre
@@ -503,7 +503,7 @@ Section TypingSoundNeg.
       1: boundary.
       intros [|] ; cbn.
       2: intros _ IH ? (?&[]&?)%termGen' ; now eapply IH.
-      
+
       intros Hty%implem_typing_sound _ ; cbn in * ; tea.
       destruct x ; cbn.
       2: shelve.
@@ -553,7 +553,7 @@ Section TypingSoundNeg.
       1: eassumption.
       intros [|] ; cbn.
       2: intros _ IH ? (?&[]&?)%termGen' ; now eapply IH.
-      
+
       intros ?%implem_typing_sound _ ; cbn in * ; tea.
       destruct x ; cbn ; try easy.
       all: eintros ? (?&[? ?%infer_nat]&?)%termGen' ; tea ; congruence.
@@ -584,7 +584,7 @@ Section TypingSoundNeg.
       intros _ _ ; tea ; cbn in *.
       split.
       1: now eapply elimSuccHypTy_ty.
-      
+
       intros [|] ; cbn.
       2: intros _ IH ? (?&[]&?)%termGen' ; eapply IH ; eauto.
       easy.
@@ -604,11 +604,11 @@ Section TypingSoundNeg.
       intros [|] ; cbn.
       2: intros _ IH ? (?&[]&?)%termGen' ; eapply IH ; eauto.
       easy.
-    
+
     - split ; tea.
       intros [|] ; cbn.
       2: intros _ IH ? (?&[]&?)%termGen' ; now eapply IH.
-      
+
       intros Hty%implem_typing_sound _ ; cbn in * ; tea.
       destruct x ; cbn.
       2: shelve.
@@ -665,7 +665,7 @@ Section TypingSoundNeg.
     - split ; tea.
       intros [|] ; cbn.
       2: intros _ IH ? (?&[]&?)%termGen' ; now eapply IH.
-      
+
       intros HA%implem_typing_sound _ ; tea ; cbn in *.
       destruct x0 ; cbn.
       2: shelve.
@@ -756,7 +756,7 @@ Section TypingSoundNeg.
       1: gen_typing.
       intros [|] ; cbn ; try easy.
       intros ?? []%prod_ty_inv ; eauto.
-  
+
     - split ; tea.
       intros [|] ; cbn.
       2: intros ?? []%sig_ty_inv ; eauto.
@@ -766,7 +766,7 @@ Section TypingSoundNeg.
       1: gen_typing.
       intros [|] ; cbn ; try easy.
       intros ?? []%sig_ty_inv ; eauto.
-    
+
     - split ; tea.
       intros [|] ; cbn.
       2: intros ?? []%id_ty_inv ; eauto.
@@ -797,7 +797,7 @@ Section TypingSoundNeg.
       eapply build_ty_view1_anomaly in He as [n i].
       eapply n, Uterm_isType ; tea.
       now apply whnf_can_whne.
-      
+
   Qed.
 
   Lemma implem_typing_sound_neg x r:
@@ -812,7 +812,7 @@ Section TypingSoundNeg.
   Qed.
 
   Lemma _check_ctx_sound_neg :
-    funrec (check_ctx conv) (fun _ => True) (fun Γ r => if r then True else ~[|-[de] Γ]).
+    funrec (check_ctx conv) (fun _ => True) (fun Γ r => if r then True else ¬ [|-[de] Γ]).
   Proof.
     intros ? _.
     funelim (check_ctx _ _) ; cbn.
@@ -828,10 +828,10 @@ Section TypingSoundNeg.
         inversion Hctx ; subst ; refold.
         easy.
   Qed.
-     
+
   Lemma check_ctx_sound_neg Γ e :
     graph (check_ctx conv) Γ (exception e) ->
-    ~ [|-[de] Γ].
+    ¬ [|-[de] Γ].
   Proof.
     eintros ?%funrec_graph.
     2: eapply _check_ctx_sound_neg ; cbn.

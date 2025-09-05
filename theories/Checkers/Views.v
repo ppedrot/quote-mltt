@@ -12,7 +12,7 @@ Set Printing Universes.
 
 Import DeclarativeTypingData.
 
-Lemma zip_can t s : ~ isCanonical (zip1 t s).
+Lemma zip_can t s : ¬ isCanonical (zip1 t s).
 Proof.
   destruct s ; cbn.
   all: now intros c ; inversion c.
@@ -37,7 +37,7 @@ Qed.
 
 Lemma isType_tm_view1 t e :
   build_tm_view1 t = tm_view1_type e ->
-  isType t × ~ whne t.
+  isType t × ¬ whne t.
 Proof.
   intros H.
   destruct e ; cbn.
@@ -46,7 +46,7 @@ Qed.
 
 Lemma whnf_tm_view1_nat t e :
   build_tm_view1 t = tm_view1_nat e ->
-  whnf t × ~ whne t.
+  whnf t × ¬ whne t.
 Proof.
   intros H.
   destruct e ; cbn.
@@ -55,7 +55,7 @@ Qed.
 
 Lemma build_ty_view1_anomaly t :
   build_ty_view1 t = ty_view1_anomaly ->
-  ~ isType t × isCanonical t.
+  ¬ isType t × isCanonical t.
 Proof.
   intros.
   destruct t ; cbn in * ; try solve [congruence].
@@ -63,21 +63,21 @@ Proof.
   eapply can_whne_exclusive ; [..|eassumption] ; constructor.
 Qed.
 
-Lemma ty_view1_small_can T n : build_ty_view1 T = ty_view1_small n -> ~ isCanonical T.
+Lemma ty_view1_small_can T n : build_ty_view1 T = ty_view1_small n -> ¬ isCanonical T.
 Proof.
   destruct T ; cbn.
   all: inversion 1.
   all: inversion 1.
 Qed.
 
-Lemma tm_view1_neutral_can t n : build_nf_view1 t = nf_view1_ne n -> ~ isCanonical t.
+Lemma tm_view1_neutral_can t n : build_nf_view1 t = nf_view1_ne n -> ¬ isCanonical t.
 Proof.
   destruct t ; cbn.
   all: inversion 1.
   all: inversion 1.
 Qed.
 
-Lemma ty_view2_neutral_can T V : build_nf_ty_view2 T V = ty_neutrals T V -> ~ isCanonical T × ~ isCanonical V.
+Lemma ty_view2_neutral_can T V : build_nf_ty_view2 T V = ty_neutrals T V -> ¬ isCanonical T × ¬ isCanonical V.
 Proof.
   destruct T, V ; cbn.
   all: inversion 1.
@@ -85,7 +85,7 @@ Proof.
 Qed.
 
 
-Lemma whnf_view3_ty_neutral_can s t u : build_nf_view3 (tSort s) t u = types s (ty_neutrals t u) -> ~ isCanonical t × ~ isCanonical u.
+Lemma whnf_view3_ty_neutral_can s t u : build_nf_view3 (tSort s) t u = types s (ty_neutrals t u) -> ¬ isCanonical t × ¬ isCanonical u.
 Proof.
   destruct t, u ; cbn.
   all: inversion 1.
@@ -95,7 +95,7 @@ Qed.
 Lemma whnf_view3_neutrals_can A t u :
   whnf A ->
   build_nf_view3 A t u = neutrals A t u ->
-  [× isPosType A, ~ isCanonical t & ~ isCanonical u].
+  [× isPosType A, ¬ isCanonical t & ¬ isCanonical u].
 Proof.
   intros HA.
   simp build_nf_view3.
@@ -210,7 +210,7 @@ Proof.
     all: solve [intros [=]].
 
   - destruct (build_nf_view1 t), (build_nf_view1 u) ; cbn.
-    all: try solve [intros [=]]. 
+    all: try solve [intros [=]].
     all: destruct n ; cbn ; try solve [intros [=]].
     all: (intros _ ; right ; do 5 eexists).
     all: split ; [reflexivity|..].
@@ -218,14 +218,14 @@ Proof.
     all: try solve [constructor].
     5-8: econstructor ; eapply not_can_whne ; tea ; solve [now apply zip_can | intros c ; inversion c].
     all: now cbn.
-    
+
   - unshelve erewrite whne_ty_view1 ; tea ; cbn.
     destruct (build_nf_view1 t) ; cbn ; try solve [intros [=]].
     destruct (build_nf_view1 u) ; cbn ; solve [intros [=]].
 
 Qed.
 
-Definition ncan_ne_view1 {N} (w : ~ isCanonical N) : ne_view1 N.
+Definition ncan_ne_view1 {N} (w : ¬ isCanonical N) : ne_view1 N.
 Proof.
   destruct N.
   all: try solve [destruct w ; econstructor].
@@ -239,7 +239,7 @@ Proof.
 Defined.
 
 
-Lemma ncan_nf_view1 {N} (w : ~ isCanonical N) :
+Lemma ncan_nf_view1 {N} (w : ¬ isCanonical N) :
   build_nf_view1 N = nf_view1_ne (ncan_ne_view1 w).
 Proof.
   destruct N ; cbn ; try reflexivity.
@@ -248,7 +248,7 @@ Qed.
 
 Lemma nf_view2_neutral_can t t' :
   build_nf_view2 t t' = neutrals2 t t' ->
-  ~ isCanonical t /\ ~ isCanonical t'.
+  ¬ isCanonical t /\ ¬ isCanonical t'.
 Proof.
   intros Heq.
   simp build_nf_view2 in Heq.
@@ -294,7 +294,7 @@ Proof.
     1,4: unshelve (right ; right ; unshelve (do 2 eexists) ; econstructor ;
       [now apply not_can_whne ; [..|eapply tm_view1_neutral_can]|..] ;
       do 2 eexists ; reflexivity) ; easy.
-    
+
     - destruct t1 ; try solve [congruence |
       left ; unshelve (do 2 eexists) ; try constructor ; cbn ;
       now apply not_can_whne ; [..|eapply tm_view1_neutral_can]].
@@ -309,7 +309,7 @@ Qed.
 
 Lemma mismatch2_hd_view_ne t u :
   whne t -> whne u ->
-  ~ build_nf_view2 t u = mismatch2 t u.
+  ¬ build_nf_view2 t u = mismatch2 t u.
 Proof.
   intros Ht Hu.
   funelim (build_nf_view2 _ _) ; try solve [congruence|inversion Hu|inversion Ht].
