@@ -3,7 +3,7 @@
 all: partial-fun logrel
 
 autosubst:
-	autosubst -f -s ucoq -v ge813 -p ./theories/AutoSubst/Ast_preamble -no-static -o ./theories/AutoSubst/Ast.v ./theories/AutoSubst/Ast.sig
+	autosubst -f -s urocq -v ge813 -p ./theories/AutoSubst/Ast_preamble -no-static -o ./theories/AutoSubst/Ast.v ./theories/AutoSubst/Ast.sig
 partial-fun:
 	@+$(MAKE) -C coq-partialfun all
 
