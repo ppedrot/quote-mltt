@@ -1,5 +1,5 @@
-opam-version: "2.0"              
-version: "8.19.dev"
+opam-version: "2.0"
+version: "9.0.dev"
 maintainer: "Meven.Bertrand@univ-nantes.fr"
 dev-repo: "git+https://github.com/CoqHott/logrel-coq.git"
 bug-reports: "https://github.com/CoqHott/logrel-coq/issues"
@@ -8,11 +8,19 @@ authors: ["Meven Lennon-Bertrand <Meven.Bertrand@univ-nantes.fr>"
           "Kenji Maillard <kenji.maillard@inria.fr>"
           "Pierre-Marie Pédrot <pierre-marie.pedrot@inria.fr>"
 ]
+homepage: "https://github.com/CoqHott/logrel-coq"
+synopsis:"A formalisation of meta-theory for a dependent type system, in Coq"
 license: "MIT"
 depends: [
-  "coq" { >= "8.19" & < "8.20~" }
-  "coq-smpl"
+  "rocq-stdlib" { >= "9.0" & < "9.1~" }
+  "rocq-smpl"
+  "rocq-equations" { >= "1.3" }
 ]
+
+depopts: [
+  "rocq-autosubst-ocaml" {>= "1.1"}
+]
+
 build: [
   [make]
 ]

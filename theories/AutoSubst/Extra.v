@@ -2,9 +2,11 @@
 
 (** This is the only file in the AutoSubst submodule that is not automatically generated. *)
 From smpl Require Import Smpl.
-From Coq Require Import ssrbool List.
-From LogRel.AutoSubst Require Import core unscoped Ast.
-From LogRel Require Import Utils BasicAst.
+From Stdlib Require Import ssrbool List.
+From Equations Require Import Equations.
+From LogRel.AutoSubst Require Export core unscoped Ast.
+From LogRel Require Import Utils.
+From LogRel.Syntax Require Import BasicAst.
 
 (* Export UnscopedNotations.
 #[global] Open Scope subst_scope. *)
@@ -37,7 +39,7 @@ Notation "'eta_expand' f" := (tApp f⟨↑⟩ (tRel 0)) (at level 40, only parsi
 #[global] Instance Ren1_subst {Y Z : Type} `{Ren1 (nat -> nat) Y Z} :
   (Ren1 (nat -> nat) (nat -> Y) (nat -> Z)) :=
   fun ρ σ i => (σ i)⟨ρ⟩.
-    
+
 Ltac fold_autosubst :=
     fold ren_term ;
     fold subst_term.
@@ -71,11 +73,30 @@ Proof. now asimpl. Qed.
 Lemma subst_prod X Y σ : (tProd X Y)[σ] = tProd X[σ] Y[up_term_term σ].
 Proof. now asimpl. Qed.
 
+Lemma subst_sig X Y σ : (tSig X Y)[σ] = tSig X[σ] Y[up_term_term σ].
+Proof. now asimpl. Qed.
+
 Lemma shift_up_eq {t σ} : t⟨↑⟩[up_term_term σ] = t[σ]⟨↑⟩.
+Proof. now asimpl. Qed.
+
+Lemma shift_one_eq t a : t⟨↑⟩[a..] = t.
 Proof. now asimpl. Qed.
 
 Lemma up_single_subst {t σ u} : t[up_term_term σ][u..] = t[u .:  σ].
 Proof.  now asimpl. Qed.
+
+Lemma eta_up_single_subst A σ : A[up_term_term (↑ >> σ)][(σ var_zero)..] = A[σ].
+Proof. now rewrite up_single_subst, (scons_eta' σ). Qed.
+
+Lemma subst_rel t : t[tRel] = t.
+Proof. now asimpl. Qed.
+
+Lemma singleSubstComm G t σ : G[t..][σ] = G[t[σ] .: σ].
+Proof. now asimpl. Qed.
+
+Lemma singleSubstComm' G t σ : G[t..][σ] = G[up_term_term σ][t[σ]..].
+Proof. now asimpl. Qed.
+
 
 Lemma up_liftSubst_eq {σ t u} : t[up_term_term σ][u]⇑ = t[u .: ↑ >> up_term_term σ].
 Proof.
@@ -114,3 +135,6 @@ all: repeat match goal with H : ?t⟨?ρ⟩ = ?u⟨?ρ⟩, H' : forall u : term,
 end; try congruence.
 { f_equal; now apply Hρ. }
 Qed.
+
+Equations Derive NoConfusion EqDec for sort.
+Equations Derive NoConfusion Subterm EqDec for term.

@@ -1,0 +1,7 @@
+(** * LogRel.AutoSubst.Ast: abstract syntax tree, definitions of renamings, substitutions and many lemmas, generated using AutoSubst. *)
+
+From LogRel.AutoSubst Require Import core unscoped.
+From LogRel.Syntax Require Import BasicAst.
+From Stdlib Require Import Setoid Morphisms Relation_Definitions.
+
+

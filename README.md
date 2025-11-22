@@ -1,36 +1,46 @@
 Presentation
 =======
 
-This repo contains formalisation work on implementing a logical relation over MLTT with one universe.
-This formalisation follows the [work done by Abel et al.]((https://github.com/mr-ohman/logrel-mltt/)) (described in [Decidability of conversion for Type Theory in Type Theory, 2018](https://dl.acm.org/doi/10.1145/3158111)), and [Loïc Pujet's work](https://github.com/loic-p/logrel-mltt) on removing induction-recursion from the previous formalization, making it feasible to translate it from Agda to Coq.
+This repository contains an extensive formalisation of a dependent type theory (MLT with one universe and a number of type formers: Π, Σ, ℕ, Id). It contains:
+- a proof by logical relations, inspired by the approach of [Abel et al.]((https://github.com/mr-ohman/logrel-mltt/)) (described in [*Decidability of conversion for Type Theory in Type Theory*, 2018](https://dl.acm.org/doi/10.1145/3158111)), and ideas by [Loïc Pujet](https://github.com/loic-p/logrel-mltt) on removing induction-recursion from it;
+- a formalisation of multiple conversion-checking algorithms (type-directed and term-directed)
+  and a bidirectional type system, all fully verified.
 
-The definition of the logical relation (**LR**) ressembles Loïc's in many ways, but also had to be modified for a few reasons :
-- Because of universe constraints and the fact that functors cannot be indexed by terms in Coq whereas it is possible in Agda, the relevant structures had to be parametrized by a type level and a recursor, and the module system had to be dropped out entirely.
-- Since Coq and Agda's positivity checking for inductive types is different, it turns out that **LR**'s definition, even though it does not use any induction-induction or induction-recursion in Agda, is not accepted in Coq. As such, the predicate over Π-types for **LR** has been modified compared to Agda. You can find a MWE of the difference in positivity checking in the two systems in [Positivity.v] and [Positivity.agda].
+Parts of the formalisation has been described in the following papers:
+- [*Martin-Löf à la Coq*](https://dl.acm.org/doi/10.1145/3636501.3636951) presents the core of the project;
+- [*What does it take to certify conversion?*](https://arxiv.org/abs/2502.15500) focuses more on the verification of the properties of the algorithms, including the term-directed one.
 
-In order to avoid some work on the syntax, this project uses the [AutoSubst](https://github.com/uds-psl/autosubst-ocaml) project to generate syntax-related boilerplate.
+The project has also been used as a base for the following work:
+- [*Definitional Functoriality for Dependent (Sub)Types*](https://hal.science/hal-04160858v3), which extends the type system with lists and a definitionally functorial map operator (with applications to subtyping for dependent types);
+- [*“Upon This Quote I Will Build My Church Thesis”*](https://dl.acm.org/doi/10.1145/3661814.3662070), which extends the type system with primitives for quoting;
+- [*Continuity in Type Theory*, Chapter 4](https://theses.hal.science/tel-04617881v1), which extends the system with sheaf-like conditions to obtain continuity properties.
 
 Building
 ===========
 
-The project builds with Coq version `8.19.0`. It needs the opam package `coq-smpl`. Once these have been installed, you can simply issue `make` in the root folder.
+The project builds with Coq version `8.20.0`, and depends on the [`smpl`](https://github.com/uds-psl/smpl/) and [Equations](https://github.com/mattam82/Coq-Equations/) libraries.
+If you already have an opam set-up, dependencies can be installed by simply using `opam install . --deps-only`.
+
+Once the dependencies have been installed, you can simply issue `make` in the root folder to
+build the whole development.
 
 The `make depgraph` recipe can be used to generate the [dependency graph](https://coqhott.github.io/logrel-coq/dependency_graph.png).
+
+The project uses the [AutoSubst](https://github.com/uds-psl/autosubst-ocaml) tool to generate syntax-related boilerplate, although it is not necessary to install it to build the project (see below for how to use it).
 
 Browsing the development
 ==================
 
 The development, rendered using `coqdoc`, can be [browsed online](https://coqhott.github.io/logrel-coq/). A dependency graph for the project is available [here](https://coqhott.github.io/logrel-coq/dependency_graph.png).
 
-Syntax (re)generation
-============
+Syntax regeneration
+====================
 
-The syntax boilerplate has been generated using AutoSubst OCaml with the options `-s ucoq -v ge813 -allfv` (see the [AutoSubst OCaml documentation](https://github.com/uds-psl/autosubst-ocaml) for installation instructions for it). Currently, this package works only with older version of Coq (8.13), so we cannot add a recipe to the MakeFile for automatically
-re-generating the syntax.
+For simplicity, we include the syntax file (`Ast.v`) generated using [AutoSubst](https://github.com/uds-psl/autosubst-ocaml).
 
-**If you wish to regenerate the syntax** by hand, install autosubst paying attention to [this issue](https://github.com/uds-psl/autosubst-ocaml/issues/1) -- in an opam installation do a `cp -R $OPAM_SWITCH_PREFIX/share/coq-autosubst-ocaml $OPAM_SWITCH_PREFIX/share/autosubst`--, modify the syntax file `AutoSubst/Ast.sig`, run autosubst on it (`autosubst -s ucoq -v ge813 -allfv Ast.sig -o Ast.v`) and patch the resulting files using the checked in patch (`git apply -R autosubst-patch.diff`). This patch does two things, which can also be done by hand if the automatic patching fails:
-- change the imports at the beginning of the files;
-- add the `#[global]` keyword to all instances.
+It can be re-generated using the `make autosubst` recipe, once `autosubst-ocaml` (version `>= 1.1`) has been installed.
+
+Note that we include modified versions of the `core` and `unscoped` files, which fix their dependencies, so one should pass the `-no-static` option to `AutoSubst` to avoid overwriting them.
 
 Getting started with using the development
 =================
@@ -66,7 +76,7 @@ Proof.
 
 End Section.
 ```
-The names of the arguments printed when querying `About XXXInductionConcl` should make it clear 
+The names of the arguments printed when querying `About XXXInductionConcl` should make it clear
 to which mutually-defined relation each predicate corresponds.
 
 [Utils]: ./theories/Utils.v

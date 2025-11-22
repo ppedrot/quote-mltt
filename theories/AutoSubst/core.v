@@ -19,7 +19,7 @@ Two things are important:
  *)
 
 (** *** List Instance *)
-Require Import List.
+From Stdlib Require Import List.
 
 Notation "'list_map'" := map.
 

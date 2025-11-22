@@ -1,6 +1,8 @@
+(** * LogRel.AutoSubst.Ast: abstract syntax tree, definitions of renamings, substitutions and many lemmas, generated using AutoSubst. *)
+
 From LogRel.AutoSubst Require Import core unscoped.
-From LogRel Require Import BasicAst.
-From Coq Require Import Setoid Morphisms Relation_Definitions.
+From LogRel.Syntax Require Import BasicAst.
+From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 
 
 Module Core.
@@ -132,7 +134,8 @@ Lemma congr_tId {s0 : term} {s1 : term} {s2 : term} {t0 : term} {t1 : term}
 Proof.
 exact (eq_trans
          (eq_trans (eq_trans eq_refl (ap (fun x => tId x s1 s2) H0))
-            (ap (fun x => tId t0 x s2) H1)) (ap (fun x => tId t0 t1 x) H2)).
+            (ap (fun x => tId t0 x s2) H1))
+         (ap (fun x => tId t0 t1 x) H2)).
 Qed.
 
 Lemma congr_tRefl {s0 : term} {s1 : term} {t0 : term} {t1 : term}
@@ -644,7 +647,8 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
       congr_tNatElim
         (compRenSubst_term (upRen_term_term xi_term) (up_term_term tau_term)
            (up_term_term theta_term) (up_ren_subst_term_term _ _ _ Eq_term)
-           s0) (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
+           s0)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s2)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s3)
   | tEmpty => congr_tEmpty
@@ -652,7 +656,8 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
       congr_tEmptyElim
         (compRenSubst_term (upRen_term_term xi_term) (up_term_term tau_term)
            (up_term_term theta_term) (up_ren_subst_term_term _ _ _ Eq_term)
-           s0) (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
+           s0)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
   | tSig s0 s1 =>
       congr_tSig (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
         (compRenSubst_term (upRen_term_term xi_term) (up_term_term tau_term)
@@ -662,7 +667,8 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
       congr_tPair (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
         (compRenSubst_term (upRen_term_term xi_term) (up_term_term tau_term)
            (up_term_term theta_term) (up_ren_subst_term_term _ _ _ Eq_term)
-           s1) (compRenSubst_term xi_term tau_term theta_term Eq_term s2)
+           s1)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s2)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s3)
   | tFst s0 =>
       congr_tFst (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
@@ -683,7 +689,8 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
            (up_term_term (up_term_term tau_term))
            (up_term_term (up_term_term theta_term))
            (up_ren_subst_term_term _ _ _
-              (up_ren_subst_term_term _ _ _ Eq_term)) s2)
+              (up_ren_subst_term_term _ _ _ Eq_term))
+           s2)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s3)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s4)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s5)
@@ -800,7 +807,8 @@ ren_term zeta_term (subst_term sigma_term s) = subst_term theta_term s :=
            (upRen_term_term (upRen_term_term zeta_term))
            (up_term_term (up_term_term theta_term))
            (up_subst_ren_term_term _ _ _
-              (up_subst_ren_term_term _ _ _ Eq_term)) s2)
+              (up_subst_ren_term_term _ _ _ Eq_term))
+           s2)
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s3)
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s4)
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s5)
@@ -834,7 +842,8 @@ exact (fun n =>
                 (eq_sym
                    (compSubstRen_term tau_term shift
                       (funcomp (ren_term shift) tau_term) (fun x => eq_refl)
-                      (sigma n'))) (ap (ren_term shift) (Eq n')))
+                      (sigma n')))
+                (ap (ren_term shift) (Eq n')))
        | O => eq_refl
        end).
 Qed.
@@ -921,7 +930,8 @@ subst_term tau_term (subst_term sigma_term s) = subst_term theta_term s :=
            (up_term_term (up_term_term tau_term))
            (up_term_term (up_term_term theta_term))
            (up_subst_subst_term_term _ _ _
-              (up_subst_subst_term_term _ _ _ Eq_term)) s2)
+              (up_subst_subst_term_term _ _ _ Eq_term))
+           s2)
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s3)
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s4)
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s5)
@@ -1074,7 +1084,8 @@ Fixpoint rinst_inst_term (xi_term : nat -> nat) (sigma_term : nat -> term)
         (rinst_inst_term (upRen_term_term (upRen_term_term xi_term))
            (up_term_term (up_term_term sigma_term))
            (rinstInst_up_term_term _ _ (rinstInst_up_term_term _ _ Eq_term))
-           s2) (rinst_inst_term xi_term sigma_term Eq_term s3)
+           s2)
+        (rinst_inst_term xi_term sigma_term Eq_term s3)
         (rinst_inst_term xi_term sigma_term Eq_term s4)
         (rinst_inst_term xi_term sigma_term Eq_term s5)
   | tQuote s0 =>
@@ -1155,33 +1166,29 @@ Class Up_term X Y :=
 
 #[global] Instance Ren_term : (Ren1 _ _ _) := @ren_term.
 
-#[global] Instance VarInstance_term : (Var _ _) := @tRel.
-
-Notation "[ sigma_term ]" := (subst_term sigma_term)
-  ( at level 1, left associativity, only printing) : fscope.
+#[global]
+Instance VarInstance_term : (Var _ _) := @tRel.
 
 Notation "s [ sigma_term ]" := (subst_term sigma_term s)
-  ( at level 7, left associativity, only printing) : subst_scope.
+( at level 7, left associativity, only printing)  : subst_scope.
 
-Notation "↑__term" := up_term (only printing) : subst_scope.
+Notation "↑__term" := up_term (only printing)  : subst_scope.
 
-Notation "↑__term" := up_term_term (only printing) : subst_scope.
-
-Notation "⟨ xi_term ⟩" := (ren_term xi_term)
-  ( at level 1, left associativity, only printing) : fscope.
+Notation "↑__term" := up_term_term (only printing)  : subst_scope.
 
 Notation "s ⟨ xi_term ⟩" := (ren_term xi_term s)
-  ( at level 7, left associativity, only printing) : subst_scope.
+( at level 7, left associativity, only printing)  : subst_scope.
 
-Notation "'var'" := tRel ( at level 1, only printing) : subst_scope.
+Notation "'var'" := tRel ( at level 1, only printing)  : subst_scope.
 
 Notation "x '__term'" := (@ids _ _ VarInstance_term x)
-  ( at level 5, format "x __term", only printing) : subst_scope.
+( at level 5, format "x __term", only printing)  : subst_scope.
 
-Notation "x '__term'" := (tRel x) ( at level 5, format "x __term") :
-  subst_scope.
+Notation "x '__term'" := (tRel x) ( at level 5, format "x __term")  :
+subst_scope.
 
-#[global] Instance subst_term_morphism :
+#[global]
+Instance subst_term_morphism :
  (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
     (@subst_term)).
 Proof.
@@ -1190,14 +1197,16 @@ exact (fun f_term g_term Eq_term s t Eq_st =>
          (ext_term f_term g_term Eq_term s) t Eq_st).
 Qed.
 
-#[global] Instance subst_term_morphism2 :
+#[global]
+Instance subst_term_morphism2 :
  (Proper (respectful (pointwise_relation _ eq) (pointwise_relation _ eq))
     (@subst_term)).
 Proof.
 exact (fun f_term g_term Eq_term s => ext_term f_term g_term Eq_term s).
 Qed.
 
-#[global] Instance ren_term_morphism :
+#[global]
+Instance ren_term_morphism :
  (Proper (respectful (pointwise_relation _ eq) (respectful eq eq))
     (@ren_term)).
 Proof.
@@ -1206,7 +1215,8 @@ exact (fun f_term g_term Eq_term s t Eq_st =>
          (extRen_term f_term g_term Eq_term s) t Eq_st).
 Qed.
 
-#[global] Instance ren_term_morphism2 :
+#[global]
+Instance ren_term_morphism2 :
  (Proper (respectful (pointwise_relation _ eq) (pointwise_relation _ eq))
     (@ren_term)).
 Proof.
@@ -1250,7 +1260,8 @@ Ltac asimpl := check_no_evars;
                 repeat
                  unfold VarInstance_term, Var, ids, Ren_term, Ren1, ren1,
                   Up_term_term, Up_term, up_term, Subst_term, Subst1, subst1
-                  in *; asimpl'; minimize.
+                  in *;
+                asimpl'; minimize.
 
 Tactic Notation "asimpl" "in" hyp(J) := revert J; asimpl; intros J.
 
@@ -2449,17 +2460,15 @@ Module Extra.
 
 Import Core.
 
-#[export]Hint Opaque subst_term: rewrite.
+#[global] Hint Opaque subst_term: rewrite.
 
-#[export]Hint Opaque ren_term: rewrite.
+#[global] Hint Opaque ren_term: rewrite.
 
 End Extra.
 
 Module interface.
 
 Export Core.
-
-Export Allfv.
 
 Export Extra.
 

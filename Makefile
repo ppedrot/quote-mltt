@@ -2,19 +2,22 @@
 
 all: logrel
 
-logrel: Makefile.coq
-	@+$(MAKE) -f Makefile.coq all
+autosubst:
+	autosubst -f -s urocq -v ge813 -p ./theories/AutoSubst/Ast_preamble -no-static -o ./theories/AutoSubst/Ast.v ./theories/AutoSubst/Ast.sig
 
-clean: Makefile.coq
-	@+$(MAKE) -f Makefile.coq cleanall
-	@rm -f Makefile.coq Makefile.coq.conf
+logrel: Makefile.rocq
+	@+$(MAKE) -f Makefile.rocq all
 
-Makefile.coq: _CoqProject
-	$(COQBIN)coq_makefile -f _CoqProject -o Makefile.coq
+clean: Makefile.rocq
+	@+$(MAKE) -f Makefile.rocq cleanall
+	@rm -f Makefile.rocq Makefile.rocq.conf
+
+Makefile.rocq: _CoqProject
+	$(COQBIN)rocq makefile -f _CoqProject -o Makefile.rocq
 
 force _CoqProject Makefile: ;
 
-%: Makefile.coq force
-	@+$(MAKE) -f Makefile.coq $@
+%: Makefile.rocq force
+	@+$(MAKE) -f Makefile.rocq $@
 
-.PHONY: all clean force logrel
+.PHONY: all clean force logrel autosubst

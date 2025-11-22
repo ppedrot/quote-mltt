@@ -1,69 +1,101 @@
 -Q theories LogRel
 
 theories/Utils.v
-theories/BasicAst.v
+theories/PERTactics.v
+theories/Syntax/BasicAst.v
+theories/Notations.v
 
 theories/AutoSubst/core.v
 theories/AutoSubst/unscoped.v
 theories/AutoSubst/Ast.v
 theories/AutoSubst/Extra.v
-theories/Context.v
-theories/Notations.v
-theories/Computation.v
 
-theories/Closed.v
-theories/NormalForms.v
-theories/Weakening.v
-theories/NormalEq.v
-theories/UntypedReduction.v
-theories/Confluence.v
-theories/Standardisation.v
+theories/Syntax/Computation.v
+theories/Syntax/Closed.v
+theories/Syntax/NormalEq.v
+theories/Syntax/Confluence.v
+theories/Syntax/Standardisation.v
+
+theories/Syntax/Context.v
+theories/Syntax/TermNotations.v
+theories/Syntax/NormalForms.v
+theories/Syntax/Weakening.v
+theories/Syntax/UntypedReduction.v
+theories/Syntax/Sections.v
+theories/Syntax/All.v
+
 theories/GenericTyping.v
-
 theories/DeclarativeTyping.v
-theories/DeclarativeInstance.v
 theories/DeepTyping.v
+
+theories/TypingProperties/DeclarativeProperties.v
+# theories/TypingProperties/NormalisationDefinition.v
+# theories/TypingProperties/PropertiesDefinition.v
+# theories/TypingProperties/SubstConsequences.v
+# theories/TypingProperties/TypeInjectivityConsequences.v
+# theories/TypingProperties/NeutralConvProperties.v
+# theories/TypingProperties/NormalisationConsequences.v
+# theories/TypingProperties/LogRelConsequences.v
+
+
+theories/LogicalRelation/Definition/Prelude.v
+theories/LogicalRelation/Definition/Universe.v
+theories/LogicalRelation/Definition/Ne.v
+theories/LogicalRelation/Definition/Poly.v
+theories/LogicalRelation/Definition/Pi.v
+theories/LogicalRelation/Definition/Sig.v
+theories/LogicalRelation/Definition/Nat.v
+theories/LogicalRelation/Definition/Empty.v
+theories/LogicalRelation/Definition/Id.v
+theories/LogicalRelation/Definition/Def.v
+theories/LogicalRelation/Definition/Helper.v
+
+
 
 theories/LogicalRelation.v
 theories/LogicalRelation/Induction.v
 theories/LogicalRelation/Escape.v
-theories/LogicalRelation/ShapeView.v
-theories/LogicalRelation/Reflexivity.v
 theories/LogicalRelation/Irrelevance.v
-theories/LogicalRelation/Weakening.v
-theories/LogicalRelation/Universe.v
-theories/LogicalRelation/Neutral.v
+theories/LogicalRelation/Symmetry.v
 theories/LogicalRelation/Transitivity.v
+theories/LogicalRelation/Weakening.v
+theories/LogicalRelation/Neutral.v
+theories/LogicalRelation/InstKripke.v
 theories/LogicalRelation/Reduction.v
 theories/LogicalRelation/NormalRed.v
-theories/LogicalRelation/Application.v
-theories/LogicalRelation/SimpleArr.v
-theories/LogicalRelation/Id.v
+theories/LogicalRelation/Properties.v
 
-theories/Validity.v
-theories/Substitution/Irrelevance.v
-theories/Substitution/Properties.v
-theories/Substitution/Escape.v
-theories/Substitution/Conversion.v
-theories/Substitution/Reflexivity.v
-theories/Substitution/Reduction.v
-theories/Substitution/SingleSubst.v
-theories/Substitution/Introductions/Application.v
-theories/Substitution/Introductions/Universe.v
-theories/Substitution/Introductions/Poly.v
-theories/Substitution/Introductions/Pi.v
-theories/Substitution/Introductions/Lambda.v
-theories/Substitution/Introductions/SimpleArr.v
-theories/Substitution/Introductions/Var.v
-theories/Substitution/Introductions/Nat.v
-theories/Substitution/Introductions/Empty.v
-theories/Substitution/Introductions/Sigma.v
-theories/Substitution/Introductions/Id.v
-theories/Substitution/Introductions/Quote.v
-theories/Substitution/Introductions/Reflect.v
+theories/LogicalRelation/Introductions/Universe.v
+theories/LogicalRelation/Introductions/Poly.v
+theories/LogicalRelation/Introductions/Pi.v
+theories/LogicalRelation/Introductions/Application.v
+theories/LogicalRelation/Introductions/SimpleArr.v
+theories/LogicalRelation/Introductions/Nat.v
+theories/LogicalRelation/Introductions/Empty.v
+theories/LogicalRelation/Introductions/Sigma.v
+theories/LogicalRelation/Introductions/Id.v
+
+theories/Validity/Validity.v
+theories/Validity/Irrelevance.v
+theories/Validity/Properties.v
+theories/Validity/ValidityTactics.v
+theories/Validity/Introductions/Universe.v
+theories/Validity/Introductions/Var.v
+theories/Validity/Introductions/Poly.v
+theories/Validity/Introductions/Pi.v
+theories/Validity/Introductions/Application.v
+theories/Validity/Introductions/Lambda.v
+theories/Validity/Introductions/SimpleArr.v
+theories/Validity/Introductions/Nat.v
+theories/Validity/Introductions/Empty.v
+theories/Validity/Introductions/Sigma.v
+theories/Validity/Introductions/Id.v
+theories/Validity/Introductions/Quote.v
+theories/Validity/Introductions/Reflect.v
+
 theories/Fundamental.v
 
-theories/DeclarativeSubst.v
-theories/TypeConstructorsInj.v
-theories/Consequences.v
-theories/Main.v
+# theories/DeclarativeSubst.v
+# theories/TypeConstructorsInj.v
+# theories/Consequences.v
+# theories/Main.v

@@ -1,9 +1,13 @@
 name: LogRel CI
 
 on:
-  push:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - 'coq-*'
+      - 'rocq-*'
 
 permissions:
   contents: read
@@ -16,14 +20,14 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      coq_version: '8.19'
+      coq_version: '9.0'
       ocaml_version: '4.14-flambda'
       fail-fast: true
 
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 1
@@ -35,12 +39,12 @@ jobs:
           ocaml_version: ${{ env.ocaml_version }}
           before_install: |
             startGroup "Print opam config"
-              sudo chown -R coq:coq .
+              sudo chown -R rocq:rocq .
               opam config list; opam repo list; opam list
             endGroup
           before_script: |
             startGroup "Workaround permission issue"
-              sudo chown -R coq:coq .  # <--
+              sudo chown -R rocq:rocq .  # <--
               opam exec -- ocamlfind list
             endGroup
           script: |
@@ -59,7 +63,7 @@ jobs:
         run: sudo chown -R 1001:116 .  # <--
 
       - name: Install graphviz
-        uses: ts-graphviz/setup-graphviz@v1
+        uses: ts-graphviz/setup-graphviz@v2
 
       - name: Build dependency graph
         run: |
@@ -76,14 +80,14 @@ jobs:
             --metadata title="LogRel Overview"
             docs/index.md
       - name: Setup Pages
-        if: github.ref == 'refs/heads/master'
+        if: github.ref_name == github.event.repository.default_branch
         uses: actions/configure-pages@v3
       - name: Upload artifact
-        if: github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v1
+        if: github.ref_name == github.event.repository.default_branch
+        uses: actions/upload-pages-artifact@v3
         with:
           path: 'docs'
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/master'
+        if: github.ref_name == github.event.repository.default_branch
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4

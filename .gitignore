@@ -8,13 +8,23 @@
 .vscode
 
 .Makefile.coq.d
+.Makefile.rocq.d
 
 Makefile.coq
+Makefile.rocq
 
 Makefile.coq.conf
+Makefile.rocq.conf
 
 *.cache
 
 _opam
 
 *.dot
+docs/dependency_graph.png
+
+docs/dependency_graph.pre
+
+docs/coqdoc/coqdoc.css
+
+docs/coqdoc/resources/
