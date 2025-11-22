@@ -480,12 +480,7 @@ Section RenWhnf.
   Lemma whne_ren t : whne (t⟨ρ⟩) <~> whne t.
   Proof.
     split.
-
-    - remember t⟨ρ⟩ as t'.
-      intros Hne.
-      induction Hne in t, Heqt' |- * ; cbn.
-      all: push_renaming ; econstructor ; eauto.
-      all: admit.
+    - apply whne_ren_rev.
     - induction 1 ; cbn; try now econstructor.
       + econstructor; [|now eapply dnf_ren].
         intros Hc; now apply closed0_ren_rev in Hc.
@@ -493,7 +488,7 @@ Section RenWhnf.
         destruct s; [left|right]; intros Hc; now apply closed0_ren_rev in Hc.
       + econstructor; try now eapply dnf_ren.
         destruct s; [left|right]; intros Hc; now apply closed0_ren_rev in Hc.
-  Admitted. (* FIXME *)
+  Qed.
 
   Lemma whnf_ren t : whnf (t⟨ρ⟩) <~> whnf t.
   Proof.
