@@ -743,10 +743,9 @@ Module DeepTypingProperties.
   Proof.
   intros * H Hwf; revert H; destruct Hwf; intros; invnf.
   + econstructor; tea.
-    admit.
     constructor; tea.
   + econstructor; tea.
-  Admitted. (* FIXME *)
+  Qed.
 
   Lemma isWfPair_isNfPair : forall Γ A B t (* p₀ q₀ *),
     isWfPair Γ A B t -> isNfPair Γ A B t.

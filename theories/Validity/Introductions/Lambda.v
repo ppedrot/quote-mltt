@@ -14,9 +14,16 @@ Proof.
   destruct Rt as [?? wtA convtyA eqt|]; cbn in *.
   2: now constructor.
   epose proof (instKripkeFamTm wfΓ eqt).
-  escape; now constructor.
-Qed.
+  escape; constructor; tea.
 
+  replace t with t[tRel 0 .: @wk1 Γ A' >> tRel] by now bsimpl.
+  replace G with G[tRel 0 .: @wk1 Γ A' >> tRel] by now bsimpl.
+  assert [ |- Γ,, A'] by gen_typing.
+  unshelve eapply escapeTm, eqt; tea.
+  eapply reflect_var0; [apply reflectLR|..]; tea.
+  rewrite <- wk1_ren_on with (Γ := Γ) (F := A').
+  apply convty_wk; tea; now symmetry.
+Qed.
 
 Section LambdaValid.
 Context `{GenericTypingProperties}.
