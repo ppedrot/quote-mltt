@@ -38,14 +38,21 @@ Lemma isLRPair_isWfPair {Γ A A' B B' l p} (ΣA : [Γ ||-<l> tSig A B ≅ tSig A
     isWfPair Γ A B p.
 Proof.
   assert (wfΓ: [|- Γ]) by (escape ; gen_typing).
-  destruct Rp as [???? wtdom convtydom wtcod convtycod rfst rsnd|].
+  destruct Rp as [Ap Bp a b wtdom convtydom wtcod convtycod rcod rfst rsnd|].
   2: now econstructor.
   pose proof (Ra := instKripkeTm wfΓ rfst).
   pose proof (instKripkeSubst RΣ.(PolyRed.posRed) _ Ra).
   epose proof (hb := rsnd _ wk_id wfΓ).
   cbn -[wk_id] in *.
   escape; rewrite <-eq_subst_scons,wk_id_ren_on in EscLhb, Eschb.
-  now econstructor.
+  econstructor; tea.
+  rewrite <- (@var0_wk1_id Γ A B), <- (@var0_wk1_id Γ A Bp).
+  assert [Γ |- A].
+  { eapply escape, redΣdom; tea. }
+  unshelve eapply rcod, var0.
+  + now apply wfc_cons.
+  + symmetry; apply wk1_ren_on.
+  + tea.
 Qed.
 
 Section Helpers.
@@ -229,13 +236,15 @@ Lemma mkPair_isLRPair {Γ A A' A1 B B' B1 a1 b1 l}
   (RΣ := normRedΣ RΣ0)
   (RA1 : [Γ ||-<l> A ≅ A1])
   (RB1 : [Γ ||-<l> B[a1..] ≅ B1[a1..]])
+  (RB1' : forall {Δ a} (ρ : Δ ≤ Γ) (h : [ |- Δ ]), [ (wkLR _ _ _ RA1).(wkRed) ρ h | Δ ||- a : _] -> [ Δ ||-<l> B[a .: ρ >> tRel] ≅ B1[a .: ρ >> tRel]])
   (Ra1 : [Γ ||-<l> a1 : _ | RA1])
-  (Rb1 : [Γ ||-<l> b1 : _ | RB1])
+  (Rb1 : [Γ ||-<l> b1 : _ | RB1 ])
 : isLRPair RΣ (tPair A1 B1 a1 b1).
 Proof.
   escape.
   unshelve eapply PairLRPair; tea; intros.
   - now unshelve now eapply irrLR, wkLR.
+  - now unshelve eapply escapeEq, RB1', irrLR, ha.
   - now unshelve now eapply irrLREq, wkLR; tea; rewrite subst_ren_subst_mixed.
 Qed.
 
@@ -256,7 +265,12 @@ Proof.
     assert [_ ||-<l> b1 : _ | urefl RB ] by now eapply irrLRConv.
     escape.
     eapply ty_conv; [ eapply ty_pair; tea| now symmetry].
-  + now unshelve now eapply mkPair_isLRPair; eapply irrLR.
+  + assert (forall {Δ a} (ρ : Δ ≤ Γ) (h : [ |- Δ ]),
+    [ (wkLR _ _ _ RA).(wkRed) ρ h | Δ ||- a : _] -> [ Δ ||-<l> B[a .: ρ >> tRel] ≅ B1[a .: ρ >> tRel]]).
+    { intros * ha; cbn in *.
+      pose (RΣ' := (normRedΣ RΣ1).(PolyRed.posRed)).
+      unshelve eapply RΣ', irrLR, ha; tea. }
+    now unshelve now eapply mkPair_isLRPair; try eapply irrLR.
 Defined.
 
 Lemma pairCongRed {Γ A A' B B' a a' b b' l}

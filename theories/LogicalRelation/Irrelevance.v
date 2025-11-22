@@ -111,7 +111,9 @@ Section Irrelevance.
     2,4: constructor; tea; cbn in *.
     1,2: unshelve eapply PairLRPair; tea; cbn in *.
     1,2: now unshelve (intros; now eapply ihdom).
-    all: now unshelve (intros; eapply ihcod; eauto).
+    all: try now unshelve (intros; eapply ihcod; eauto).
+    - intros; now unshelve eapply rtycod, ihdom, ha.
+    - intros; now unshelve eapply rtycod, ihdom, ha.
   Qed.
 
   Lemma irrRedSigTm0 : forall t, SigRedTm ΣA' t <≈> SigRedTm ΣA t.

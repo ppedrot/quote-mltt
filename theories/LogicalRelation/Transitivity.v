@@ -201,10 +201,11 @@ Section Transitivity.
     Definition sigRedTmLeft {t} : SigRedTm ΣAB t -> SigRedTm transΣ t.
     Proof.
       intros [?? ispair]; cbn in *; econstructor; tea.
-      destruct ispair as [???????? rfst rsnd|].
+      destruct ispair as [????????? rfst rsnd|].
       2:now constructor.
       unshelve eapply PairLRPair; tea.
       - intros ; now unshelve eapply irrLR, rfst.
+      - intros; now unshelve eapply rtycod, irrLR, ha.
       - intros ; now unshelve eapply irrLR, rsnd.
     Defined.
 
@@ -213,16 +214,26 @@ Section Transitivity.
     Proof.
       intros [?? ispair]; econstructor; cbn in *.
       1: eapply redtmwf_conv; tea; rewrite eqΣ; symmetry; eapply ParamRedTy.eq.
-      destruct ispair as [???????? rfst rsnd|].
+      destruct ispair as [????????? rfst rsnd|].
       2: constructor; eapply convneu_conv; tea; cbn; rewrite eqΣ; symmetry; apply ParamRedTy.eq.
       unshelve eapply PairLRPair; tea.
-      1,4: intros; now unshelve now eapply (symLR _).(symRedTm), irrLR, (symLR _).(symRedTm).
+      1,5: intros; now unshelve now eapply (symLR _).(symRedTm), irrLR, (symLR _).(symRedTm).
       1: etransitivity; tea; cbn; rewrite eqdom; apply ParamRedTy.eqdom.
       etransitivity; tea; cbn; destruct ΣAB as [???????? PAB]; cbn in *; subst.
       erewrite 2!eq_subst_scons; eapply escapeEq.
       unshelve eapply PAB.(PolyRed.posRed).
       2: unshelve eapply (symLR _).(symRedTm), irrLR, rfst.
-      all: gtyping.
+      1-2: gtyping.
+      { intros; cbn.
+        assert (rBC : [Δ ||-< l2 > (ParamRedTy.domR ΣAB)⟨ρ⟩ ≅ (ParamRedTy.domR ΣBC)⟨ρ⟩]).
+        { rewrite <- eqdom; now eapply (PolyRed.shpRed ΣBC). }
+        edestruct (factor (ihdom _ ρ h _ _ rBC) (a := a0) (b := a0)) as [haL haR].
+        { unshelve eapply irrLR, ha. }
+        etransitivity; [|unshelve eapply rtycod; tea].
+        + cbn; rewrite eqcod.
+          unshelve eapply escapeEq, PolyRed.posRed, haL.
+        + eapply (symLR _).(symRedTm), irrLR, (symLR _).(symRedTm).
+          eapply haR. }
     Defined.
 
     Definition transLRΣ : trans (LRSig' ΣAB) (LRSig' ΣBC).

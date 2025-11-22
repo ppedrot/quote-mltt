@@ -752,11 +752,9 @@ Module DeepTypingProperties.
   Proof.
   intros * Hwf; destruct Hwf; intros; invnf.
   + econstructor; tea.
-    admit.
-    admit.
     constructor; tea.
   + econstructor; tea.
-  Admitted. (* FIXME *)
+  Qed.
 
   Definition exp_fun {Γ A B f} (w : isNfFun Γ A B f) : term := match w with
   | LamNfFun A' A₀ _ t₀ _ _ _ _ _ _ _ => tLambda A' t₀

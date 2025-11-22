@@ -127,22 +127,30 @@ Section Symmetry.
     Definition symIsLRPair {t} : isLRPair ΣA t <≈> isLRPair symΣ t.
     Proof.
       split.
-      - intros [???????? r1 r2|].
+      - intros [????????? r1 r2|].
         * unshelve eapply PairLRPair; tea.
           2: etransitivity; tea; eapply ParamRedTy.eqdom.
           + intros; now eapply ihdom.
           + etransitivity; tea; erewrite 2!eq_subst_scons.
             symmetry; eapply escapeEq.
             unshelve eapply PolyRed.posRed, r1; gtyping.
+          + intros.
+            etransitivity; [symmetry|].
+            { cbn; unshelve eapply escapeEq, PolyRed.posRed, ihdom, ha. }
+            { eapply rtycod, ihdom, ha. }
           + intros; (unshelve now eapply ihcod, irrLR); tea.
         * constructor; eapply convneu_conv; tea; eapply ParamRedTy.eq.
-      - intros [???????? r1 r2|].
+      - intros [????????? r1 r2|].
         * unshelve eapply PairLRPair; tea.
           2: etransitivity; tea; eapply ParamRedTy.eqdom.
           + intros; now eapply ihdom.
           + etransitivity; tea; erewrite 2!eq_subst_scons.
             symmetry; eapply escapeEq.
             unshelve eapply PolyRed.posRed, r1; gtyping.
+          + intros.
+            etransitivity; [symmetry|].
+            { eapply escapeEq, ihcod, ha. }
+            { eapply rtycod, ihdom, ha. }
           + intros; (unshelve now eapply ihcod, irrLR); tea.
         * constructor; eapply convneu_conv; tea; eapply ParamRedTy.eq.
     Qed.

@@ -157,6 +157,7 @@ Section RedDefinitions.
     PairWfPair : forall A' B' a b : term,
       [Γ |- A'] ->
       [Γ |- A ≅ A'] ->
+      [Γ,, A |- B ≅ B'] ->
       [Γ |- a : A] ->
       [Γ |- a ≅ a : A] ->
       [Γ |- B[a..]] ->

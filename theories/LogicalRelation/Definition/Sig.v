@@ -27,6 +27,9 @@ Inductive isLRPair `{ta : tag} `{WfContext ta}
       (convtydom : [Γ |- SigRedTyPack.domL ΣA ≅ A'])
       (wtycod : [Γ |- B'[a..]])
       (convtycod : [Γ |- (SigRedTyPack.codL ΣA)[a..] ≅ B'[a..]])
+  (rtycod : (forall {Δ a} (ρ : Δ ≤ Γ) (h : [ |- Δ ])
+      (ha : [ ΣA.(PolyRedPack.shpRed) ρ h | Δ ||- a ≅ a : ΣA.(SigRedTyPack.domL)⟨ρ⟩ ]),
+        [Δ |- (SigRedTyPack.codL ΣA)[a .: (ρ >> tRel)] ≅ B'[a .: (ρ >> tRel)]]))
   (rfst : forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]),
       [ΣA.(PolyRedPack.shpRed) ρ h | Δ ||- a⟨ρ⟩ ≅ a⟨ρ⟩ : (SigRedTyPack.domL ΣA)⟨ρ⟩])
   (rsnd : forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]),

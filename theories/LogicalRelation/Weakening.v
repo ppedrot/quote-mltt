@@ -127,7 +127,7 @@ Section Weakenings.
   Lemma wk_isLRPair {Γ l A B} (ΣA : [Γ ||-Σ< l > A ≅ B]) {t Δ} (ρ : Δ ≤ Γ) (wfΔ : [|- Δ]) :
     isLRPair ΣA t -> isLRPair (wkΣ ρ wfΔ ΣA) t⟨ρ⟩.
   Proof.
-  intros * [A' B' a b wtydom convtydom wtycod convtycod Hfst Hsnd|]; unshelve econstructor; tea; refold.
+  intros * [A' B' a b wtydom convtydom wtycod convtycod Hcod Hfst Hsnd|]; unshelve econstructor; tea; refold.
   all: try first [now eapply wft_wk| now eapply convty_wk].
   + refold; intros Ξ ρ' wfΞ.
     rewrite wk_comp_ren_on; eapply irrLREq; [|now unshelve eapply Hfst].
@@ -136,6 +136,14 @@ Section Weakenings.
     now eapply wft_wk.
   + cbn; erewrite <- (wk_up_ren_on _ _ _ A'), 2!wk_up_subst1.
     now eapply convty_wk.
+  + intros; cbn; rewrite wk_up_ren_on.
+    assert (Hrw : forall t, t⟨upRen_term_term ρ⟩[a0 .: ρ0 >> tRel] = t[a0 .: (ρ0 ∘w ρ) >> tRel]).
+    { intros; now bsimpl. }
+    rewrite !Hrw.
+    unshelve eapply Hcod; tea.
+    cbn in ha; eapply irrLREq.
+    { eapply wk_comp_ren_on. }
+    eapply ha.
   + refold; intros Ξ ρ' wfΞ.
     eapply irrLREq.
     2:rewrite wk_comp_ren_on ; now unshelve apply Hsnd.
