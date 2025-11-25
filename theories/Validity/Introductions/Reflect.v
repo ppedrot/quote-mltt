@@ -33,17 +33,6 @@ destruct rA.
 apply (embRedTyOne relEq).
 Qed.
 
-(*
-Lemma ElURedEq {Γ A A'} rΓ (rU := LRU_ (redUOneCtx rΓ)) (rA : [Γ ||-<one> A]) (rAA' : [rU | Γ ||- A ≅ A' : U]) : [rA | Γ ||- A ≅ A'].
-Proof.
-destruct rAA'.
-unshelve (irrelevance0; [reflexivity|]).
-* shelve.
-* refine (embRedTyOne relL).
-* apply relEq.
-Qed.
-*)
-
 Lemma simple_AppRedEq {Γ t t' u u' F G l} (RF : [Γ ||-< l > F]) (RG : [Γ ||-< l > G]) (RΠ := SimpleArr.ArrRedTy RF RG) :
   [RΠ | Γ ||- t ≅ t' : arr F G] -> [RF | Γ ||- u ≅ u' : F] -> [RG | Γ ||- tApp t u ≅ tApp t' u' : G].
 Proof.
@@ -174,347 +163,120 @@ eapply redtm_beta.
 + tea.
 Qed.
 
-Lemma simple_lambdaRed {Γ l A B t} (rΓ : [|- Γ])
-  (rA : [Γ ||-<l> A]) (rB : [Γ ||-<l> B]) (rΠ : [Γ ||-<l> arr A B])
-  (rte : forall Δ a b (ρ : Δ ≤ Γ) (rΔ : [|- Δ]) (rA : [Δ ||-<l> A⟨ρ⟩]) (rB : [Δ ||-<l> B⟨ρ⟩]),
-    [Δ ||-<l> a : A⟨ρ⟩ | rA] -> [Δ ||-<l> b : A⟨ρ⟩ | rA] -> [Δ ||-<l> a ≅ b : A⟨ρ⟩ | rA] -> [Δ ||-<l> t[a .: ρ >> tRel] ≅ t[b .: ρ >> tRel] : B⟨ρ⟩ | rB]) :
-  [Γ ||-<l> tLambda A t : arr A B | rΠ].
+Lemma simple_lambdaRed {Γ l A A' B B' t t'}
+  (rA : [Γ ||-<l> A ≅ A']) (rB : [Γ ||-<l> B ≅ B']) (rΠ : [Γ ||-<l> arr A B ≅ arr A' B'])
+  (rte : forall Δ (ρ : Δ ≤ Γ) (rΔ : [|- Δ]) a b,
+    [ (wkLR _ _ _ rA).(wkRed) ρ rΔ | Δ ||- a ≅ b : A⟨ρ⟩ ≅ A'⟨ρ⟩] -> [ (wkLR _ _ _ rB).(wkRed) ρ rΔ | Δ ||- t[a .: ρ >> tRel] ≅ t'[b .: ρ >> tRel] : B⟨ρ⟩ ≅ B'⟨ρ⟩]) :
+  [rΠ | Γ ||- tLambda A t ≅ tLambda A' t' : arr A B ≅ arr A' B'].
 Proof.
-(*
-assert (rt : forall Δ a (ρ : Δ ≤ Γ) (rΔ : [|- Δ]) (rA : [Δ ||-<l> A⟨ρ⟩]) (rB : [Δ ||-<l> B⟨ρ⟩]), [Δ ||-<l> a : A⟨ρ⟩ | rA] -> [Δ ||-<l> t[a .: ρ >> tRel] : B⟨ρ⟩ | rB]).
-{ intros; eapply LRTmEqRed_l, rte; tea. }
-pose (rΠ0 := normRedΠ rΠ).
-(* unshelve eapply irrLR; [| |apply (LRPi_ rΠ0)|]. *)
-assert [Γ |- A] by now escape.
-assert [Γ |- A ≅ A].
-{ now unshelve eapply escapeEq. }
-assert [|- Γ,, A] by now apply wfc_cons.
-assert [Γ,, A |- B⟨↑⟩].
-{ rewrite <- (wk1_ren_on Γ A).
-  eapply escape, wkLR; tea. }
-assert [Γ,, A |- B⟨↑⟩ ≅ B⟨↑⟩].
-{ rewrite <- !(@wk1_ren_on Γ A).
-  apply convty_wk; [|unshelve eapply escapeEq; tea].
-  now apply wfc_cons. }
-assert [Γ,, A ||-< l > A⟨@wk1 Γ A⟩].
-{ now apply wkLR. }
-assert [Γ,, A ||-< l > B⟨@wk1 Γ A⟩].
-{ now apply wkLR. }
+unshelve eapply irrLR; [..|eapply LRPi', normRedΠ, rΠ|].
+escape.
+assert [ |- Γ,, A] by gen_typing.
+assert [ |- Γ,, A'] by gen_typing.
 assert [Γ,, A |- t : B⟨↑⟩].
-{ replace t with t[(tRel 0) .: @wk1 Γ A >> tRel].
-  2:{ bsimpl; reflexivity. }
-  rewrite <- (wk1_ren_on Γ A).
-  unshelve eapply escapeTerm, rt; tea.
-  -apply var0; [now rewrite wk1_ren_on|tea]. }
-assert [Γ,, A |- t ≅ t : B⟨↑⟩].
-{ replace t with t[(tRel 0) .: @wk1 Γ A >> tRel].
-  2:{ bsimpl; reflexivity. }
-  rewrite <- (wk1_ren_on Γ A).
-  unshelve eapply escapeEqTerm, rt; tea.
-  apply var0; [now rewrite wk1_ren_on|tea]. }
+{ rewrite <- (@var0_wk1_id Γ A t).
+  rewrite <- (@wk1_ren_on Γ A B).
+  unshelve (eapply escapeTm; symmetry; apply rte, var0); tea.
+  symmetry; apply wk1_ren_on. }
+assert [Γ,, A' |- t' : B'⟨↑⟩].
+{ rewrite <- (@var0_wk1_id Γ A' t').
+  rewrite <- (@wk1_ren_on Γ A' B').
+  unshelve eapply escapeTm; [..|eapply wkLR; [symmetry; eapply rB|]|]; [shelve|gen_typing|].
+  cbn; unshelve eapply irrLRSym, rte, var0conv; tea.
+  rewrite <- (wk1_ren_on Γ A' A').
+  apply convty_wk; [|now symmetry]; tea. }
 assert [Γ |- tLambda A t : arr A B].
 { now apply ty_lam. }
-assert (forall Δ (ρ : Δ ≤ Γ), [|- Δ] -> [Δ,, A⟨ρ⟩ |- t⟨upRen_term_term ρ⟩ : B⟨ρ⟩⟨↑⟩]).
-{ intros.
-  rewrite <- (@wk_up_ren_on _ _ ρ A), <- (@wk1_ren_on Δ A⟨ρ⟩), wk_up_wk1.
-  apply ty_wk; [|now rewrite wk1_ren_on].
-  apply wfc_cons; tea; now eapply escape, wkLR. }
-unshelve eapply irrLR; [| |eapply (LRPi' rΠ0)|].
-
-eexists (tLambda A t) (tLambda A t).
-+ apply redtmwf_refl, ty_lam; tea.
-+ unshelve constructor; cbn.
-  - intros; apply reflLRTyEq.
-  - intros; irrelevance0; [|unshelve apply rt; tea].
-    bsimpl; apply rinstInst'_term.
-    irrelevance0; [reflexivity|tea].
-+ cbn; apply convtm_eta; tea.
-  - constructor; tea.
-  - constructor; tea.
-  - cbn.
-    assert [Γ,, A |- tApp (tLambda A⟨↑⟩ t⟨upRen_term_term ↑⟩) (tRel 0) ⤳* t : B⟨↑⟩].
-    { replace B⟨↑⟩ with B⟨↑ >> ↑⟩[(tRel 0)..].
-      2:{ bsimpl; symmetry; now apply rinst_inst_term. }
-      set (t' := t) at 2; replace t' with t⟨upRen_term_term ↑⟩[(tRel 0)..].
-      2:{ bsimpl; apply idSubst_term; now intros []. }
-      eapply redtm_beta.
-      + rewrite <- (@wk1_ren_on Γ A); now apply wft_wk.
-      + replace B⟨↑ >> ↑⟩ with (B⟨↑⟩⟨upRen_term_term ↑⟩) by now bsimpl.
-        rewrite <- !(wk_up_wk1_ren_on Γ A A).
-        rewrite <- (wk1_ren_on Γ A).
-        apply ty_wk; [|tea]; apply wfc_cons; [tea|].
-        apply wft_wk; tea.
-      + now apply ty_var0.
-    }
-    eapply convtm_exp; tea.
-+ cbn; intros.
-  assert (Hrw : B⟨ρ⟩ = B⟨↑⟩[a .: ρ >> tRel]).
-  { bsimpl; apply rinstInst'_term. }
-  eapply (redSubstTerm (u := t[a .: ρ >> tRel])); tea.
-  - irrelevance0; [|unshelve apply rt; tea].
-    bsimpl; apply rinstInst'_term.
-    irrelevance0; [reflexivity|tea].
-  - replace t[a .: ρ >> tRel] with t⟨upRen_term_term ρ⟩[a..] by now bsimpl.
-    rewrite <- Hrw.
-    replace B⟨ρ⟩ with B⟨ρ⟩⟨↑⟩[a..].
-    2:{ bsimpl; symmetry; apply rinstInst'_term. }
-    apply redtm_beta; [now eapply escape, wk| |now eapply escapeTerm].
-    now eauto.
-+ cbn; intros.
-  assert (Hrw : B⟨ρ⟩ = B⟨↑⟩[a .: ρ >> tRel]).
-  { bsimpl; apply rinstInst'_term. }
-  unshelve (irrelevance0; [tea|]); [shelve|now apply wk|].
-  unshelve eapply (LREqTermHelper (G' := B⟨ρ⟩)). 1-2: shelve.
-  - now apply wk.
-  - unshelve eapply simple_betaRed; first [now apply wk|now eapply escapeTerm|tea].
-    * rewrite wk1_ren_on; now eauto.
-    * replace (t⟨upRen_term_term ρ⟩[a..]) with t[a .: ρ >> tRel] by now bsimpl.
-      apply rt.
-      irrelevance0; [reflexivity|apply ha].
-  - unshelve eapply simple_betaRed; first [now apply wk|now eapply escapeTerm|tea].
-    * rewrite wk1_ren_on; now eauto.
-    * replace (t⟨upRen_term_term ρ⟩[b..]) with t[b .: ρ >> tRel] by now bsimpl.
-      apply rt.
-      irrelevance0; [reflexivity|apply hb].
-  - apply reflLRTyEq.
-  - replace (t⟨upRen_term_term ρ⟩[a..]) with t[a .: ρ >> tRel] by now bsimpl.
-    replace (t⟨upRen_term_term ρ⟩[b..]) with t[b .: ρ >> tRel] by now bsimpl.
-    apply rte; (irrelevance0; [reflexivity|]).
-    { apply ha. }
-    { apply hb. }
-    { apply eq. }
-*)
-Admitted. (* FIXME *)
-
-Lemma tAndRed {Γ l A B} (rΓ : [|- Γ])
-  (rA : [Γ ||-<l> A]) (rB : [Γ ||-<l> B]) : [Γ ||-<l> tAnd A B].
-Proof.
-(*
-assert [Γ |- A] by now eapply escape.
-assert [|- Γ,, A] by gen_typing.
-assert [Γ |- B] by now eapply escape.
-assert [Γ,, A |- B⟨↑⟩].
-{ rewrite <- (@wk1_ren_on Γ A); apply wft_wk; tea. }
-eapply LRSig'; econstructor.
-+ now apply redtywf_refl, wft_sig.
-+ unshelve eapply escapeEq, reflLRTyEq; tea.
-+ apply convty_sig; tea.
-  - unshelve eapply escapeEq, reflLRTyEq; tea.
-  - rewrite <- (@wk1_ren_on Γ A); apply convty_wk; tea.
-    unshelve eapply escapeEq, reflLRTyEq; tea.
-+ unshelve econstructor; tea.
-  - intros; now eapply wk.
-  - intros ? a **.
-    assert (Hrw : B⟨ρ⟩ = B⟨↑⟩[a .: ρ >> tRel]).
-    { bsimpl; apply rinstInst'_term. }
-    rewrite <- Hrw; now eapply wk.
-  - intros.
-    assert (Hrw : forall a, B⟨ρ⟩ = B⟨↑⟩[a .: ρ >> tRel]).
-    { intros; bsimpl; apply rinstInst'_term. }
-    irrelevance0; [apply Hrw|].
-    rewrite <- Hrw; unshelve apply wkEq, reflLRTyEq; tea.
-*)
-Admitted. (* FIXME *)
-
-(*
-Lemma tAndRedEq {Γ l A A' B B'} (rΓ : [|- Γ]) (rΣ : [Γ ||-<l> tAnd A B])
-  (rAA : [Γ ||-<l> A ≅ A']) (tA' : [Γ |- A']) (rB : [Γ ||-<l> B]) (tB' : [Γ |- B']) (rAA' : [rA | Γ ||- A ≅ A']) (rBB' : [rB | Γ ||- B ≅ B'])
-  : [rΣ | Γ ||- tAnd A B ≅ tAnd A' B'].
-Proof.
-pose (rΣ0 := normRedΣ rΣ).
-unshelve (irrelevance0; [reflexivity|]); [|apply rΣ0|].
-unshelve econstructor; [shelve|shelve|..].
-+ apply redtywf_refl,  wft_sig; tea.
-  rewrite <- !(@wk1_ren_on Γ A').
-  apply wft_wk; tea.
-  now eapply wfc_cons.
-+ cbn; now eapply escapeEq.
-+ cbn; eapply convty_sig.
-  - now eapply escape.
-  - now eapply escapeEq.
+assert [Γ |- tLambda A' t' : arr A B].
+{ eapply ty_conv; [eapply ty_lam|]; [..|symmetry; now eapply escapeEq]; tea. }
+cbn; unshelve econstructor.
++ econstructor; cbn.
+  - now eapply redtmwf_refl.
+  - constructor; cbn; tea; [now eapply lrefl|].
+    intros.
+    unshelve (eapply irrLREq; [|etransitivity]; [|eapply rte|]).
+    * tea.
+    * shelve.
+    * symmetry; apply shift_subst_scons.
+    * eapply lreflRedTm, irrLR, ha.
+    * unshelve eapply irrLRSym, symLR, rte; tea.
+      unshelve eapply irrLRSym, symLR, ha.
++ econstructor; cbn.
+  - now eapply redtmwf_refl.
+  - constructor; cbn; tea.
+    intros.
+    unshelve (eapply irrLREq; [|etransitivity]; [|symmetry; eapply rte|]).
+    * tea.
+    * shelve.
+    * symmetry; apply shift_subst_scons.
+    * eapply lreflRedTm, irrLR, ha.
+    * unshelve (eapply irrLRSym, symLR; symmetry; eapply rte); tea.
+      unshelve eapply irrLR, ha.
++ cbn; eapply lambda_cong; tea.
+  - rewrite <- (@wk1_ren_on Γ A B); apply wft_wk; gen_typing.
+  - rewrite <- (@var0_wk1_id Γ A t').
+    rewrite <- (@wk1_ren_on Γ A B).
+    unshelve (eapply escapeTm; apply rte, var0); tea.
+    symmetry; apply @wk1_ren_on.
   - rewrite <- !(@wk1_ren_on Γ A).
-    apply convty_wk; [|now eapply escapeEq].
-    apply wfc_cons; tea; now eapply escape.
-+ cbn; split.
-  - intros.
-    irrelevance0; [reflexivity|]; now unshelve eapply wkEq.
-  - intros.
-    assert (Hrw : forall B, B⟨ρ⟩ = B⟨↑⟩[a .: ρ >> tRel]).
-    { intros; bsimpl; apply rinstInst'_term. }
-    irrelevance0; [apply Hrw|].
-    rewrite <- Hrw.
-    now unshelve eapply wkEq.
-Qed.
-*)
-
-(*
-Lemma tAndURed {Γ l A B} (rΓ : [|- Γ])
-  (rU : [Γ ||-<l> U]) (rA : [Γ ||-<l> A : U | rU]) (rB : [Γ ||-<l> B : U | rU]) :
-  [Γ ||-<l> tAnd A B : U | rU].
-Proof.
-unshelve (irrelevance0; [reflexivity|]); [|apply (LRU_ (redUOne rΓ))|].
-assert [Γ |- A : U] by now eapply escapeTerm.
-assert [|- Γ,, A] by gen_typing.
-assert [Γ |- B : U] by now eapply escapeTerm.
-econstructor.
-+ apply redtmwf_refl, ty_sig.
-  - now unshelve eapply escapeTerm.
+    apply convty_wk; gen_typing.
+  - rewrite <- !(@wk1_ren_on Γ A').
+    apply convty_wk; gen_typing.
   - rewrite <- (@wk1_ren_on Γ A).
-    change U with U⟨@wk1 Γ A⟩; eapply ty_wk; tea.
-+ constructor.
-+ apply convtm_sig; tea.
-  - now eapply escapeEqTerm, reflLRTmEq.
-  - rewrite <- (@wk1_ren_on Γ A).
-    change U with U⟨@wk1 Γ A⟩; eapply convtm_wk; tea.
-    now eapply escapeEqTerm, reflLRTmEq.
-+ cbn.
-  unshelve refine (LRCumulative (tAndRed _ _ _)); tea.
-  - assert (rA' : [ LRU_ (redUOne rΓ) | Γ ||- A : U]) by now irrelevance0.
-    destruct rA' as [? ? ? ? r]; apply r.
-  - assert (rB' : [ LRU_ (redUOne rΓ) | Γ ||- B : U]) by now irrelevance0.
-    destruct rB' as [? ? ? ? r]; apply r.
+    rewrite <- (@var0_wk1_id Γ A t'), <- (@var0_wk1_id Γ A t).
+    unshelve eapply escapeTm, rte, var0; tea.
+    symmetry; apply @wk1_ren_on.
++ cbn; intros.
+  eapply irrLREq; [symmetry; apply shift_subst_scons|].
+  eapply redSubstTmEq.
+  - now unshelve eapply rte, irrLR, hab.
+  - rewrite (subst1_ren_wk_up (A := A⟨ρ⟩)).
+    rewrite wk_up_ren_on, <- (@shift_subst1 B⟨ρ⟩ a).
+    eapply redtm_beta.
+    * eapply wft_wk; tea.
+    * unfold ren1 at 3; unfold Ren1_well_wk.
+      rewrite shift_upRen.
+      rewrite <- !(@wk_up_ren_on _ _ ρ A).
+      eapply ty_wk; [eapply wfc_cons|]; tea.
+      eapply wft_wk; tea.
+    * now escape.
+  - rewrite (subst1_ren_wk_up (A := A'⟨ρ⟩)).
+    rewrite wk_up_ren_on, <- (@shift_subst1 B'⟨ρ⟩ b).
+    eapply redtm_beta.
+    * eapply wft_wk; tea.
+    * unfold ren1 at 3; unfold Ren1_well_wk.
+      rewrite shift_upRen.
+      rewrite <- !(@wk_up_ren_on _ _ ρ A').
+      eapply ty_wk; [eapply wfc_cons|]; tea.
+      eapply wft_wk; tea.
+    * unshelve apply symLR in hab; now escape.
 Qed.
-*)
 
 Lemma tAndURedEq {Γ l A A' B B'} (rΓ : [|- Γ])
   (rU : [Γ ||-<l> U])
   (rAA' : [Γ ||-<l> A ≅ A' : U | rU]) (rBB' : [Γ ||-<l> B ≅ B' : U | rU]) : [Γ ||-<l> tAnd A B ≅ tAnd A' B' : U | rU].
 Proof.
-(*
-intros.
-pose (rU' := LRU_ (redUOne rΓ)).
-unshelve (irrelevance0; [reflexivity|]); [|apply rU'|].
-unshelve eapply LRTmEqIrrelevant' in rAA'; [..|reflexivity]; [|apply rU'|].
-unshelve eapply LRTmEqIrrelevant' in rBB'; [..|reflexivity]; [|apply rU'|].
-assert (rA : [Γ ||-<one> A : U | rU']) by apply rAA'.
-assert (rA' : [Γ ||-<one> A' : U | rU']) by apply rAA'.
-assert (rB : [Γ ||-<one> B : U | rU']) by apply rBB'.
-assert (rB' : [Γ ||-<one> B' : U | rU']) by apply rBB'.
-unshelve econstructor.
-+ refine (tAndURed rΓ rU' rA rB).
-+ refine (tAndURed rΓ rU' rA' rB').
-+ unshelve refine (tAndRed _ _ _); tea.
-  - destruct rA as [? ? ? ? r]; apply r.
-  - destruct rB as [? ? ? ? r]; apply r.
-+ assert (Hrw : forall rec t A (R : [Γ ||-U< one > A]) (p : [rec | Γ ||-U t : A | R]), whnf t -> URedTm.te p = t).
-  { intros; symmetry; eapply red_whnf; [|tea].
-    now eapply redtm_sound, tmr_wf_red, URedTm.red. }
-  rewrite !Hrw; try now constructor.
-  apply convtm_and; first [now eapply escapeTerm|now eapply escapeEqTerm].
-+ refine (tAndRed _ _ _); tea.
-  - destruct rA' as [? ? ? ? r]; apply r.
-  - destruct rB' as [? ? ? ? r]; apply r.
-+ cbn.
-  unshelve eapply tAndRedEq; tea.
-  - apply rA.
-  - apply rB.
-  - now eapply wft_term, escapeTerm.
-  - now eapply wft_term, escapeTerm.
-  - destruct rAA'.
-    destruct rA; cbn.
-    unshelve (irrelevance0; [reflexivity|]).
-    * shelve.
-    * refine (embRedTyOne relL).
-    * apply relEq.
-  - destruct rBB'.
-    destruct rB; cbn.
-    unshelve (irrelevance0; [reflexivity|]).
-    * shelve.
-    * refine (embRedTyOne relL).
-    * apply relEq.
-*)
-Admitted. (* FIXME *)
+unshelve eapply sigmaURed; [exact zero|tea|].
+intros * hab.
+replace B⟨↑⟩[a .: ρ >> tRel] with B⟨ρ⟩.
+2:{ bsimpl; now apply rinst_inst_term. }
+replace B'⟨↑⟩[b .: ρ >> tRel] with B'⟨ρ⟩.
+2:{ bsimpl; now apply rinst_inst_term. }
+now apply wkRedTm.
+Qed.
 
 Lemma simple_tPairRed {Γ l A A' B B' p p' q q'}
   (rA : [Γ ||-<l> A ≅ A']) (rB : [Γ ||-<l> B ≅ B'])
   (rΣ : [Γ ||-<l> tAnd A B ≅ tAnd A' B'])
   (rp : [rA | Γ ||- p ≅ p' : A ≅ A']) (rq : [rB | Γ ||- q ≅ q' : B ≅ B']) : [rΣ | Γ ||- tPair A B⟨↑⟩ p q ≅ tPair A' B'⟨↑⟩ p' q' : tAnd A B ≅ tAnd A' B'].
 Proof.
-
-(*
-Lemma simple_tPairRed {Γ l A B p q}
-  (rA : [Γ ||-<l> A]) (rB : [Γ ||-<l> B])
-  (rΣ : [Γ ||-<l> tAnd A B])
-  (rp : [rA | Γ ||- p : A]) (rq : [rB | Γ ||- q : B]) : [rΣ | Γ ||- tPair A B⟨↑⟩ p q : tAnd A B].
-Proof.
-pose (rΣ0 := normRedΣ rΣ).
-unshelve (irrelevance0; [reflexivity|]); [|apply rΣ0|].
-assert [|- Γ] by now eapply wfc_wft, escape.
-assert [Γ |- A] by now eapply escape.
-assert [|- Γ,, A] by gen_typing.
-assert [Γ |- B] by now eapply escape.
-assert [Γ,, A |- B⟨↑⟩].
-{ rewrite <- (@wk1_ren_on Γ A); tea; eapply wft_wk; gen_typing. }
-assert [Γ |- p : A] by now eapply escapeTerm.
-assert [Γ |- q : B] by now eapply escapeTerm.
-assert [Γ |- tPair A B⟨↑⟩ p q : tSig A B⟨↑⟩].
-{ apply ty_pair; tea.
-  now replace  B⟨↑⟩[p..] with B by now bsimpl. }
-assert [Γ |- A ≅ A] by now unshelve eapply escapeEq, reflLRTyEq.
-assert [Γ |- B ≅ B] by now unshelve eapply escapeEq, reflLRTyEq.
-assert [Γ |- p ≅ p : A] by now unshelve eapply escapeEqTerm, reflLRTmEq.
-assert [Γ |- q ≅ q : B] by now unshelve eapply escapeEqTerm, reflLRTmEq.
-assert [Γ,, A |- B⟨↑⟩ ≅ B⟨↑⟩].
-{ rewrite <- (@wk1_ren_on Γ A).
-  now apply convty_wk. }
-assert (Hrw : forall x ρ, B⟨↑⟩[x .: ρ >> tRel] = B⟨ρ⟩).
-{ intros. bsimpl; symmetry; apply rinstInst'_term. }
-assert [Γ |- tSnd (tPair A B⟨↑⟩ p q) ⤳* q : B].
-{ set (B' := B) at 1.
-  replace B' with B⟨↑⟩[(tFst (tPair A B⟨↑⟩ p q))..] by now bsimpl.
-  clear B'; eapply redtm_snd_beta; tea.
-  now replace B⟨↑⟩[p..] with B by now bsimpl. }
-unshelve econstructor.
-+ exact (tPair A B⟨↑⟩ p q).
-+ intros.
-  assert [Δ |- A⟨ρ⟩] by now apply wft_wk.
-  eapply redSubstTerm; cbn; [|apply redtm_fst_beta]; tea.
-  - irrelevance0; [reflexivity|]; now apply wkTerm.
-  - rewrite <- wk_up_ren_on with (F := A).
-    apply wft_wk; [apply wfc_cons|]; tea.
-  - now eapply ty_wk.
-  - let T := match goal with |- [_ |- _ : ?T] => T end in
-    replace T with B⟨ρ⟩.
-    2:{ bsimpl; apply rinstInst'_term. }
-    apply ty_wk; tea.
-  Unshelve. all: tea.
-+ cbn; apply redtmwf_refl.
-  apply ty_pair; tea.
-  - let T := match goal with |- [_ |- _ : ?T] => T end in
-    replace T with B by now bsimpl.
-    tea.
-+  unshelve econstructor; cbn.
-  - intros.
-    irrelevance0; [reflexivity|].
-    unshelve apply wkTerm, rp; tea.
-  - intros.
-    unshelve (irrelevance0; [reflexivity|]); [shelve|..].
-    * now unshelve apply wk, rA.
-    * unshelve apply reflLRTyEq.
-  - intros.
-    rewrite Hrw.
-    irrelevance0; [symmetry; apply Hrw|].
-    now unshelve apply wkEq, reflLRTyEq.
-  - intros.
-    irrelevance0; [symmetry; apply Hrw|].
-    now unshelve apply wkTerm.
-+ assert (isWfPair Γ A B⟨↑⟩ (tPair A B⟨↑⟩ p q)).
-  { constructor; tea; now replace B⟨↑⟩[p..] with B by now bsimpl. }
-  cbn; eapply convtm_eta_sig; tea.
-  - assert [Γ |- tFst (tPair A B⟨↑⟩ p q) ⤳* p : A].
-    { apply redtm_fst_beta; tea.
-      now replace B⟨↑⟩[p..] with B by now bsimpl. }
-    eapply convtm_exp; tea.
-  - match goal with |- [_ |- _ ≅ _ : ?T] => replace T with B by now bsimpl end.
-    eapply convtm_exp; tea.
-+ intros; cbn.
-  unshelve (irrelevance0; [symmetry; apply Hrw|]); [|now unshelve apply wk|].
-  eapply redSubstTerm; [now eapply wkTerm|].
-  let H := match goal with H : [_ |- _  ⤳* _ : _ ] |- _ => H end in
-  eapply redtm_wk with (ρ := ρ) in H; [|tea]; apply H.
+unshelve (eapply irrLR, pairCongRed; [tea|]).
++ eapply rΣ.
++ now rewrite !shift_subst1.
++ eapply irrLREq.
+  { symmetry; eapply shift_subst1. }
+  eapply rq.
 Qed.
-*)
-Admitted. (* FIXME *)
 
 Lemma tIsNilRedEq {Γ l t t'} (rΓ : [|- Γ])
   (rNat := natRed rΓ)
@@ -550,25 +312,6 @@ unshelve eapply IdCongRedU; tea.
 + eapply rS.
 Qed.
 
-(*
-Lemma tShiftRed {Γ l t} (rPNat : [Γ ||-<l> tPNat])
-  (rt : [rPNat | Γ ||- t : tPNat]) : [rPNat | Γ ||- tShift t : tPNat].
-Proof.
-assert (rΓ : [|- Γ]).
-{ eapply wfc_wft; now eapply escape. }
-pose (rNat := natRed (l := l) rΓ).
-unshelve eapply simple_lambdaRed; tea; intros.
-cbn - [rB]; unshelve eapply (simple_AppRedEq (F := tNat)).
-+ tea.
-+ assert (Hrw : forall a, t⟨ρ⟩ = t⟨↑⟩[a .: ρ >> tRel]).
-  { intros; bsimpl; apply rinstInst'_term. }
-  rewrite <- !Hrw.
-  eapply reflLRTmEq, LRTmRedIrrelevant', wkTerm; [|tea]; reflexivity.
-  Unshelve. tea.
-+ eapply succRedEq; tea.
-Qed.
-*)
-
 Lemma redtm_shift_app {Γ t u} :
   [Γ |- t : arr tNat tNat] ->
   [Γ |- u : tNat] ->
@@ -600,63 +343,24 @@ Qed.
 Lemma tShiftRedEq {Γ l t t'} (rPNat : [Γ ||-<l> tPNat])
   (rt : [rPNat | Γ ||- t ≅ t' : tPNat]) : [rPNat | Γ ||- tShift t ≅ tShift t' : tPNat].
 Proof.
-(*
-assert (rΓ : [|- Γ]).
-{ eapply wfc_wft; now eapply escape. }
-pose (rPNat0 := normRedΠ rPNat).
-unshelve eapply irrLR; [| |apply (LRPi' rPNat0)|].
-unshelve (eapply irrLR in rt); [| |exact (LRPi' rPNat0)|].
-(* assert (Hrw : forall t R (p : [Γ ||-Π t : tPNat | R]), whnf t -> PiRedTm.nf p = t). *)
-(* { intros; symmetry; eapply red_whnf; tea. *)
-(*     now eapply redtm_sound, tmr_wf_red, PiRedTm.red. } *)
-unshelve econstructor.
-Search concl:PiRedTm.
-+ eapply (tShiftRed rPNat0).
-  irrelevance0; [reflexivity|]; now eapply LRTmEqRed_l.
-+ eapply (tShiftRed rPNat0).
-  irrelevance0; [reflexivity|]; now eapply LRTmEqRed_r.
-+ rewrite !Hrw; cbn; try now constructor.
-  assert [Γ |- tNat] by now apply wft_nat.
-  assert [Γ |- tNat ≅ tNat] by now apply convty_term, convtm_nat.
-  apply convtm_lam; tea.
-  assert (rΓNat : [|- Γ,, tNat]) by gen_typing.
-  assert [natRed (l := l) rΓNat | _ ||- tRel 0 : tNat].
-  { apply var0; [reflexivity|]; gen_typing. }
-  assert [natRed (l := l) rΓNat | _ ||- tSucc (tRel 0) : tNat].
-  { now apply succRed. }
-  assert [natRed (l := l) rΓNat | _ ||- tSucc (tRel 0) ≅ tSucc (tRel 0) : tNat].
-  { apply succRedEq; tea; now apply reflLRTmEq. }
-  rewrite <- (@wk1_ren_on Γ tNat t), <- (@wk1_ren_on Γ tNat t').
-  unshelve eapply escapeEqTerm, (SimpleArr.simple_appcongTerm (F := tNat)); tea.
-  - now apply natRed.
-  - change (arr tNat tNat) with (arr tNat tNat)⟨@wk1 Γ tNat⟩.
-    now apply wk.
-  - apply wkTermEq, rt.
-+ intros.
-  rewrite !Hrw; try now constructor; cbn.
-  unfold ren1, Ren1_well_wk.
-  rewrite !(tShift_ren).
-  eapply red_redtm_exp.
-  - apply redtm_shift_app; [|now eapply escapeTerm].
-    change (arr tNat tNat) with (arr tNat tNat)⟨ρ⟩.
-    apply ty_wk; [tea|].
-    now eapply escapeTerm, LRTmEqRed_l.
-  - apply redtm_shift_app; [|now eapply escapeTerm].
-    change (arr tNat tNat) with (arr tNat tNat)⟨ρ⟩.
-    apply ty_wk; [tea|].
-    now eapply escapeTerm, LRTmEqRed_r.
-  - assert [natRed (l := l) h | Δ ||- a : tNat].
-    { irrelevance0; [reflexivity|]; apply ha. }
-    assert [natRed (l := l) h | Δ ||- tSucc a : tNat].
-    { now apply succRed. }
-    assert [natRed (l := l) h | Δ ||- tSucc a ≅ tSucc a : tNat].
-    { apply succRedEq; tea; now apply reflLRTmEq. }
-    unshelve eapply (SimpleArr.simple_appcongTerm (F := tNat)); tea.
-    * cbn; change (tProd tNat tNat) with (tProd tNat tNat)⟨ρ⟩.
-      apply wk; tea.
-    * apply wkTermEq, rt.
-*)
-Admitted. (* FIXME *)
+escape.
+assert (rΓ : [|- Γ]) by gen_typing.
+assert [Γ ||-< l > tNat].
+{ now apply natRed. }
+unshelve eapply simple_lambdaRed; tea.
+intros * hab; cbn.
+unshelve eapply simple_appcongTerm, succRed, irrLR, hab.
++ exact (tNat⟨ρ⟩).
++ rewrite wk_arr; eapply wkLR; tea.
++ now eapply natRedTy.
++ rewrite !shift_subst_scons.
+  eapply irrLREq; [|eapply (wkLR _ _ _ _).(wkRedTm)]; [eapply arr_ren1|].
+  Unshelve.
+  - unshelve eapply irrLR, rt.
+  - shelve.
+  - apply rPNat.
+  - tea.
+Qed.
 
 Lemma tEvalZeroRedEq {Γ l t v} (rΓ : [|- Γ])
   (rNat := natRed rΓ) (rNatNat := SimpleArr.ArrRedTy rNat rNat)
@@ -838,22 +542,20 @@ induction k; cbn.
   - now eapply natRed.
   - apply succRed, qNatRedEq.
 + assert (Hrw : qEvalTy (S k) v = tAnd (tId tNat tZero tZero) (qEvalTy k v)) by reflexivity.
+  assert [Γ ||-<one> tId tNat tZero tZero].
+  { unshelve (eapply IdRed; eapply zeroRed); now eapply natRedTy. }
+  assert [Γ ||-< one > tAnd (tId tNat tZero tZero) (qEvalTy k v)].
+  { unshelve eapply sigmaRed; [tea|].
+    intros. rewrite !qEvalTy_ren, !qEvalTy_subst.
+    now eapply qEvalTyRed. }
   pose (rNat := natRed (l := one) rΓ).
   eapply irrLREq; [symmetry; apply Hrw|].
-(*
-  2:{ apply tAndRed; tea; [|now apply qEvalTyRed].
-      unshelve eapply Id.IdRed; [tea| |]; eapply zeroRed; tea. }
-  set (T := qEvalTy k v) at 2.
-  replace T with (qEvalTy k v)⟨↑⟩ by apply qEvalTy_ren.
-  unshelve eapply simple_tPairRed.
-  - unshelve eapply Id.IdRed; tea; eapply zeroRed; tea.
-  - now apply qEvalTyRed.
-  - unshelve eapply Id.reflRed.
-    * now apply natRed.
-    * now apply zeroRed.
-  - apply IHk.
-*)
-Admitted. (* FIXME *)
+  rewrite <- (qEvalTy_ren k v ↑).
+  eapply simple_tPairRed.
+  - unshelve eapply reflCongRed, zeroRed; now eapply natRedTy.
+  - eapply IHk.
+Unshelve. all: tea.
+Qed.
 
 Lemma tShiftAppRedEq {Γ l t n} {rΓ : [|- Γ]}
   (rNat := natRed (l := l) rΓ) (rPNat := SimpleArr.ArrRedTy rNat rNat) :

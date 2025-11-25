@@ -29,6 +29,72 @@ Proof.
   apply (redΣdom (LRSig' (normRedΣ RΣ))).
 Qed.
 
+Lemma sigmaRed {Γ F F' G G' l} :
+  forall (RF : [Γ ||-<l> F ≅ F']),
+  (forall {Δ} (ρ : Δ ≤ Γ) (h : [|- Δ]) a b, [ (wkLR _ _ _ RF).(wkRed) ρ h | Δ ||- a ≅ b : _ ≅ _ ] ->
+    [Δ ||-<l> G[a .: ρ >> tRel] ≅ G'[b .: ρ >> tRel]]) ->
+  [Γ ||-<l> tSig F G ≅ tSig F' G'].
+Proof.
+intros * hab; eapply LRSig'.
+escape.
+assert [|- Γ] by gen_typing.
+assert (RGL : [Γ,, F ||-<l> G ≅ G']).
+{ rewrite <- (@var0_wk1_id Γ F G), <- (@var0_wk1_id Γ F G').
+  unshelve eapply hab, var0; eauto using wk1_ren_on.
+  gen_typing. }
+assert (RGR : [Γ,, F' ||-<l> G ≅ G']).
+{ rewrite <- (@var0_wk1_id Γ F' G), <- (@var0_wk1_id Γ F' G').
+  unshelve eapply hab, var0conv; eauto using wk1_ren_on; [gen_typing|].
+  rewrite <- (@wk1_ren_on Γ F'); apply convty_wk.
+  + gen_typing.
+  + now symmetry. }
+escape.
+assert [Γ |- tSig F G] by gen_typing.
+assert [Γ |- tSig F' G'] by gen_typing.
+assert [Γ |- tSig F G ≅ tSig F' G'] by now eapply convty_sig.
+exists F F' G G'; tea.
++ constructor; tea.
+  now apply redtywf_refl.
++ constructor; tea.
+  now apply redtywf_refl.
++ unshelve econstructor.
+  - intros; now apply (wkLR _ _ _ RF).(wkRed).
+  - intros; eauto.
+Qed.
+
+Lemma sigmaURed {Γ F F' G G' l l'} (rU : [Γ ||-<l'> U]) :
+  forall (rF : [rU | Γ ||- F ≅ F' : U]),
+  (forall {Δ} (ρ : Δ ≤ Γ) (h : [|- Δ]) a b, [ (wkLR _ _ _ (UnivEq l rU rF)).(wkRed) ρ h | Δ ||- a ≅ b : _ ≅ _ ] ->
+    [(wkLR _ _ _ rU).(wkRed) ρ h | Δ ||- G[a .: ρ >> tRel] ≅ G'[b .: ρ >> tRel] : U]) ->
+  [rU | Γ ||- tSig F G ≅ tSig F' G' : U].
+Proof.
+intros * rGG'; escape.
+assert (rΓ : [|- Γ]) by gen_typing.
+unshelve eapply irrLR;[..|now apply LRU_, redUOneCtx|].
+assert (rΓF : [|- Γ,, F]) by gen_typing.
+assert (rΓF' : [|- Γ,, F']) by gen_typing.
+assert [Γ |- F ≅ F'] by gen_typing.
+assert (RGL : [LRU_ (redUOneCtx rΓF) | Γ,, F ||- G ≅ G' : U]).
+{ rewrite <- (@var0_wk1_id Γ F G), <- (@var0_wk1_id Γ F G').
+  unshelve eapply irrLR, rGG', var0; eauto using wk1_ren_on; gen_typing. }
+assert (RGR : [LRU_ (redUOneCtx rΓF') | Γ,, F' ||- G ≅ G' : U]).
+{ rewrite <- (@var0_wk1_id Γ F' G), <- (@var0_wk1_id Γ F' G').
+  unshelve eapply irrLR, rGG', var0conv; eauto using wk1_ren_on; [|gen_typing].
+  rewrite <- (@wk1_ren_on Γ F'); apply convty_wk; tea; now symmetry. }
+escape.
+unshelve econstructor; cbn.
++ econstructor.
+  - eapply redtmwf_refl; gen_typing.
+  - constructor.
++ econstructor.
+  - eapply redtmwf_refl; gen_typing.
+  - constructor.
++ cbn; gen_typing.
++ change [Γ ||-<zero> tSig F G ≅ tSig F' G'].
+  unshelve eapply sigmaRed.
+  - now eapply UnivEq'.
+  - intros; now unshelve (eapply UnivEq', rGG', irrLR; eauto).
+Qed.
 
 Import SigRedTmEq.
 
