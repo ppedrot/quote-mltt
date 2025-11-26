@@ -1,13 +1,7 @@
 (** * Derive the main properties of typing. *)
-From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping LogicalRelation.
+From LogRel Require Import Utils Syntax.All DeclarativeTyping.
 
-(* From LogRel Require Import Utils BasicAst Computation Notations Context NormalForms NormalEq Weakening *)
-(*   DeclarativeTyping (* GenericTyping DeclarativeInstance UntypedReduction *).
- *)
-
-From LogRel Require Import Fundamental (* TypeConstructorsInj *).
-(* From LogRel Require Import Consequences. *)
+From LogRel Require Import Consequences.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -52,5 +46,3 @@ intros; now eapply nat_canonicity_dred.
 Qed.
 
 Print Assumptions nat_canonicity_dred.
-
-

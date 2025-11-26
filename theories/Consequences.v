@@ -1,11 +1,25 @@
 (** * LogRel.Consequences: important meta-theoretic consequences of normalization: canonicity of natural numbers and consistency. *)
 From Coq Require Import CRelationClasses.
-From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Computation Notations Context NormalForms Weakening UntypedReduction
-  LogicalRelation Fundamental Validity LogicalRelation.Induction Substitution.Escape LogicalRelation.Irrelevance
-  GenericTyping DeclarativeTyping DeclarativeInstance TypeConstructorsInj.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping DeepTyping LogicalRelation Fundamental.
 
-Import DeclarativeTypingData DeclarativeTypingProperties SNDeclarativeTypingProperties.
+Import DeclarativeTypingData WeakDeclarativeTypingData.
+
+Module Import SNDeclarativeTypingProperties.
+
+Import DeepTypingData.
+Import DeepTypingProperties.
+
+#[export] Instance SNTypingDeclProperties : SNTypingProperties de _ _ _ _ _.
+Proof.
+split; intros * Hc.
+apply Fundamental in Hc as [].
+eapply Properties.escapeValidTm in Vtu as (?&?&Vtu).
+apply snty_nf in Vtu as (t₀&u₀&?&?&?&?&?); prod_splitter; eauto using nfconvtm_conv.
+Qed.
+
+End SNDeclarativeTypingProperties.
+
+Import Allfv.
 
 Section TypingFv.
 
@@ -167,21 +181,23 @@ Qed.
 
 (** *** Consistency: there are no closed proofs of false, i.e. no closed inhabitants of the empty type. *)
 
-#[local] Lemma red_empty_empty : [ε ||-Empty tEmpty].
+#[local] Lemma red_empty_empty : [ε ||-Empty tEmpty ≅ tEmpty].
 Proof.
   repeat econstructor.
 Qed.
+
+Import DeclarativeProperties.WeakDeclarativeTypingProperties.
 
 Lemma consistency {t} : [ε |- t : tEmpty] -> False.
 Proof.
   intros H.
   assert (Ht : [LREmpty_ one red_empty_empty | ε ||- t : tEmpty]).
   {
-    apply Fundamental in H as [?? Vt%reducibleTm].
-    irrelevance.
+    eapply Fundamental in H as [?? Vt].
+    eapply Properties.redValidTm', Vt.
   }
-  destruct Ht, prop, r.
-  eapply no_neutral_empty_ctx; tea.
+  destruct Ht, eq.
+  eapply (no_neutral_empty_ctx (t := nfL)); tea.
   now eapply convneu_whne.
 Qed.
 
@@ -197,7 +213,7 @@ Proof.
 intros * H.
 apply TermRefl in H.
 apply Fundamental in H as [].
-eapply escapeTmEq in Vtu.
+eapply Properties.escapeValidTm in Vtu as (?&?&Vtu).
 apply snty_nf in Vtu as (t₀&?&[]&?&?&?&?).
 exists t₀.
 now eapply dredalg_bigstep.
@@ -209,38 +225,36 @@ End SN.
 
 Section NatCanonicityInduction.
 
-  Let red_nat_empty : [ε ||-Nat tNat].
-  Proof.
-    repeat econstructor.
-  Defined.
-
   Lemma nat_red_empty_ind :
-    (forall t, [ε ||-Nat t : tNat | red_nat_empty] ->
+    (forall t u, [ε ||-Nat t ≅ u:Nat] ->
     ∑ n : nat, [ε |- t ≅ qNat n : tNat]) ×
-    (forall t, NatProp red_nat_empty t -> ∑ n : nat, [ε |- t ≅ qNat n : tNat]).
+    (forall t u, NatPropEq ε t u -> ∑ n : nat, [ε |- t ≅ qNat n : tNat]).
   Proof.
-    apply NatRedInduction.
-    - intros * [? []] ? _ [n] ; refold.
+    apply NatRedEqInduction.
+    - intros *  ? ? ? ? [n].
       exists n.
-      now etransitivity.
+      etransitivity; [|tea].
+      eapply DeclarativeProperties.RedConvTeC, redL.
     - exists 0 ; cbn.
       now repeat constructor.
-    - intros ? _ [n].
+    - intros ? ? _ [n].
       exists (S n) ; simpl.
       now econstructor.
-    - intros ? [? [? _ _]].
+    - intros ? ? [? ?].
       exfalso.
-      now eapply no_neutral_empty_ctx.
+      eapply (no_neutral_empty_ctx (t := ne)); tea.
+      now eapply convneu_whne.
   Qed.
 
   Lemma _nat_canonicity {t} : [ε |- t : tNat] ->
   ∑ n : nat, [ε |- t ≅ qNat n : tNat].
   Proof.
     intros Ht.
-    assert [LRNat_ one red_nat_empty | ε ||- t : tNat] as ?%nat_red_empty_ind.
+    assert (rε : [ |- ε]) by gen_typing.
+    assert [ Nat.natRed (l := one) rε | ε ||- t : tNat] as ?%nat_red_empty_ind.
     {
-      apply Fundamental in Ht as [?? Vt%reducibleTm].
-      irrelevance.
+      apply Fundamental in Ht as [?? Vt].
+      eapply Properties.redValidTm', Vt.
     }
     now assumption.
   Qed.
@@ -252,18 +266,18 @@ Section NatCanonicityDeepRed.
 Import DeepTyping.DeepTypingData.
 Import DeepTyping.DeepTypingProperties.
 
-Let red_nat_empty : [ε ||-Nat tNat].
-Proof.
-repeat econstructor.
-Defined.
-
 Lemma _nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
 Proof.
   intros Ht.
-  assert (rt : [LRNat_ one red_nat_empty | ε ||- t : tNat]).
-  { apply Fundamental in Ht as [?? Vt%reducibleTm]; irrelevance. }
+  assert (rε : [ |- ε]) by gen_typing.
+
+  assert (rt : [Nat.natRed (l := one) rε  | ε ||- t : tNat]).
+  {
+    apply Fundamental in Ht as [?? Vt].
+    eapply Properties.redValidTm', Vt.
+  }
   assert (Htt : [ε |-[nf] t ≅ t : tNat]).
-  { now eapply LogicalRelation.Escape.escapeEqTerm, Reflexivity.reflLRTmEq. }
+  { now eapply LogicalRelation.Escape.escapeEqTerm. }
   destruct Htt as [t₀ ?? [Hr Hnf Ht₀]].
   assert (Hn : ∑ n, t₀ = qNat n).
   { eapply Reflect.dnf_closed_qNat in Hr; tea.
