@@ -33,9 +33,15 @@ match t with
   (andb (is_closedn n x)
   (andb (is_closedn (S (S n)) P)
     (andb (is_closedn n hr) (andb (is_closedn n y) (is_closedn n e)))))
-| tQuote t => is_closedn n t
-| tStep t u => andb (is_closedn n t) (is_closedn n u)
-| tReflect t u => andb (is_closedn n t) (is_closedn n u)
+| tDecide A t u =>
+  andb (is_closedn n A)
+    (andb (is_closedn n t) (is_closedn n u))
+| tReflect A t u e =>
+  andb (is_closedn n A)
+    (andb (is_closedn n t) (andb (is_closedn n u) (is_closedn n e)))
+| tReify A t u e =>
+  andb (is_closedn n A)
+    (andb (is_closedn n t) (andb (is_closedn n u) (is_closedn n e)))
 end.
 
 Definition closedn n (t : term) := is_true (is_closedn n t).

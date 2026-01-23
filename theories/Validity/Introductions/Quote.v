@@ -13,6 +13,7 @@ From LogRel.Substitution Require Import Irrelevance Properties SingleSubst.
 From LogRel.Substitution.Introductions Require Import Universe Nat SimpleArr.
 *)
 
+(*
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 
@@ -226,3 +227,4 @@ unshelve eapply QuoteRedEq, escapeEqTerm, vte; cbn; tea.
 Qed.
 
 End QuoteCongValid.
+*)

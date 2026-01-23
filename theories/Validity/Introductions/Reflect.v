@@ -8,6 +8,7 @@ From LogRel.Validity Require Import Universe Nat SimpleArr Quote.
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 
+(*
 Section Utils.
 
 Context `{GenericTypingProperties}.
@@ -1579,3 +1580,4 @@ eapply TotalRed.
 Qed.
 
 End ReflectCongValid.
+*)

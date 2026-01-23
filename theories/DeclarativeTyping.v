@@ -127,19 +127,19 @@ Section Definitions.
     [Γ |- y : A] ->
     [Γ |- e : tId A x y] ->
     [Γ |- tIdElim A x P hr y e : P[e .: y..]]
-  | wfTermQuote {Γ} {t} :
-    [Γ |- t ≅ t : arr tNat tNat] ->
-    [Γ |- tQuote t : tNat]
-  | wfTermStep {Γ} {t u} :
-    [Γ |- t ≅ t : arr tNat tNat] ->
-    [Γ |- u ≅ u : tNat] ->
-    [Γ |- run : arr tNat (arr tNat tPNat)] ->
-    [Γ |- tStep t u : tNat]
-  | wfTermReflect {Γ} {t u} :
-    [Γ |- t ≅ t : arr tNat tNat] ->
-    [Γ |- u ≅ u : tNat] ->
-    [Γ |- run : arr tNat (arr tNat tPNat)] ->
-    [Γ |- tReflect t u : tTotal t u]
+(*   | wfTermQuote {Γ} {t} : *)
+(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
+(*     [Γ |- tQuote t : tNat] *)
+(*   | wfTermStep {Γ} {t u} : *)
+(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
+(*     [Γ |- u ≅ u : tNat] -> *)
+(*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
+(*     [Γ |- tStep t u : tNat] *)
+(*   | wfTermReflect {Γ} {t u} : *)
+(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
+(*     [Γ |- u ≅ u : tNat] -> *)
+(*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
+(*     [Γ |- tReflect t u : tTotal t u] *)
   | wfTermConv {Γ} {t A B} :
     [Γ |- t : A] -> 
     [Γ |- A ≅ B] -> 
@@ -182,37 +182,37 @@ Section Definitions.
     [Γ ,, A |- t : B] ->
     [Γ |- a : A] ->
     [Γ |- tApp (tLambda A t) a ≅ t[a..] : B[a..]]
-  | TermQuoteRed {Γ} {t} :
-    [Γ |- t ≅ t : arr tNat tNat] ->
-    dnf t -> closed0 t ->
-    [Γ |- tQuote t ≅ qNat (quote (erase t)) : tNat]
-  | TermQuoteCong {Γ} {t t'} :
-    [Γ |- t ≅ t' : arr tNat tNat] ->
-    [Γ |- tQuote t ≅ tQuote t' : tNat]
-  | TermStepRed {Γ} {t u k v} :
-    [Γ |- t ≅ t : arr tNat tNat] ->
-    [Γ |- run : arr tNat (arr tNat tPNat)] ->
-    dnf t -> closed0 t ->
-    (forall k', k' < k -> [Γ |- qRun t u k' ≅ tZero : tNat]) ->
-    [Γ |- qRun t u k ≅ tSucc (qNat v) : tNat] ->
-    [Γ |- tStep t (qNat u) ≅ qNat k : tNat]
-  | TermStepCong {Γ} {t t' u u'} :
-    [Γ |- t ≅ t' : arr tNat tNat] ->
-    [Γ |- u ≅ u' : tNat] ->
-    [Γ |- run : arr tNat (arr tNat tPNat)] ->
-    [Γ |- tStep t u ≅ tStep t' u' : tNat]
-  | TermReflectRed {Γ} {t u k v} :
-    [Γ |- t ≅ t : arr tNat tNat] ->
-    [Γ |- run : arr tNat (arr tNat tPNat)] ->
-    dnf t -> closed0 t ->
-    (forall k', k' < k -> [Γ |- qRun t u k' ≅ tZero : tNat]) ->
-    [Γ |- qRun t u k ≅ tSucc (qNat v) : tNat] ->
-    [Γ |- tReflect t (qNat u) ≅ qEvalTm k v : tTotal t (qNat u)]
-  | TermReflectCong {Γ} {t t' u u'} :
-    [Γ |- t ≅ t' : arr tNat tNat] ->
-    [Γ |- u ≅ u' : tNat] ->
-    [Γ |- run : arr tNat (arr tNat tPNat)] ->
-    [Γ |- tReflect t u ≅ tReflect t' u' : tTotal t u]
+(*   | TermQuoteRed {Γ} {t} : *)
+(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
+(*     dnf t -> closed0 t -> *)
+(*     [Γ |- tQuote t ≅ qNat (quote (erase t)) : tNat] *)
+(*   | TermQuoteCong {Γ} {t t'} : *)
+(*     [Γ |- t ≅ t' : arr tNat tNat] -> *)
+(*     [Γ |- tQuote t ≅ tQuote t' : tNat] *)
+(*   | TermStepRed {Γ} {t u k v} : *)
+(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
+(*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
+(*     dnf t -> closed0 t -> *)
+(*     (forall k', k' < k -> [Γ |- qRun t u k' ≅ tZero : tNat]) -> *)
+(*     [Γ |- qRun t u k ≅ tSucc (qNat v) : tNat] -> *)
+(*     [Γ |- tStep t (qNat u) ≅ qNat k : tNat] *)
+(*   | TermStepCong {Γ} {t t' u u'} : *)
+(*     [Γ |- t ≅ t' : arr tNat tNat] -> *)
+(*     [Γ |- u ≅ u' : tNat] -> *)
+(*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
+(*     [Γ |- tStep t u ≅ tStep t' u' : tNat] *)
+(*   | TermReflectRed {Γ} {t u k v} : *)
+(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
+(*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
+(*     dnf t -> closed0 t -> *)
+(*     (forall k', k' < k -> [Γ |- qRun t u k' ≅ tZero : tNat]) -> *)
+(*     [Γ |- qRun t u k ≅ tSucc (qNat v) : tNat] -> *)
+(*     [Γ |- tReflect t (qNat u) ≅ qEvalTm k v : tTotal t (qNat u)] *)
+(*   | TermReflectCong {Γ} {t t' u u'} : *)
+(*     [Γ |- t ≅ t' : arr tNat tNat] -> *)
+(*     [Γ |- u ≅ u' : tNat] -> *)
+(*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
+(*     [Γ |- tReflect t u ≅ tReflect t' u' : tTotal t u] *)
   | TermPiCong {Γ} {A B C D} :
     [Γ |- A : U] ->
     [Γ |- A ≅ B : U] ->

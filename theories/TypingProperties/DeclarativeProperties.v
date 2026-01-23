@@ -119,6 +119,7 @@ Section TypingWk.
         * rewrite <- 2!wk_up_wk1, 2!wk_step_wk1; eauto.
         * rewrite <- wk_up_wk1, wk1_ren_on; cbn; constructor; tea; constructor.
       + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
+(*
     - intros * _ IH **; cbn.
       econstructor.
       now apply IH.
@@ -129,6 +130,7 @@ Section TypingWk.
       unfold ren1, Ren1_well_wk; rewrite tTotal_ren.
       cbn in *; constructor; eauto.
       rewrite <- run_ren with (ρ := ρ); eauto.
+*)
     - intros * _ IHt _ IHAB ? ρ ?.
       econstructor.
       1: now eapply IHt.
@@ -168,7 +170,8 @@ Section TypingWk.
         now eapply IHA.
       + now eapply IHu.
       + now asimpl.
-      + now asimpl. 
+      + now asimpl.
+(*
     - intros * H IH **; cbn.
       unfold ren1, Ren1_well_wk.
       rewrite quote_ren; eauto using wk_inj.
@@ -219,6 +222,7 @@ Section TypingWk.
       unfold ren1, Ren1_well_wk.
       rewrite tTotal_ren; cbn in *; constructor; eauto using dnf_ren, closed0_ren.
       rewrite <- run_ren with (ρ := ρ); eauto.
+*)
     - intros Γ A A' B B' _ IHA _ IHAA' _ IHBB' ? ρ ?.
       cbn.
       econstructor.
@@ -584,6 +588,7 @@ eapply TermNatElimCong.
 + tea.
 Qed.
 
+(*
 Lemma tTotal_decl_cong : forall Γ t t' u u',
   [Γ |- run : arr tNat (arr tNat (arr tNat tNat))] ->
   [Γ |- t ≅ t' : arr tNat tNat] ->
@@ -601,6 +606,7 @@ apply tEval_decl_cong.
 - apply TermStepCong; tea.
 - cbn; now eapply simple_TermAppCong with tNat.
 Qed.
+*)
 
 (** ** Weakenings of reduction *)
 
@@ -696,11 +702,12 @@ Module WeakDeclarativeTypingProperties.
     all: try (intros; now econstructor).
     - intros.
       now eapply typing_wk.
+(*
     - intros.
       eapply wfTermConv; [constructor; tea|].
       + eapply TermTrans; [|eapply TermSym]; tea.
       + eapply TermTrans; [|eapply TermSym]; tea.
-      + now apply convUniv, tTotal_decl_cong.
+      + now apply convUniv, tTotal_decl_cong.*)
     - intros.
       econstructor ; tea.
       now apply TypeSym, RedConvTyC.
@@ -783,6 +790,7 @@ Module WeakDeclarativeTypingProperties.
   - intros ????? []; split; now econstructor.
   - intros ????? []; split; now econstructor.
   - intros * ??????? []; split; now econstructor.
+(*
   - intros; econstructor; now econstructor.
   - intros; econstructor; eauto using whne.
     eapply TermConv; [now constructor|].
@@ -792,6 +800,7 @@ Module WeakDeclarativeTypingProperties.
     eapply TermConv; [now constructor|].
     assert [|- Γ] by gen_typing.
     eapply convUniv, tTotal_decl_cong; [tea|tea|now symmetry].
+*)
   Qed.
 
   #[export, refine] Instance RedTermDeclProperties : RedTermProperties (ta := de) := {}.
@@ -853,6 +862,7 @@ Module WeakDeclarativeTypingProperties.
     + now econstructor.
     + now eapply redalg_idElim.
     + econstructor; tea; now (eapply TypeRefl + eapply TermRefl).
+(*
   - intros; split.
     + now constructor.
     + econstructor; [|reflexivity].
@@ -896,6 +906,7 @@ Module WeakDeclarativeTypingProperties.
     + constructor; [now eapply lrefl|now eapply lrefl|tea].
     + apply redalg_reflect; tea.
     + constructor; tea.
+*)
   - intros; now eapply redtmdecl_conv.
   - intros; split.
     + assumption.

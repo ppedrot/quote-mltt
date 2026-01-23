@@ -36,7 +36,23 @@ Inductive pred : term -> term -> Set :=
   [tIdElim A x P hr y e ⇉ tIdElim A' x' P' hr' y' e']
 | pred_idelimrefl {A x P hr hr' y B z} : [hr ⇉ hr'] ->
   [tIdElim A x P hr y (tRefl B z) ⇉ hr']
-| pred_quote {t t'} : [t ⇉ t'] -> [tQuote t ⇉ tQuote t']
+| pred_decide {A A' t t' u u'} : [A ⇉ A'] -> [t ⇉ t'] -> [u ⇉ u'] -> [tDecide A t u ⇉ tDecide A' t' u']
+| pred_decideeval_eq {A t u} :
+  dnf (unannot t) -> closed0 t -> dnf (unannot u) -> closed0 u -> term_beq (erase t) (erase u) ->
+  [tDecide A t u ⇉ tZero]
+| pred_decideeval_neq {A t u} :
+  dnf (unannot t) -> closed0 t -> dnf (unannot u) -> closed0 u -> negb (term_beq (erase t) (erase u)) ->
+  [tDecide A t u ⇉ tSucc tZero]
+| pred_reflect {A A' t t' u u' e e'} :
+  [A ⇉ A'] -> [t ⇉ t'] -> [u ⇉ u'] -> [e ⇉ e'] -> [tReflect A t u e ⇉ tReflect A' t' u' e']
+| pred_reflecteval {A A' X x t t' u} :
+  [A ⇉ A'] -> [t ⇉ t'] ->
+  [tReflect A t u (tRefl X x) ⇉ tRefl A' t' ]
+| pred_reify {A A' t t' u u' e e'} :
+  [A ⇉ A'] -> [t ⇉ t'] -> [u ⇉ u'] -> [e ⇉ e'] -> [tReify A t u e ⇉ tReify A' t' u' e']
+| pred_reifyeval {A X x t u} :
+  [tReify A t u (tRefl X x) ⇉ tRefl tNat tZero ]
+(*
 | pred_quoteeval {t} : dnf (unannot t) -> closed0 t -> [tQuote t ⇉ qNat (quote (erase t))]
 | pred_step {t t' u u'} : [t ⇉ t'] -> [u ⇉ u'] -> [tStep t u ⇉ tStep t' u']
 | pred_stepeval {t u n k k'} :
@@ -48,6 +64,7 @@ Inductive pred : term -> term -> Set :=
   dnf t -> closed0 t ->
   murec (fun k => eval true (tApp (erase t) (qNat u)) k) k = Some (k', qNat n) ->
   [tReflect t (qNat u) ⇉ qEvalTm k' n]
+*)
 
 where "[ t ⇉ u ]" := (pred t u).
 
@@ -76,10 +93,8 @@ all: try now (f_equal; eauto).
 all: try match goal with H : forall u, [?t ⇉ u] -> _, H' : [?t ⇉ ?u] |- _ => specialize (H _ H'); cbn in H; injection H; intros; subst end.
 all: try now (f_equal; tea).
 + inversion d; subst; inversion H12.
-+ assert (closed0 (qNat u1)) by apply closed0_qNat.
-  destruct s; contradiction.
-+ assert (closed0 (qNat u1)) by apply closed0_qNat.
-  destruct s; contradiction.
++ inversion d; subst; inversion H10.
++ inversion d; subst; inversion H8.
 Qed.
 
 Lemma dnf_pred_id : forall t u, dnf t -> [t ⇉ u] -> eqannot t u.
@@ -94,21 +109,18 @@ intros t t' ρ Hρ Ht; revert ρ Hρ; induction Ht; cbn; eauto 10 using pred, up
   replace t'[u'..]⟨ρ⟩ with t'⟨upRen_term_term ρ⟩[u'⟨ρ⟩..] by now bsimpl.
   eauto using pred, upRen_term_term_inj.
 + intros ρ Hρ.
-  rewrite quote_ren; tea.
-  constructor; [|now apply closed0_ren].
-  rewrite <- unannot_ren; eauto using dnf_ren.
-+ intros ρ Hρ.
-  rewrite !qNat_ren.
-  assert (dnf (unannot t⟨ρ⟩)).
-  { rewrite <- unannot_ren; [|tea].
-    now apply dnf_ren. }
+  assert (dnf (unannot t⟨ρ⟩)) by eauto using dnf_unannot_rev, dnf_unannot, dnf_ren.
+  assert (dnf (unannot u⟨ρ⟩)) by eauto using dnf_unannot_rev, dnf_unannot, dnf_ren.
   econstructor; eauto using closed0_ren.
-  rewrite erase_is_closed0_ren_id; tea.
+  apply term_beq_eq in i; apply term_eq_beq.
+  rewrite <- !erase_ren; eauto; congruence.
 + intros ρ Hρ.
-  rewrite qNat_ren, qEvalTm_ren.
-  assert (dnf t⟨ρ⟩) by now apply dnf_ren.
+  assert (dnf (unannot t⟨ρ⟩)) by eauto using dnf_unannot_rev, dnf_unannot, dnf_ren.
+  assert (dnf (unannot u⟨ρ⟩)) by eauto using dnf_unannot_rev, dnf_unannot, dnf_ren.
   econstructor; eauto using closed0_ren.
-  rewrite erase_is_closed0_ren_id; tea.
+  revert i; apply contraNN.
+  intros i%term_beq_eq; apply term_eq_beq.
+  rewrite !erase_is_closed0_ren_id in i; eauto.
 Qed.
 
 Lemma pred_subst : forall t t' σ σ', [t ⇉ t'] -> (forall n, [σ n ⇉ σ' n]) -> [t[σ] ⇉ t'[σ']].
@@ -119,20 +131,20 @@ assert (Hup : forall σ σ', (forall n, [σ n ⇉ σ' n]) -> (forall n, [up_term
 intros t t' σ σ' Ht; revert σ σ'; induction Ht; intros σ σ' Hσ; cbn; eauto 10 using pred.
 + replace t'[u'..][σ'] with t'[up_term_term σ'][u'[σ']..] by now bsimpl.
   eauto using pred.
-+ rewrite qNat_subst, <- (qNat_subst _ σ).
-  rewrite quote_subst; tea; constructor.
++ constructor.
   - rewrite unannot_closed0_subst; tea.
   - now apply closed0_subst.
-+ rewrite !qNat_subst.
-  econstructor.
+  - rewrite unannot_subst; apply dnf_closed0_subst; eauto.
+    now unfold closed0; rewrite closedn_unannot.
+  - now apply closed0_subst.
+  - now rewrite !erase_is_closed0_subst_id.
++ constructor.
   - rewrite unannot_closed0_subst; tea.
   - now apply closed0_subst.
-  - rewrite erase_is_closed0_subst_id; tea.
-+ rewrite qNat_subst, qEvalTm_subst.
-  econstructor.
-  - now apply dnf_closed0_subst.
+  - rewrite unannot_subst; apply dnf_closed0_subst; eauto.
+    now unfold closed0; rewrite closedn_unannot.
   - now apply closed0_subst.
-  - rewrite erase_is_closed0_subst_id; tea.
+  - now rewrite !erase_is_closed0_subst_id.
 Qed.
 
 Lemma pred_subst1 : forall t t' u u', [t ⇉ t'] -> [u ⇉ u'] -> [t[u..] ⇉ t'[u'..]].
@@ -152,9 +164,6 @@ all: try match goal with |- is_true true => constructor end.
 all: try match goal with H : forall n : nat, _ |- _ => now apply H end.
 + tea.
 + apply closedn_beta; [apply IHHr1|apply IHHr2]; tea.
-+ apply closedn_qNat.
-+ apply closedn_qNat.
-+ apply closedn_qEvalTm.
 Qed.
 
 Lemma closed0_unannot : forall t, closed0 t -> closed0 (unannot t).
@@ -171,18 +180,13 @@ all: try now (f_equal; eauto using pred).
 all: try now match goal with H : dne _ |- _ => f_equal; inversion H; subst; eauto using pred, dne, dnf end.
 all: try now do 2 match goal with H : dne _ |- _ => inversion H; subst end.
 + match goal with H : dne _ |- _ => inversion H; subst end.
-  assert (closed0 (unannot t)) by now apply closed0_unannot.
-  contradiction.
+  assert (closed0 (unannot t2)) by now apply closed0_unannot.
+  assert (closed0 (unannot t3)) by now apply closed0_unannot.
+  destruct H9; contradiction.
 + match goal with H : dne _ |- _ => inversion H; subst end.
-  assert (closed0 (unannot t1)) by now apply closed0_unannot.
-  assert (closed0 (unannot (qNat u))).
-  { rewrite unannot_qNat; apply closed0_qNat. }
-  destruct H5; contradiction.
-+ match goal with H : dne _ |- _ => inversion H; subst end.
-  assert (closed0 (unannot t1)) by now apply closed0_unannot.
-  assert (closed0 (unannot (qNat u))).
-  { rewrite unannot_qNat; apply closed0_qNat. }
-  destruct H5; contradiction.
+  assert (closed0 (unannot t2)) by now apply closed0_unannot.
+  assert (closed0 (unannot t3)) by now apply closed0_unannot.
+  destruct H9; contradiction.
 Qed.
 
 Lemma pred_tLambda_inv : forall A A' t t', [tLambda A t ⇉ tLambda A' t'] -> [t ⇉ t'].
@@ -325,73 +329,71 @@ all: try now saturate_diamond; eauto 10 using pred.
   clear IHt6; saturate_diamond.
   eexists; split; eauto using pred.
 + eexists; split; [|eapply pred_refl].
-  assert (Heq : unannot t = unannot t') by now apply pred_unannot_id.
-  assert (Hrw : erase t = erase t').
+  assert (Heqt : unannot t2 = unannot t') by now apply pred_unannot_id.
+  assert (Hequ : unannot t3 = unannot u') by now apply pred_unannot_id.
+  assert (Hrwt : erase t2 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
-  rewrite Hrw; constructor.
-  - now rewrite <- Heq.
-  - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
-+ eexists; split; [eapply pred_refl|].
-  assert (Heq : unannot t = unannot t') by now apply pred_unannot_id.
-  assert (Hrw : erase t = erase t').
+  assert (Hrwu : erase t3 = erase u').
   { rewrite !erase_unannot_etared; now f_equal. }
-  rewrite Hrw; constructor.
-  - now rewrite <- Heq.
-  - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
-+ eexists; split; eapply pred_refl.
+  constructor.
+  - now rewrite <- Heqt.
+  - unfold closed0; rewrite <- closedn_unannot, <- Heqt, closedn_unannot; tea.
+  - now rewrite <- Hequ.
+  - unfold closed0; rewrite <- closedn_unannot, <- Hequ, closedn_unannot; tea.
+  - now rewrite <- Hrwt, <- Hrwu.
 + eexists; split; [|eapply pred_refl].
-  apply dnf_pred_id in H3; [|apply dnf_qNat].
-  symmetry in H3; apply eqannot_qNat_inv in H3; subst.
-  assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
-  assert (Hrw : erase t1 = erase t').
+  assert (Heqt : unannot t2 = unannot t') by now apply pred_unannot_id.
+  assert (Hequ : unannot t3 = unannot u') by now apply pred_unannot_id.
+  assert (Hrwt : erase t2 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
-  econstructor.
-  - now rewrite <- Heq.
-  - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
-  - now rewrite <- Hrw.
+  assert (Hrwu : erase t3 = erase u').
+  { rewrite !erase_unannot_etared; now f_equal. }
+  constructor.
+  - now rewrite <- Heqt.
+  - unfold closed0; rewrite <- closedn_unannot, <- Heqt, closedn_unannot; tea.
+  - now rewrite <- Hequ.
+  - unfold closed0; rewrite <- closedn_unannot, <- Hequ, closedn_unannot; tea.
+  - now rewrite <- Hrwt, <- Hrwu.
 + eexists; split; [eapply pred_refl|].
-  apply dnf_pred_id in H6; [|apply dnf_qNat].
-  symmetry in H6; apply eqannot_qNat_inv in H6; subst.
-  assert (Heq : unannot t1 = unannot t') by now apply pred_unannot_id.
-  assert (Hrw : erase t1 = erase t').
+  assert (Heqt : unannot t2 = unannot t') by now apply pred_unannot_id.
+  assert (Hequ : unannot t3 = unannot u') by now apply pred_unannot_id.
+  assert (Hrwt : erase t2 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
-  econstructor.
-  - now rewrite <- Heq.
-  - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
-  - now rewrite <- Hrw.
-+ apply qNat_inj in H0; subst.
-  match goal with H : _ = Some ?r, H' : _ = Some ?r' |- _ =>
-    assert (Hrw : r = r') by (now eapply murec_det)
-  end.
-  injection Hrw; intros; subst; clear Hrw.
-  eexists; split; apply pred_refl.
-+ eexists; split; [|eapply pred_refl].
-  apply dnf_pred_id in H3; [|apply dnf_qNat].
-  symmetry in H3; apply eqannot_qNat_inv in H3; subst.
-  assert (Heq : unannot t1 = unannot t') by eauto using pred_unannot_id, dnf_unannot.
-  assert (Hrw : erase t1 = erase t').
+  assert (Hrwu : erase t3 = erase u').
   { rewrite !erase_unannot_etared; now f_equal. }
-  econstructor.
-  - apply dnf_unannot_rev; rewrite <- Heq; now apply dnf_unannot.
-  - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
-  - now rewrite <- Hrw.
+  constructor.
+  - now rewrite <- Heqt.
+  - unfold closed0; rewrite <- closedn_unannot, <- Heqt, closedn_unannot; tea.
+  - now rewrite <- Hequ.
+  - unfold closed0; rewrite <- closedn_unannot, <- Hequ, closedn_unannot; tea.
+  - now rewrite <- Hrwt, <- Hrwu.
++ exfalso; destruct term_beq; try congruence; inversion H12.
 + eexists; split; [eapply pred_refl|].
-  apply dnf_pred_id in H6; [|apply dnf_qNat].
-  symmetry in H6; apply eqannot_qNat_inv in H6; subst.
-  assert (Heq : unannot t1 = unannot t') by eauto using pred_unannot_id, dnf_unannot.
-  assert (Hrw : erase t1 = erase t').
+  assert (Heqt : unannot t2 = unannot t') by now apply pred_unannot_id.
+  assert (Hequ : unannot t3 = unannot u') by now apply pred_unannot_id.
+  assert (Hrwt : erase t2 = erase t').
   { rewrite !erase_unannot_etared; now f_equal. }
-  econstructor.
-  - apply dnf_unannot_rev; rewrite <- Heq; now apply dnf_unannot.
-  - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
-  - now rewrite <- Hrw.
-+ apply qNat_inj in H0; subst.
-  match goal with H : _ = Some ?r, H' : _ = Some ?r' |- _ =>
-    assert (Hrw : r = r') by (now eapply murec_det)
-  end.
-  injection Hrw; intros; subst; clear Hrw.
-  apply qNat_inj in H; subst.
-  eexists; split; apply pred_refl.
+  assert (Hrwu : erase t3 = erase u').
+  { rewrite !erase_unannot_etared; now f_equal. }
+  constructor.
+  - now rewrite <- Heqt.
+  - unfold closed0; rewrite <- closedn_unannot, <- Heqt, closedn_unannot; tea.
+  - now rewrite <- Hequ.
+  - unfold closed0; rewrite <- closedn_unannot, <- Hequ, closedn_unannot; tea.
+  - now rewrite <- Hrwt, <- Hrwu.
++ exfalso; destruct term_beq; try congruence; inversion H7.
++ inversion H7; subst.
+  clear IHt4; saturate_diamond.
+  eexists; split; eauto using pred.
++ inversion H9; subst.
+  clear IHt4; saturate_diamond.
+  eexists; split; eauto using pred.
++ inversion H7; subst.
+  clear IHt4; saturate_diamond.
+  eexists; split; eauto using pred.
++ inversion H7; subst.
+  clear IHt4; saturate_diamond.
+  eexists; split; eauto using pred.
 Unshelve. all: exact U.
 Qed.
 
@@ -461,10 +463,15 @@ intros A A' t t' Hr; revert A A'; induction Hr; intros; eauto using pred, pred_c
 Unshelve. all: exact U.
 Qed.
 
-Lemma pred_clos_quote : forall t t', [t ⇉* t'] -> [tQuote t ⇉* tQuote t'].
-Proof.
-induction 1; eauto using pred, pred_refl, pred_clos.
-Qed.
+(* Lemma pred_clos_decide : forall A A' t t' u u', [A ⇉* A'] -> [t ⇉* t'] -> [u ⇉* u'] -> *)
+(*   [tDecide A t u ⇉* tDecide A' t' u']. *)
+(* Proof.
+ *)
+
+(* Lemma pred_clos_quote : forall t t', [t ⇉* t'] -> [tQuote t ⇉* tQuote t']. *)
+(* Proof. *)
+(* induction 1; eauto using pred, pred_refl, pred_clos. *)
+(* Qed. *)
 
 (* Ad-hoc stuff needed to prove the logical relation *)
 

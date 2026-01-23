@@ -543,6 +543,7 @@ split.
   - constructor; tea; etransitivity; tea.
 Qed.
 
+(*
 Lemma NeTermDecl_tQuote : forall Γ n n₀, ~ closed0 n -> dnf n ->
   NfTermDecl Γ (arr tNat tNat) n n₀ ->
   NeTermDecl Γ tNat (tQuote n) (tQuote n₀).
@@ -595,6 +596,7 @@ split; [now constructor|]; split.
 + eapply TermConv; [apply TermReflectCong; tea|].
   apply convty_term, tTotal_decl_cong; tea; now symmetry.
 Qed.
+*)
 
 End Nf.
 
@@ -626,6 +628,7 @@ Module DeepTypingProperties.
   | H : [_ |-[nf] _ ~ _ : _] |- _ => destruct H
   end.
 
+(*
   Lemma EvalStep_compat : forall Γ t u k v,
     EvalStep (ta := nf) Γ t u k v -> EvalStep (ta := de) Γ t u k v.
   Proof.
@@ -633,7 +636,7 @@ Module DeepTypingProperties.
   intros k' Hk **; invnf.
   specialize (evstep_nil k' Hk); now invnf.
   Qed.
-
+*)
   #[export, refine] Instance WfCtxDeclProperties : WfContextProperties (ta := nf) := {}.
   Proof.
     1-2: now constructor.
@@ -1012,10 +1015,10 @@ Module DeepTypingProperties.
   #[export, refine] Instance TypingDeclProperties : TypingProperties (ta := nf) := {}.
   Proof.
   all: try apply WeakDeclarativeTypingProperties.TypingDeclProperties.
-  + intros * []; now constructor.
-  + intros * [] []; now econstructor.
-  + intros * [] [] ?.
-    now eapply WeakDeclarativeTypingProperties.TypingDeclProperties.
+(*   + intros * []; now constructor. *)
+(*   + intros * [] []; now econstructor. *)
+(*   + intros * [] [] ?. *)
+(*     now eapply WeakDeclarativeTypingProperties.TypingDeclProperties. *)
   + intros * ? []; now econstructor.
   Qed.
 
@@ -1082,6 +1085,7 @@ Module DeepTypingProperties.
     - eapply NeTermDecl_tIdElim; tea.
       eapply convtm_convneu; tea; constructor.
     - now apply eqnf_tIdElim.
+(*
   + intros ? n n' **; invnf; eexists.
     - now eapply convneu_quote.
     - now apply NeTermDecl_tQuote.
@@ -1128,7 +1132,7 @@ Module DeepTypingProperties.
       match goal with H : NfTermDecl _ _  u ?r |- _ =>
         tryif unify u r then fail else assert (r = u) by (now eapply NfTermDecl_unique); subst
       end.
-      now apply eqnf_tReflect.
+      now apply eqnf_tReflect.*)
   Qed.
 
   #[export, refine] Instance RedTypeDeclProperties : RedTypeProperties (ta := nf) := {}.
@@ -1139,16 +1143,16 @@ Module DeepTypingProperties.
   #[export, refine] Instance RedTermDeclProperties : RedTermProperties (ta := nf) := {}.
   Proof.
   all: try apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf.
-    match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end.
-    now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
-  + intros; invnf.
-    match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end.
-    now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
+(*   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
+(*   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
+(*   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
+(*   + intros; invnf. *)
+(*     match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end. *)
+(*     now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
+(*   + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
+(*   + intros; invnf. *)
+(*     match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end. *)
+(*     now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   Qed.

@@ -189,41 +189,6 @@ unfold closedn; induction n; intros; cbn in *.
 - apply IHn.
 Qed.
 
-(** Axiomatic definition of a computation model internal to MLTT *)
-
-Axiom quote : term -> nat.
-Axiom run : term.
-
-(** Slightly contrived way to state that [run] is closed. *)
-Axiom run_subst : forall (σ : nat -> term), run[σ] = run.
-
-Lemma run_ren : forall ρ, run⟨ρ⟩ = run.
-Proof.
-intros; rewrite rinstInst'_term; apply run_subst.
-Qed.
-
-(** Derived notions from the model *)
-
-Definition tTotal t u :=
-  tEval (tApp (tApp run (tQuote t)) u) (tStep t u) (tApp t u).
-(** eval (run (quote t) u) (step t u) (t u) *)
-
-Lemma tTotal_ren : forall t u ρ,
-  (tTotal t u)⟨ρ⟩ = tTotal t⟨ρ⟩ u⟨ρ⟩.
-Proof.
-intros; unfold tTotal; cbn - [tEval].
-f_equal; rewrite tEval_ren; cbn; do 2 f_equal; try now asimpl.
-now rewrite run_ren.
-Qed.
-
-Lemma tTotal_subst : forall t u σ,
-  (tTotal t u)[σ] = tTotal t[σ] u[σ].
-Proof.
-intros; unfold tTotal; cbn - [tEval].
-f_equal; rewrite tEval_subst; cbn; do 2 f_equal; try now asimpl.
-f_equal; apply run_subst.
-Qed.
-
 (*
 Definition qTotal (t u k v : nat) :=
   tPair tNat (tEval (tApp (tApp model.(run) (qNat t)) (qNat u)) (tRel 0) (qNat v))

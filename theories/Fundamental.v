@@ -179,6 +179,7 @@ Section Fundamental.
     Unshelve. all: irrValid.
   Qed.
 
+(*
   Lemma FundTmQuote : forall (Γ : context) (t : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTm Γ tNat (tQuote t).
   Proof.
@@ -209,6 +210,7 @@ Section Fundamental.
     + eapply totalValid; irrValid; exact one.
     + eapply ReflectValid; irrValid.
   Qed.
+*)
 
   Lemma FundTmConv : forall (Γ : context) (t A B : term),
     FundTm Γ A t ->
@@ -267,6 +269,7 @@ Section Fundamental.
     Unshelve. all: cycle 2; irrValid.
   Qed.
 
+(*
   Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),
     FundTmEq Γ (arr tNat tNat) t t -> dnf t -> Closed.closed0 t ->
     FundTmEq Γ tNat (tQuote t) (qNat (quote (erase t))).
@@ -346,6 +349,7 @@ Section Fundamental.
   - eapply (totalValid (l := one)); try irrValid.
   - apply ReflectCongValid; irrValid.
   Qed.
+*)
 
   Lemma FundTmEqPiCong : forall (Γ : context) (A B C D : term),
     FundTm Γ U A ->
@@ -862,9 +866,9 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmId.
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
-  + intros; now apply FundTmQuote.
-  + intros; now apply FundTmStep.
-  + intros; now apply FundTmReflect.
+(*   + intros; now apply FundTmQuote. *)
+(*   + intros; now apply FundTmStep. *)
+(*   + intros; now apply FundTmReflect. *)
   + intros; now eapply FundTmConv.
   + intros; now apply FundTyEqPiCong.
   + intros; now apply FundTyEqSigCong.
@@ -874,12 +878,12 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTyEqSym.
   + intros; now eapply FundTyEqTrans.
   + intros; now apply FundTmEqBRed.
-  + intros; now apply FundTmEqQuoteEval.
-  + intros; now apply FundTmEqQuoteCong.
-  + intros; now eapply FundTmEqStepEval.
-  + intros; now eapply FundTmEqStepCong.
-  + intros; now apply FundTmEqReflectEval.
-  + intros; now apply FundTmEqReflectCong.
+(*   + intros; now apply FundTmEqQuoteEval. *)
+(*   + intros; now apply FundTmEqQuoteCong. *)
+(*   + intros; now eapply FundTmEqStepEval. *)
+(*   + intros; now eapply FundTmEqStepCong. *)
+(*   + intros; now apply FundTmEqReflectEval. *)
+(*   + intros; now apply FundTmEqReflectCong. *)
   + intros; now apply FundTmEqPiCong.
   + intros; now eapply FundTmEqAppCong.
   + intros; now apply FundTmEqLambdaCong.

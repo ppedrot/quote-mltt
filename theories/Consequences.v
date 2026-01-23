@@ -174,8 +174,6 @@ Proof.
   repeat match goal with H : _ /\ _ |- _ => destruct H end;
   eauto; tea.
   - destruct v; tea.
-  - elim n; now eapply (allfv_closed nil).
-  - destruct s as [n|n]; elim n; now eapply (allfv_closed nil).
   - destruct s as [n|n]; elim n; now eapply (allfv_closed nil).
 Qed.
 
@@ -266,6 +264,7 @@ Section NatCanonicityDeepRed.
 Import DeepTyping.DeepTypingData.
 Import DeepTyping.DeepTypingProperties.
 
+(*
 Lemma _nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
 Proof.
   intros Ht.
@@ -285,7 +284,7 @@ Proof.
     + apply (allfv_closed ε).
       now apply typing_fv in Ht₀ as (?&?&?). }
   destruct Hn as [n]; subst; exists n; now eapply dredalg_bigstep.
-Qed.
+Qed.*)
 
 End NatCanonicityDeepRed.
 
@@ -295,7 +294,9 @@ Proof.
   now apply _nat_canonicity.
 Qed.
 
+(*
 Lemma nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
 Proof.
   now apply _nat_canonicity_dred.
 Qed.
+*)

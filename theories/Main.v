@@ -40,9 +40,11 @@ Qed.
 
 Print Assumptions strong_normalization.
 
+(*
 Lemma nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
 Proof.
 intros; now eapply nat_canonicity_dred.
 Qed.
 
 Print Assumptions nat_canonicity_dred.
+*)
