@@ -119,6 +119,7 @@ Section TypingWk.
         * rewrite <- 2!wk_up_wk1, 2!wk_step_wk1; eauto.
         * rewrite <- wk_up_wk1, wk1_ren_on; cbn; constructor; tea; constructor.
       + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
+    - intros; cbn; now constructor.
 (*
     - intros * _ IH **; cbn.
       econstructor.
@@ -171,6 +172,17 @@ Section TypingWk.
       + now eapply IHu.
       + now asimpl.
       + now asimpl.
+    - intros; cbn; constructor; eauto using dnf_ren, closed0_ren.
+      unfold eqnf.
+      etransitivity; [now apply erase_is_closed0_ren_id|].
+      etransitivity; [tea|].
+      symmetry; now apply erase_is_closed0_ren_id.
+    - intros; cbn; constructor; eauto using dnf_ren, closed0_ren.
+      revert H9; apply ssrbool.contraNN; intro Heq.
+      apply term_beq_eq in Heq; apply term_eq_beq.
+      etransitivity; [|etransitivity]; [|apply Heq|now apply erase_is_closed0_ren_id].
+      symmetry; now apply erase_is_closed0_ren_id.
+    - intros; cbn; constructor; eauto.
 (*
     - intros * H IH **; cbn.
       unfold ren1, Ren1_well_wk.
@@ -790,6 +802,10 @@ Module WeakDeclarativeTypingProperties.
   - intros ????? []; split; now econstructor.
   - intros ????? []; split; now econstructor.
   - intros * ??????? []; split; now econstructor.
+  - intros; econstructor; eauto using whne.
+    eapply TermConv; [now constructor|].
+    assert [|- Γ] by gen_typing.
+    now eapply convUniv, convtm_nat.
 (*
   - intros; econstructor; now econstructor.
   - intros; econstructor; eauto using whne.
@@ -907,6 +923,20 @@ Module WeakDeclarativeTypingProperties.
     + apply redalg_reflect; tea.
     + constructor; tea.
 *)
+  - intros; split.
+    + now constructor.
+    + apply redalg_one_step; now constructor.
+    + constructor; tea.
+      apply term_beq_eq in H6; tea.
+  - intros; split.
+    + now constructor.
+    + apply redalg_one_step; now constructor.
+    + constructor; tea.
+  - intros; split.
+    + constructor; tea; now eapply lrefl.
+    + now apply redalg_decide.
+    + constructor; tea.
+      now constructor.
   - intros; now eapply redtmdecl_conv.
   - intros; split.
     + assumption.

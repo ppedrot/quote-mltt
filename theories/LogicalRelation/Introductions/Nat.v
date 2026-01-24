@@ -132,6 +132,7 @@ Section NatElimRedEq.
     (forall n n' (Rnn' : [Γ ||-<l> n ≅ n' : _ | RN]),
       [Γ ||-<l> tNatElim P hz hs n ≅ tNatElim Q hz' hs' n' : _ | RPQext _ _ Rnn' ]).
   Proof. intros; now apply (fst natElimRedEqAux). Qed.
+
 End NatElimRedEq.
 
 

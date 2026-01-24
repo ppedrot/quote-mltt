@@ -3,15 +3,213 @@ From LogRel.Syntax Require Import Confluence Standardisation.
 From LogRel.LogicalRelation Require Import Properties.
 From LogRel.LogicalRelation.Introductions Require Import Universe Nat Sigma SimpleArr Id.
 From LogRel.Validity Require Import Validity Irrelevance Properties.
-From LogRel.Validity Require Import Universe Nat SimpleArr Quote.
+From LogRel.Validity Require Import Universe Nat SimpleArr.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
 
-(*
-Section Utils.
+Section Valid.
 
 Context `{GenericTypingProperties}.
+Context {SN : SNTypingProperties ta _ _ _ _ _}.
+
+Lemma DecideRedEvalEq : forall Γ l A A' t u (rΓ : [|- Γ])
+  (rNat : [Γ ||-<l> tNat])
+  (rA : [Γ ||-<l> A ≅ A']),
+  [rA | Γ ||- t ≅ t : A ≅ A'] ->
+  [rA | Γ ||- u ≅ u : A ≅ A'] ->
+  dnf t -> dnf u ->
+  closed0 t -> closed0 u ->
+  term_beq (erase t) (erase u) = true ->
+  [rNat | Γ ||- tDecide A t u ≅ tZero : tNat].
+Proof.
+intros * rΓ rNat rA rt ru Ht Hu Hct Hcu Heq.
+assert [Γ |- A] by now escape.
+eapply redSubstLeftTmEq; tea.
++ unshelve eapply irrLR, zeroRed.
+  3: apply natRedTy. all: tea.
++ apply redtm_decide_eval_eq; eauto; try now escape.
+Qed.
+
+(*
+Lemma DecideRedEvalEq : forall Γ l A A' t u (rΓ : [|- Γ])
+  (rNat : [Γ ||-<l> tNat])
+  (rA : [Γ ||-<l> A ≅ A']),
+  [rA | Γ ||- t ≅ u : A ≅ A'] ->
+  closed0 t -> closed0 u ->
+  [rNat | Γ ||- tDecide A t u ≅ tZero : tNat].
+Proof.
+intros * rΓ rNat rA req Hct Hcu.
+assert [Γ |- A] by now escape.
+assert (Hnf : [Γ |- t ≅ u : A]) by (now escape); apply snty_nf in Hnf.
+destruct Hnf as (t₀&u₀&[]&[]&?&?&?).
+assert [Γ |- A] by now escape.
+assert [Γ |- A'] by now escape.
+assert [Γ |- A ≅ A'] by now escape.
+assert ([Γ |- tDecide A t u ⤳* tDecide A t₀ u₀ : tNat]) by now eapply redtm_decide.
+eapply redSubstLeftTmEq; tea.
+assert [Γ |- tDecide A t₀ u₀ ⤳* tZero : tNat].
+{ apply redtm_decide_eval_eq; eauto using term_eq_beq, dredalg_closed0.
+  + now eapply urefl.
+  + now eapply urefl. }
+eapply redSubstLeftTmEq; [|tea].
+unshelve eapply irrLR, zeroRed.
+3: apply natRedTy. all: tea.
+Qed.
+*)
+
+Lemma DecideRedEvalNeq : forall Γ l A A' t u (rΓ : [|- Γ])
+  (rNat : [Γ ||-<l> tNat])
+  (rA : [Γ ||-<l> A ≅ A']),
+  [rA | Γ ||- t ≅ t : A ≅ A'] ->
+  [rA | Γ ||- u ≅ u : A ≅ A'] ->
+  dnf t -> dnf u ->
+  closed0 t -> closed0 u ->
+  negb (term_beq (erase t) (erase u)) = true ->
+  [rNat | Γ ||- tDecide A t u ≅ tSucc tZero : tNat].
+Proof.
+intros * rΓ rNat rA rt ru Ht Hu Hct Hcu Heq.
+assert [Γ |- A] by now escape.
+eapply redSubstLeftTmEq; tea.
++ unshelve eapply irrLR, succRed, zeroRed.
+  3: apply natRedTy. all: tea.
++ apply redtm_decide_eval_neq; eauto; try now escape.
+Qed.
+
+Lemma DecideRedEq : forall Γ l A A' t t' u u' (rΓ : [|- Γ])
+  (rNat : [Γ ||-<l> tNat])
+  (rA : [Γ ||-<l> A ≅ A']),
+  [rA | Γ ||- t ≅ t' : A ≅ A'] ->
+  [rA | Γ ||- u ≅ u' : A ≅ A'] ->
+  [rNat | Γ ||- tDecide A t u ≅ tDecide A' t' u' : tNat].
+Proof.
+intros * rΓ rNat rA rt ru.
+assert (Hnft : [Γ |- t ≅ t' : A]) by (now escape); apply snty_nf in Hnft.
+assert (Hnfu : [Γ |- u ≅ u' : A]) by (now escape); apply snty_nf in Hnfu.
+destruct Hnft as (t₀&t'₀&[]&[]&?&?&?).
+destruct Hnfu as (u₀&u'₀&[]&[]&?&?&?).
+assert [Γ |- A] by now escape.
+assert [Γ |- A'] by now escape.
+assert [Γ |- A ≅ A'] by now escape.
+assert ([Γ |- tDecide A t u ⤳* tDecide A t₀ u₀ : tNat]) by now eapply redtm_decide.
+assert ([Γ |- tDecide A' t' u' ⤳* tDecide A' t'₀ u'₀ : tNat]) by (eapply redtm_decide; gen_typing).
+eapply redSubstTmEq; tea.
+remember (is_closedn 0 t₀) as ct eqn:Hct; symmetry in Hct.
+assert (Hct' : is_closedn 0 t'₀ = ct).
+{ erewrite eqnf_is_closedn; [tea|now apply Symmetric_eqnf]. }
+remember (is_closedn 0 u₀) as cu eqn:Hcu; symmetry in Hcu.
+assert (Hcu' : is_closedn 0 u'₀ = cu).
+{ erewrite eqnf_is_closedn; [tea|now apply Symmetric_eqnf]. }
+remember (andb ct cu) as cb eqn:Hcb; symmetry in Hcb; destruct cb.
++ destruct ct; [|cbn in Hcb; congruence].
+  destruct cu; [|cbn in Hcb; congruence].
+  remember (term_beq (erase t₀) (erase u₀)) as eqb eqn:Heqb; symmetry in Heqb.
+  assert ([Γ |- tDecide A t₀ u₀ ⤳* (if eqb then tZero else tSucc tZero) : tNat]).
+  { destruct eqb.
+    + apply redtm_decide_eval_eq; eauto; now eapply urefl.
+    + apply redtm_decide_eval_neq; eauto using ssrbool.negbT; now eapply urefl. }
+  assert ([Γ |- tDecide A' t'₀ u'₀ ⤳* (if eqb then tZero else tSucc tZero) : tNat]).
+  { replace (erase t₀) with (erase t'₀) in Heqb by now eauto.
+    replace (erase u₀) with (erase u'₀) in Heqb by now eauto.
+    destruct eqb.
+    + apply redtm_decide_eval_eq; eauto.
+      - eapply convtm_conv; [|tea].
+        now eapply urefl.
+      - eapply convtm_conv; [|tea].
+        now eapply urefl.
+   + apply redtm_decide_eval_neq; eauto.
+      - eapply convtm_conv; [|tea].
+        now eapply urefl.
+      - eapply convtm_conv; [|tea].
+        now eapply urefl.
+      - now apply ssrbool.negbT. }
+  eapply redSubstTmEq; tea.
+  destruct eqb.
+  - unshelve eapply irrLR, zeroRed.
+    3: apply natRedTy. all: tea.
+  - unshelve eapply irrLR, succRed, zeroRed.
+    3: apply natRedTy. all: tea.
++ eapply reflectLR.
+  - apply ty_decide; tea; now eapply urefl.
+  - apply ty_decide; tea.
+    * eapply convtm_conv; tea; now eapply urefl.
+    * eapply convtm_conv; tea; now eapply urefl.
+  - apply convneu_decide; tea.
+    * etransitivity; [|tea].
+      etransitivity; [symmetry; tea|].
+      now escape.
+    * etransitivity; [|tea].
+      etransitivity; [symmetry; tea|].
+      now escape.
+    * assert (forall b, b = false -> ~ (is_true b)).
+      { intros []; congruence. }
+      destruct ct, cu; cbn in *; eauto.
+    * assert (forall b, b = false -> ~ (is_true b)).
+      { intros []; congruence. }
+      destruct ct, cu; cbn in *; eauto.
+Qed.
+
+Section DecideValid.
+
+  Context {Γ Γ' l} {A A' t t' u u' : term}
+    (vΓ : [||-v Γ ≅ Γ'])
+    (vNat : [Γ ||-v<l> tNat ≅ tNat | vΓ])
+    (vA : [Γ ||-v<l> A ≅ A' | vΓ])
+    (vt : [Γ ||-v<l> t ≅ t' : A | vΓ | vA ])
+    (vu : [Γ ||-v<l> u ≅ u' : A | vΓ | vA ])
+  .
+
+  Lemma DecideCongValid :
+    [Γ ||-v<l> tDecide A t u ≅ tDecide A' t' u' : tNat | vΓ | vNat].
+  Proof.
+    econstructor; intros *; cbn.
+    instValid Vσσ'.
+    eapply DecideRedEq; tea.
+  Qed.
+
+End DecideValid.
+
+Section DecideEvalEqValid.
+
+  Context {Γ Γ' l} {A t u : term}
+    (vΓ : [||-v Γ ≅ Γ'])
+    (vNat : [Γ ||-v<l> tNat ≅ tNat | vΓ])
+    (vA : [Γ ||-v<l> A | vΓ])
+    (vt : [Γ ||-v<l> t : A | vΓ | vA ])
+    (vu : [Γ ||-v<l> u : A | vΓ | vA ])
+  .
+
+  Lemma DecideEvalEqValid :
+    dnf t -> dnf u -> closed0 t -> closed0 u ->
+    term_beq (erase t) (erase u) = true ->
+    [Γ ||-v<l> tDecide A t u ≅ tZero : tNat | vΓ | vNat].
+  Proof.
+    intros Hnft Hnfu Hct Hcu.
+    econstructor; intros *; cbn.
+    instValid Vσσ'.
+    eapply DecideRedEvalEq; eauto using dnf_closed0_subst, closed0_subst.
+    rewrite !erase_is_closed0_subst_id; tea.
+  Qed.
+
+  Lemma DecideEvalNeqValid :
+    dnf t -> dnf u -> closed0 t -> closed0 u ->
+    negb (term_beq (erase t) (erase u)) = true ->
+    [Γ ||-v<l> tDecide A t u ≅ tSucc tZero : tNat | vΓ | vNat].
+  Proof.
+    intros Hnft Hnfu Hct Hcu.
+    econstructor; intros *; cbn.
+    instValid Vσσ'.
+    eapply DecideRedEvalNeq; eauto using dnf_closed0_subst, closed0_subst.
+    rewrite !erase_is_closed0_subst_id; tea.
+  Qed.
+
+End DecideEvalEqValid.
+
+End Valid.
+
+(* Section Valid. *)
+
+(*
 
 Lemma embRedTy {Γ l l' A} (h : l << l') (rA : [Γ ||-< l > A]) : [Γ ||-< l' > A].
 Proof.

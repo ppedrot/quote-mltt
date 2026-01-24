@@ -543,6 +543,26 @@ split.
   - constructor; tea; etransitivity; tea.
 Qed.
 
+Lemma NeTermDecl_tDecide : forall Γ (A A₀ t t' t₀ u u' u₀ : term),
+  [Γ |-[ de ] t ≅ t' : A] ->
+  [Γ |-[ de ] u ≅ u' : A] ->
+  (~ closed0 t') + (~ closed0 u') ->
+  dnf t' -> dnf u' ->
+  NfTypeDecl Γ A A₀ ->
+  NfTermDecl Γ A t' t₀ ->
+  NfTermDecl Γ A u' u₀ ->
+  NeTermDecl Γ tNat (tDecide A t' u') (tDecide A₀ t₀ u₀).
+Proof.
+intros * ? ? Hc ? ? [] [] [].
+constructor; eauto using whne.
+assert (t' = t₀) by eauto using dred_dnf; subst t₀.
+assert (u' = u₀) by eauto using dred_dnf; subst u₀.
+constructor.
++ apply dredalg_decide; eauto.
++ now do 2 constructor.
++ now constructor.
+Qed.
+
 (*
 Lemma NeTermDecl_tQuote : forall Γ n n₀, ~ closed0 n -> dnf n ->
   NfTermDecl Γ (arr tNat tNat) n n₀ ->
@@ -599,6 +619,7 @@ Qed.
 *)
 
 End Nf.
+
 
 Module DeepTypingData.
 
@@ -1019,6 +1040,7 @@ Module DeepTypingProperties.
 (*   + intros * [] []; now econstructor. *)
 (*   + intros * [] [] ?. *)
 (*     now eapply WeakDeclarativeTypingProperties.TypingDeclProperties. *)
+  + intros; invnf; now constructor.
   + intros * ? []; now econstructor.
   Qed.
 
@@ -1085,6 +1107,13 @@ Module DeepTypingProperties.
     - eapply NeTermDecl_tIdElim; tea.
       eapply convtm_convneu; tea; constructor.
     - now apply eqnf_tIdElim.
+  + intros; invnf; eexists.
+    - now eapply convneu_decide.
+    - eapply NeTermDecl_tDecide; tea; now symmetry.
+    - eapply NeTermDecl_tDecide; eauto using NfTermConv.
+      * eapply TermConv; tea.
+      * eapply TermConv; tea.
+    - eapply eqnf_tDecide; tea.
 (*
   + intros ? n n' **; invnf; eexists.
     - now eapply convneu_quote.
@@ -1153,6 +1182,9 @@ Module DeepTypingProperties.
 (*   + intros; invnf. *)
 (*     match goal with H : EvalStep _ _ _ _ _ |- _ => apply EvalStep_compat in H end. *)
 (*     now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties. *)
+  + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   Qed.

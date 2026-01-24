@@ -340,6 +340,11 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e : tId A x y] ->
       [Γ |- tIdElim A x P hr y e : P[e .: y..]];
+    ty_decide {Γ A t u} :
+      [Γ |- A] ->
+      [Γ |- t ≅ t : A] ->
+      [Γ |- u ≅ u : A] ->
+      [Γ |- tDecide A t u : tNat];
 (*     ty_quote {Γ} {t} : *)
 (*       [ Γ |- t ≅ t : arr tNat tNat ] -> *)
 (*       [ Γ |- tQuote t : tNat ]; *)
@@ -490,6 +495,15 @@ Section GenericTyping.
       [Γ |- y ≅ y' : A] ->
       [Γ |- e ~ e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ~ tIdElim A' x' P' hr' y' e' : P[e .: y..]];
+    convneu_decide {Γ A A' t t' u u'} :
+      [Γ |- A] ->
+      [Γ |- A ≅ A'] ->
+      [Γ |- t ≅ t' : A] ->
+      [Γ |- u ≅ u' : A] ->
+      dnf t -> dnf t' -> dnf u -> dnf u' ->
+      (~ closed0 t) + (~ closed0 u) -> (~ closed0 t') + (~ closed0 u') ->
+      [Γ |- tDecide A t u ~ tDecide A' t' u' : tNat];
+
 (*     convneu_quote {Γ n n'} : *)
 (*         [Γ |- n ≅ n' : arr tNat tNat] -> *)
 (*         dnf n -> dnf n' -> *)
@@ -604,6 +618,26 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e ⤳* e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ⤳* tIdElim A x P hr y e' : P[e .: y..]];
+    redtm_decide_eval_eq {Γ A t u} :
+      [Γ |- A] ->
+      [Γ |- t ≅ t : A] ->
+      [Γ |- u ≅ u : A] ->
+      dnf t -> closed0 t -> dnf u -> closed0 u -> term_beq (erase t) (erase u) ->
+      [Γ |- tDecide A t u ⤳* tZero : tNat];
+    redtm_decide_eval_neq {Γ A t u} :
+      [Γ |- A] ->
+      [Γ |- t ≅ t : A] ->
+      [Γ |- u ≅ u : A] ->
+      dnf t -> closed0 t -> dnf u -> closed0 u -> negb (term_beq (erase t) (erase u)) ->
+      [Γ |- tDecide A t u ⤳* tSucc tZero : tNat];
+    redtm_decide {Γ A t t' u u'} :
+      [Γ |- A] ->
+      [Γ |- t ≅ t' : A] ->
+      [Γ |- u ≅ u' : A] ->
+      [ t ⇶* t' ] ->
+      [ u ⇶* u' ] ->
+      dnf t' -> dnf u' ->
+      [Γ |- tDecide A t u ⤳* tDecide A t' u' : tNat];
 (*     redtm_evalquote {Γ t} : *)
 (*       [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t -> *)
 (*       [Γ |- tQuote t ⤳* qNat (quote (erase t)) : tNat]; *)

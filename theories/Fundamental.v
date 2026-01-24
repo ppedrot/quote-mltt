@@ -179,6 +179,15 @@ Section Fundamental.
     Unshelve. all: irrValid.
   Qed.
 
+  Lemma FundTmDecide : forall (Γ : context) (A t u : term),
+    FundTy Γ A -> FundTmEq Γ A t t -> FundTmEq Γ A u u -> FundTm Γ tNat (tDecide A t u).
+  Proof.
+    intros * [] [] []; econstructor.
+    unshelve eapply DecideCongValid; tea.
+    irrValid.
+    Unshelve. apply natValid.
+  Qed.
+
 (*
   Lemma FundTmQuote : forall (Γ : context) (t : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTm Γ tNat (tQuote t).
@@ -267,6 +276,45 @@ Section Fundamental.
     intros * [] [] []; econstructor.
     eapply betaValid; irrValid.
     Unshelve. all: cycle 2; irrValid.
+  Qed.
+
+  Lemma FundTmEqDecideEvalEq : forall Γ A t u,
+    FundTy Γ A ->
+    FundTmEq Γ A t t ->
+    FundTmEq Γ A u u ->
+    dnf t -> dnf u -> closed0 t -> closed0 u -> eqnf t u ->
+    FundTmEq Γ tNat (tDecide A t u) tZero.
+  Proof.
+    intros * [] [] [] **; econstructor.
+    eapply DecideEvalEqValid; tea.
+    + irrValid.
+    + apply term_eq_beq; tea.
+    Unshelve. apply natValid.
+  Qed.
+
+  Lemma FundTmEqDecideEvalNeq : forall Γ A t u,
+    FundTy Γ A ->
+    FundTmEq Γ A t t ->
+    FundTmEq Γ A u u ->
+    dnf t -> dnf u -> closed0 t -> closed0 u -> negb (term_beq (erase t) (erase u)) = true ->
+    FundTmEq Γ tNat (tDecide A t u) (tSucc tZero).
+  Proof.
+    intros * [] [] [] **; econstructor.
+    eapply DecideEvalNeqValid; tea.
+    irrValid.
+    Unshelve. apply natValid.
+  Qed.
+
+  Lemma FundTmEqDecideCong : forall Γ A A' t t' u u',
+    FundTyEq Γ A A' -> FundTmEq Γ A t t' -> FundTmEq Γ A u u' ->
+    FundTmEq Γ tNat (tDecide A t u) (tDecide A' t' u').
+  Proof.
+    intros * [] [] []; econstructor.
+    eapply DecideCongValid; tea; irrValid.
+    Unshelve.
+    + irrValid.
+    + apply natValid.
+    + irrValid.
   Qed.
 
 (*
@@ -866,6 +914,7 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmId.
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
+  + intros; now apply FundTmDecide.
 (*   + intros; now apply FundTmQuote. *)
 (*   + intros; now apply FundTmStep. *)
 (*   + intros; now apply FundTmReflect. *)
@@ -878,6 +927,9 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTyEqSym.
   + intros; now eapply FundTyEqTrans.
   + intros; now apply FundTmEqBRed.
+  + intros; now apply FundTmEqDecideEvalEq.
+  + intros; now apply FundTmEqDecideEvalNeq.
+  + intros; now apply FundTmEqDecideCong.
 (*   + intros; now apply FundTmEqQuoteEval. *)
 (*   + intros; now apply FundTmEqQuoteCong. *)
 (*   + intros; now eapply FundTmEqStepEval. *)
