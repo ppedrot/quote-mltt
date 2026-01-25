@@ -345,6 +345,12 @@ Section GenericTyping.
       [Γ |- t ≅ t : A] ->
       [Γ |- u ≅ u : A] ->
       [Γ |- tDecide A t u : tNat];
+    ty_reflect {Γ A t u e} :
+      [Γ |- A] ->
+      [Γ |- t : A] ->
+      [Γ |- u : A] ->
+      [Γ |- e : tId tNat (tDecide A t u) tZero] ->
+      [Γ |- tReflect A t u e : tId A t u];
 (*     ty_quote {Γ} {t} : *)
 (*       [ Γ |- t ≅ t : arr tNat tNat ] -> *)
 (*       [ Γ |- tQuote t : tNat ]; *)
@@ -503,6 +509,13 @@ Section GenericTyping.
       dnf t -> dnf t' -> dnf u -> dnf u' ->
       (~ closed0 t) + (~ closed0 u) -> (~ closed0 t') + (~ closed0 u') ->
       [Γ |- tDecide A t u ~ tDecide A' t' u' : tNat];
+    convneu_reflect {Γ A A' t t' u u' e e'} :
+      [Γ |- A] ->
+      [Γ |- A ≅ A'] ->
+      [Γ |- t ≅ t' : A] ->
+      [Γ |- u ≅ u' : A] ->
+      [Γ |- e ~ e' : tId tNat (tDecide A t u) tZero] ->
+      [Γ |- tReflect A t u e ~ tReflect A' t' u' e' : tId A t u]
 
 (*     convneu_quote {Γ n n'} : *)
 (*         [Γ |- n ≅ n' : arr tNat tNat] -> *)
@@ -638,6 +651,22 @@ Section GenericTyping.
       [ u ⇶* u' ] ->
       dnf t' -> dnf u' ->
       [Γ |- tDecide A t u ⤳* tDecide A t' u' : tNat];
+    redtm_reflect_eval {Γ A X x t u} :
+      [Γ |- A] ->
+      [Γ |- t : A] ->
+      [Γ |- u : A] ->
+      [Γ |- X] ->
+      [Γ |- x : X] ->
+      [Γ |- X ≅ tNat] ->
+      [Γ |- x ≅ tDecide A t u : tNat] ->
+      [Γ |- x ≅ tZero : tNat] ->
+      [Γ |- tReflect A t u (tRefl X x) ⤳* tRefl A t : tId A t u];
+    redtm_reflect {Γ A t u e e'} :
+      [Γ |- A] ->
+      [Γ |- t : A] ->
+      [Γ |- u : A] ->
+      [Γ |- e ⤳* e' : tId tNat (tDecide A t u) tZero] ->
+      [Γ |- tReflect A t u e ⤳* tReflect A t u e' : tId A t u];
 (*     redtm_evalquote {Γ t} : *)
 (*       [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t -> *)
 (*       [Γ |- tQuote t ⤳* qNat (quote (erase t)) : tNat]; *)
@@ -715,6 +744,18 @@ Class SNTypingProperties `(ta : tag) `(WfContext ta) `(WfType ta) `(Typing ta) `
 := {
   snty_nf : forall Γ A t u, [ Γ |- t ≅ u : A ] ->
     ∑ (t₀ : term), ∑ (u₀ : term), isNf t t₀ × isNf u u₀ × [Γ |- t ≅ t₀ : A] × [Γ |- u ≅ u₀ : A] × eqnf t₀ u₀;
+}.
+
+Class SNCompleteTypingProperties `(ta : tag) `(WfContext ta) `(WfType ta) `(Typing ta) `(ConvType ta) `(ConvTerm ta) `(ConvNeuConv ta)
+:= {
+  sncmp_convtm : forall Γ A t t₀ u u₀, [Γ |- t : A] -> [Γ |- u : A] -> isNf t t₀ -> isNf u u₀ -> eqnf t₀ u₀ ->
+    (* we could also ask: *)
+    (* [Γ |- t ≅ t₀ : A] -> [Γ |- u ≅ u₀ : A] -> *)
+    [Γ |- t ≅ u : A];
+  sncmp_convneu : forall Γ A t t₀ u u₀, [Γ |- t : A] -> [Γ |- u : A] -> isNf t t₀ -> isNf u u₀ -> eqnf t₀ u₀ ->
+    (* we could also ask: *)
+    (* [Γ |- t ≅ t₀ : A] -> [Γ |- u ≅ u₀ : A] -> *)
+    whne t -> whne u -> [Γ |- t ~ u : A];
 }.
 
 (** Hints for gen_typing *)

@@ -132,6 +132,8 @@ Section TypingWk.
       cbn in *; constructor; eauto.
       rewrite <- run_ren with (ρ := ρ); eauto.
 *)
+    - intros; cbn in *.
+      constructor; eauto.
     - intros * _ IHt _ IHAB ? ρ ?.
       econstructor.
       1: now eapply IHt.
@@ -235,6 +237,10 @@ Section TypingWk.
       rewrite tTotal_ren; cbn in *; constructor; eauto using dnf_ren, closed0_ren.
       rewrite <- run_ren with (ρ := ρ); eauto.
 *)
+    - intros; cbn in *.
+      constructor; eauto.
+    - intros; cbn in *.
+      constructor; eauto.
     - intros Γ A A' B B' _ IHA _ IHAA' _ IHBB' ? ρ ?.
       cbn.
       econstructor.
@@ -806,6 +812,8 @@ Module WeakDeclarativeTypingProperties.
     eapply TermConv; [now constructor|].
     assert [|- Γ] by gen_typing.
     now eapply convUniv, convtm_nat.
+  - intros * ???? []; econstructor; eauto using whne.
+    constructor; tea.
 (*
   - intros; econstructor; now econstructor.
   - intros; econstructor; eauto using whne.
@@ -937,6 +945,19 @@ Module WeakDeclarativeTypingProperties.
     + now apply redalg_decide.
     + constructor; tea.
       now constructor.
+  - intros; split.
+    + constructor; tea.
+      eapply wfTermConv; [eapply wfTermRefl|]; tea.
+      constructor; tea.
+      * eapply TermConv; tea; now apply TypeSym.
+      * eapply TermConv; tea; now apply TypeSym.
+    + apply redalg_one_step; constructor.
+    + constructor; tea.
+  - intros; split.
+    + constructor; tea; boundary.
+    + now eapply redalg_reflect, redtmdecl_red.
+    + constructor; tea; try now (eapply TypeRefl + eapply TermRefl); tea.
+      now apply RedConvTeC.
   - intros; now eapply redtmdecl_conv.
   - intros; split.
     + assumption.

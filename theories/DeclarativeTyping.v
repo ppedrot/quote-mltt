@@ -132,6 +132,12 @@ Section Definitions.
     [Γ |- t ≅ t : A] ->
     [Γ |- u ≅ u : A] ->
     [Γ |- tDecide A t u : tNat]
+  | wfTermReflect {Γ A t u e} :
+    [Γ |- A] ->
+    [Γ |- t : A] ->
+    [Γ |- u : A] ->
+    [Γ |- e : tId tNat (tDecide A t u) tZero] ->
+    [Γ |- tReflect A t u e : tId A t u]
 (*   | wfTermQuote {Γ} {t} : *)
 (*     [Γ |- t ≅ t : arr tNat tNat] -> *)
 (*     [Γ |- tQuote t : tNat] *)
@@ -204,6 +210,21 @@ Section Definitions.
     [Γ |- t ≅ t' : A] ->
     [Γ |- u ≅ u' : A] ->
     [Γ |- tDecide A t u ≅ tDecide A' t' u' : tNat]
+  | TermReflectEval {Γ A X x t u} :
+    [Γ |- A] ->
+    [Γ |- t : A] ->
+    [Γ |- u : A] ->
+    [Γ |- X ≅ tNat] ->
+    [Γ |- x ≅ tDecide A t u : tNat] ->
+    [Γ |- x ≅ tZero : tNat] ->
+    [Γ |- tReflect A t u (tRefl X x) ≅ tRefl A t : tId A t u]
+  | TermReflectCong {Γ A A' t t' u u' e e'} :
+    [Γ |- A] ->
+    [Γ |- A ≅ A'] ->
+    [Γ |- t ≅ t' : A] ->
+    [Γ |- u ≅ u' : A] ->
+    [Γ |- e ≅ e' : tId tNat (tDecide A t u) tZero] ->
+    [Γ |- tReflect A t u e ≅ tReflect A' t' u' e' : tId A t u]
 (*   | TermQuoteRed {Γ} {t} : *)
 (*     [Γ |- t ≅ t : arr tNat tNat] -> *)
 (*     dnf t -> closed0 t -> *)

@@ -563,6 +563,20 @@ constructor.
 + now constructor.
 Qed.
 
+Lemma NeTermDecl_tReflect : forall Γ A A' A₀ t t' t₀ u u' u₀ e e' e₀,
+  [Γ |-[de] A ≅ A'] ->
+  [Γ |-[de] t ≅ t' : A] ->
+  [Γ |-[de] u ≅ u' : A] ->
+  [Γ |-[de] e ≅ e' : tId tNat (tDecide A t u) tZero] ->
+  NfTypeDecl Γ A' A₀ ->
+  NfTermDecl Γ A t' t₀ ->
+  NfTermDecl Γ A u' u₀ ->
+  NeTermDecl Γ (tId tNat (tDecide A t u) tZero) e' e₀ ->
+  NeTermDecl Γ (tId A t u) (tReflect A' t' u' e') (tReflect A₀ t₀ u₀ e₀).
+Proof.
+intros * ???? [] [] [] [].
+Admitted.
+
 (*
 Lemma NeTermDecl_tQuote : forall Γ n n₀, ~ closed0 n -> dnf n ->
   NfTermDecl Γ (arr tNat tNat) n n₀ ->
@@ -1114,6 +1128,15 @@ Module DeepTypingProperties.
       * eapply TermConv; tea.
       * eapply TermConv; tea.
     - eapply eqnf_tDecide; tea.
+  + intros; invnf; eexists.
+    - now eapply convneu_reflect.
+    - eapply NeTermDecl_tReflect; eauto; try now eapply lrefl.
+      apply TermSym; eapply convtm_convneu; [|tea].
+      constructor.
+    - eapply NeTermDecl_tReflect; tea.
+      eapply convtm_convneu; [|tea].
+      constructor.
+    - eapply eqnf_tReflect; tea.
 (*
   + intros ? n n' **; invnf; eexists.
     - now eapply convneu_quote.
@@ -1186,6 +1209,7 @@ Module DeepTypingProperties.
   + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now apply WeakDeclarativeTypingProperties.RedTermDeclProperties.
+  + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   + intros; invnf; now eapply WeakDeclarativeTypingProperties.RedTermDeclProperties.
   Qed.
 

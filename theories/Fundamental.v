@@ -188,6 +188,14 @@ Section Fundamental.
     Unshelve. apply natValid.
   Qed.
 
+  Lemma FundTmReflect : forall (Γ : context) (A t u e : term),
+    FundTy Γ A ->
+    FundTm Γ A t ->
+    FundTm Γ A u ->
+    FundTm Γ (tId tNat (tDecide A t u) tZero) e -> FundTm Γ (tId A t u) (tReflect A t u e).
+  Proof.
+  Admitted.
+
 (*
   Lemma FundTmQuote : forall (Γ : context) (t : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTm Γ tNat (tQuote t).
@@ -316,6 +324,26 @@ Section Fundamental.
     + apply natValid.
     + irrValid.
   Qed.
+
+  Lemma FundTmEqReflectEval : forall (Γ : context) (A X x t u : term),
+    FundTy Γ A ->
+    FundTm Γ A t ->
+    FundTm Γ A u ->
+    FundTyEq Γ X tNat ->
+    FundTmEq Γ tNat x (tDecide A t u) ->
+    FundTmEq Γ tNat x tZero -> FundTmEq Γ (tId A t u) (tReflect A t u (tRefl X x)) (tRefl A t).
+  Proof.
+  Admitted.
+
+  Lemma FundTmEqReflectCong : forall (Γ : context) (A A' t t' u u' e e' : term),
+    FundTy Γ A ->
+    FundTyEq Γ A A' ->
+    FundTmEq Γ A t t' ->
+    FundTmEq Γ A u u' ->
+    FundTmEq Γ (tId tNat (tDecide A t u) tZero) e e' ->
+    FundTmEq Γ (tId A t u) (tReflect A t u e) (tReflect A' t' u' e').
+  Proof.
+  Admitted.
 
 (*
   Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),
@@ -915,6 +943,7 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
   + intros; now apply FundTmDecide.
+  + intros; now apply FundTmReflect.
 (*   + intros; now apply FundTmQuote. *)
 (*   + intros; now apply FundTmStep. *)
 (*   + intros; now apply FundTmReflect. *)
@@ -930,6 +959,8 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTmEqDecideEvalEq.
   + intros; now apply FundTmEqDecideEvalNeq.
   + intros; now apply FundTmEqDecideCong.
+  + intros; now apply FundTmEqReflectEval.
+  + intros; now apply FundTmEqReflectCong.
 (*   + intros; now apply FundTmEqQuoteEval. *)
 (*   + intros; now apply FundTmEqQuoteCong. *)
 (*   + intros; now eapply FundTmEqStepEval. *)
