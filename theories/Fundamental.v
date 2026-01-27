@@ -3,7 +3,7 @@ From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping Logi
 From LogRel.LogicalRelation Require Import Properties.
 From LogRel.Validity Require Import Validity Irrelevance Properties ValidityTactics.
 From LogRel.Validity.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id.
-From LogRel.Validity.Introductions Require Import Quote Reflect.
+From LogRel.Validity.Introductions Require Import Reflect.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
