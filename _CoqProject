@@ -74,6 +74,7 @@ theories/LogicalRelation/Introductions/Nat.v
 theories/LogicalRelation/Introductions/Empty.v
 theories/LogicalRelation/Introductions/Sigma.v
 theories/LogicalRelation/Introductions/Id.v
+theories/LogicalRelation/Introductions/EqComplete.v
 
 theories/Validity/Validity.v
 theories/Validity/Irrelevance.v
