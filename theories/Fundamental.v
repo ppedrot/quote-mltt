@@ -107,6 +107,7 @@ Section Fundamental.
   for the logical relation. *)
   Context `{GenericTypingProperties}.
   Context {SN : SNTypingProperties ta _ _ _ _ _}.
+  Context {SNC : SNCompleteTypingProperties ta _ _ _ _ _ _}.
   Import DeclarativeTypingData.
 
   Lemma FundConNil : FundCon ε.
@@ -343,7 +344,21 @@ Section Fundamental.
     FundTmEq Γ (tId tNat (tDecide A t u) tZero) e e' ->
     FundTmEq Γ (tId A t u) (tReflect A t u e) (tReflect A' t' u' e').
   Proof.
-  Admitted.
+    intros * [] [] [] [] [].
+    assert [Γ ||-v< one > tId A t u ≅ tId A t u | VΓ].
+    { unshelve eapply IdValid; tea; irrValid. }
+    unshelve econstructor; [tea|irrValid|].
+    unshelve eapply ReflectCongValid.
+    + eapply IdValid.
+      - eapply DecideCongValid; irrValid.
+      - unshelve apply zeroValid.
+    + unshelve irrValid.
+    + unshelve apply natValid.
+    + unshelve irrValid.
+    + unshelve irrValid.
+    + unshelve irrValid.
+    Unshelve. all: irrValid.
+  Qed.
 
 (*
   Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),

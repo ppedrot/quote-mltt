@@ -323,4 +323,33 @@ destruct req as [X X' x x'|]; cbn in *.
     now eapply NeNf.conv.
 Qed.
 
+Section ReflectCongValid.
+
+  Context {Γ Γ' l} {A A' t t' u u' e e' : term}
+    (vΓ : [||-v Γ ≅ Γ'])
+    (vNat : [Γ ||-v<l> tNat ≅ tNat | vΓ])
+    (vId : [Γ ||-v<l> tId tNat (tDecide A t u) tZero ≅ tId tNat (tDecide A' t' u') tZero | vΓ])
+    (vId0 : [Γ ||-v<l> tId A t u ≅ tId A t u | vΓ])
+    (vA : [Γ ||-v<l> A ≅ A' | vΓ])
+    (vt : [Γ ||-v<l> t ≅ t' : A | vΓ | vA ])
+    (vu : [Γ ||-v<l> u ≅ u' : A | vΓ | vA ])
+    (ve : [Γ ||-v<l> e ≅ e' : tId tNat (tDecide A t u) tZero | vΓ | vId ])
+  .
+
+  Lemma ReflectCongValid :
+    [Γ ||-v<l> tReflect A t u e ≅ tReflect A' t' u' e' : _ | vΓ | vId0].
+  Proof.
+    econstructor; intros *; cbn.
+    instValid Vσσ'.
+    unshelve eapply irrLR, ReflectRedEq; [shelve|..].
+    + cbn; eapply IdRed; tea.
+    + tea.
+    + tea.
+    + tea.
+    + tea.
+    + now eapply irrLR.
+  Qed.
+
+End ReflectCongValid.
+
 End Reflect.

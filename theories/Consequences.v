@@ -9,6 +9,8 @@ Module Import SNDeclarativeTypingProperties.
 Import DeepTypingData.
 Import DeepTypingProperties.
 
+Declare Instance SNCompleteTypingDeepProperties : SNCompleteTypingProperties nf _ _ _ _ _ _. (* FIXME: not true yet *)
+
 #[export] Instance SNTypingDeclProperties : SNTypingProperties de _ _ _ _ _.
 Proof.
 split; intros * Hc.
@@ -16,6 +18,8 @@ apply Fundamental in Hc as [].
 eapply Properties.escapeValidTm in Vtu as (?&?&Vtu).
 apply snty_nf in Vtu as (t₀&u₀&?&?&?&?&?); prod_splitter; eauto using nfconvtm_conv.
 Qed.
+
+Declare Instance SNCompleteTypingDeclProperties : SNCompleteTypingProperties de _ _ _ _ _ _. (* FIXME: not true yet *)
 
 End SNDeclarativeTypingProperties.
 
