@@ -162,6 +162,7 @@ Qed.
 
 Lemma eqnf_complete_Nat : forall Γ l A A' (NA : [Γ ||-Nat A ≅ A']), eqnf_complete (LRNat_ l NA).
 Proof.
+intros * t t₀ u u₀ rt ru ?? Heq; cbn in *.
 Admitted.
 
 Lemma eqnf_complete_Empty : forall Γ l A A' (NA : [Γ ||-Empty A ≅ A']), eqnf_complete (LREmpty_ l NA).
@@ -246,8 +247,9 @@ indLR rA; cbn.
 + admit.
 Admitted.
 
-Lemma redTy_eqn_complete_zero_ : forall Γ A A' A₀ B B₀
+Lemma redTy_eqn_complete_zero : forall Γ A A' A₀ B B₀
   (rA : [Γ ||-<zero> A ≅ A']) (rB : [Γ ||-<zero> B ≅ B]),
+(*   URedTm zero Γ A -> URedTm zero Γ B -> *)
   isNf A A₀ -> isNf B B₀ ->
   eqnf A₀ B₀ -> [Γ ||-<zero> A ≅ B].
 Proof.
@@ -256,7 +258,36 @@ remember zero as l eqn:Hl; revert A₀ B B₀ Hl.
 indLR rA; cbn in *.
 + intros [? Hlt] A₀ B B₀ Hl; subst l.
   inversion Hlt.
-+ intros rA A₀ B B₀ Hl rB; subst l; destruct rA.
++ intros rA A₀ B B₀ Hl rB ?? Heq; destruct rA as [whA].
+  apply LRne_.
+  assert (Hr := whredty_conv rB).
+  destruct (whredtyL rB) as [B' HB]; cbn [tyred_whnf] in *.
+  exists whA B'; tea.
+  eapply sncmp_convneu; try now eapply tyr_wf_r.
+(*   - eapply tyr_wf_r. *)
+  - admit. (* seems we're missing an inversion lemma here *)
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
++ intros ΠA Hdom Hcod A₀ B B₀ Hl rB ?? Heq.
+  apply LRPi'.
+  destruct ΠA as [domL domR codL codR]; cbn in *.
+  destruct (whredtyL rB) as [B' HB]; cbn [tyred_whnf] in *.
+(*   econstructor; [..|unshelve econstructor]. *)
+  admit.
++ intros.
+  apply LRNat_.
+  admit.
++ intros.
+  apply LREmpty_.
+  admit.
++ intros.
+  admit.
++ intros.
+  admit.
 Admitted.
 
 Lemma red_eqnf_complete_one : forall Γ A A' (rA : [Γ ||-<one> A ≅ A']), eqnf_complete rA.
@@ -264,12 +295,18 @@ Proof.
 intros *.
 remember one as l eqn:Hl; revert Hl.
 indLR rA; cbn.
-+ admit.
++ intros * ? X X₀ Y Y₀ HX HY ?? Heq; subst l.
+  destruct HX as [HX], HY as [HY]; cbn in *.
+  exists HX HY.
+  - destruct HX as [], HY as []; cbn in *.
+    eapply sncmp_convtm; eauto using isNf_TermRedWf_red, tmr_wf_r.
+  - destruct h as [l Hlt]; cbn in *; inversion Hlt; subst.
+    eapply redTy_eqn_complete_zero; tea.
 + intros; apply eqnf_complete_Ne.
 + intros; apply eqnf_complete_Π; eauto.
 + intros; apply eqnf_complete_Nat.
 + intros; apply eqnf_complete_Empty.
-+ admit.
++ intros; apply eqnf_complete_Σ; auto.
 + admit.
 Admitted.
 
