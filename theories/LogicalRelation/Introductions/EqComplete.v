@@ -293,9 +293,11 @@ Lemma eqnf_complete_Ne : forall Γ l A A' (neA : [Γ ||-ne A ≅ A']), eqnf_comp
 Proof.
 intros * e e' re re' Heq.
 unfold deep_eval in *.
-cbn in *; destruct re, re'; cbn in *.
-econstructor; tea.
-(* eapply sncmp_convneu. *)
+cbn in *; destruct re as [v], re' as [w]; cbn in *.
+exists v w; tea.
+eapply sncmp_convneu; eauto using tmr_wf_r; try now eapply convneu_whne.
++ match goal with [ |- context [@nfeval _ ?p] ] => destruct p as [e₀ He] end; cbn.
+  split; [|now destruct He].
 Admitted.
 
 Lemma eqnf_complete_Nat : forall Γ l A A' (NA : [Γ ||-Nat A ≅ A']), eqnf_complete (LRNat_ l NA).
@@ -407,7 +409,6 @@ indLR rA; cbn in *.
 + intros [? Hlt] B Hl; subst l.
   inversion Hlt.
 + intros rA B Hl rB; subst l; destruct rA.
-  
 Admitted.
 
 Lemma red_eqnf_complete_one : forall Γ A A' (rA : [Γ ||-<one> A ≅ A']), eqnf_complete rA.

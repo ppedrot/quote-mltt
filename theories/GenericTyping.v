@@ -735,11 +735,6 @@ Class GenericTypingProperties `(ta : tag)
   redtm_prop :: RedTermProperties ;
 }.
 
-Record isNf (t t₀ : term) := {
-  isnf_red : [t ⇶* t₀];
-  isnf_dnf : dnf t₀;
-}.
-
 Class SNTypingProperties `(ta : tag) `(WfContext ta) `(WfType ta) `(Typing ta) `(ConvType ta) `(ConvTerm ta)
 := {
   snty_nf : forall Γ A t u, [ Γ |- t ≅ u : A ] ->
