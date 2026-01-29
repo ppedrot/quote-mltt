@@ -10,6 +10,12 @@ Record isNf (t t₀ : term) := {
   isnf_dnf : dnf t₀;
 }.
 
+Lemma isNf_irr : forall t t₀ t'₀,
+  isNf t t₀ -> isNf t t'₀ -> t₀ = t'₀.
+Proof.
+intros * [] []; now eapply dredalg_det.
+Qed.
+
 Record eqNf (t u : term) := {
   eqnf_lhs : term;
   eqnf_rhs : term;
@@ -34,6 +40,13 @@ Proof.
 intros * []; split.
 + eauto using gcredalg_wk, wk_inj.
 + now apply dnf_ren.
+Qed.
+
+Lemma isNf_wk_rev : forall {Γ Δ} t t₀ (ρ : Δ ≤ Γ), isNf t⟨ρ⟩ t₀⟨ρ⟩ -> isNf t t₀.
+Proof.
+intros * []; split.
++ eauto using redalg_ren_inv, wk_inj.
++ now eapply dnf_ren_rev.
 Qed.
 
 Lemma eqNf_wk : forall {Γ Δ} t u (ρ : Δ ≤ Γ), eqNf t u -> eqNf t⟨ρ⟩ u⟨ρ⟩.
@@ -73,6 +86,18 @@ Qed.
 Lemma dnf_isNf : forall t, dnf t -> isNf t t.
 Proof.
 intros; econstructor; tea; reflexivity.
+Qed.
+
+Lemma isNf_dnf_det : forall t t₀, dnf t -> isNf t t₀ -> t = t₀.
+Proof.
+intros.
+eapply isNf_irr; eauto using dnf_isNf.
+Qed.
+
+Lemma isNf_dred_exp : forall t t' t₀, [t ⇶* t'] -> isNf t t₀ -> isNf t' t₀.
+Proof.
+intros * ? []; split; tea.
+now eapply dred_red_det.
 Qed.
 
 Lemma isNf_eqNf : forall t t₀, isNf t t₀ -> eqNf t t₀.

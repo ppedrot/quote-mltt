@@ -224,8 +224,9 @@ Lemma DecideZeroRedComplete : forall Γ l A A' t u
   [rA | Γ ||- t ≅ u : _].
 Proof.
 intros * rt ru rdec.
-unshelve eapply red_eqnf_complete; tea.
-unfold deep_eval.
+assert (∑ t₀, isNf t t₀) as [t₀ Ht] by now eapply hasNf_red.
+assert (∑ u₀, isNf u u₀) as [u₀ Hu] by now eapply hasNf_red.
+unshelve eapply red_eqnf_complete; [..|tea|tea|]; tea.
 assert (Hr : [tDecide A t u ⤳* tZero]).
 { remember (tDecide A t u) as lhs; remember tZero as rhs.
   cbn in rdec; destruct rdec as [? ? nfl nfr ? ? ? spec]; subst.
@@ -235,8 +236,6 @@ assert (Hr : [tDecide A t u ⤳* tZero]).
   inversion spec; subst; [now eapply redtm_sound, tmr_wf_red|].
   enough (whne tZero) as Hne by inversion Hne.
   eapply convneu_whne; symmetry; now eapply NeNf.conv. }
-enough (∑ p q, eqnf (@nfeval t p) (@nfeval u q)) as (p&q&?).
-{ now eapply eqnf_nfeval_irr. }
 now eapply redalg_decide_zero_inv.
 Qed.
 
