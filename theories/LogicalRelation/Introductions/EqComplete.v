@@ -264,14 +264,11 @@ indLR rA; cbn in *.
   destruct (whredtyL rB) as [B' HB]; cbn [tyred_whnf] in *.
   exists whA B'; tea.
   eapply sncmp_convneu; try now eapply tyr_wf_r.
-(*   - eapply tyr_wf_r. *)
-  - admit. (* seems we're missing an inversion lemma here *)
+  - eassumption.
   - admit.
   - admit.
   - admit.
-  - admit.
-  - admit.
-  - admit.
+  - exact Heq.
 + intros ΠA Hdom Hcod A₀ B B₀ Hl rB ?? Heq.
   apply LRPi'.
   destruct ΠA as [domL domR codL codR]; cbn in *.

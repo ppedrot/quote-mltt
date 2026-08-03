@@ -743,14 +743,14 @@ Class SNTypingProperties `(ta : tag) `(WfContext ta) `(WfType ta) `(Typing ta) `
 
 Class SNCompleteTypingProperties `(ta : tag) `(WfContext ta) `(WfType ta) `(Typing ta) `(ConvType ta) `(ConvTerm ta) `(ConvNeuConv ta)
 := {
-  sncmp_convtm : forall Γ A t t₀ u u₀, [Γ |- t : A] -> [Γ |- u : A] -> isNf t t₀ -> isNf u u₀ -> eqnf t₀ u₀ ->
+  sncmp_convtm : forall Γ A t t' t₀ u u' u₀, [Γ |- t ≅ t' : A] -> [Γ |- u ≅ u' : A] -> isNf t t₀ -> isNf u u₀ -> eqnf t₀ u₀ ->
     (* we could also ask: *)
     (* [Γ |- t ≅ t₀ : A] -> [Γ |- u ≅ u₀ : A] -> *)
     [Γ |- t ≅ u : A];
-  sncmp_convneu : forall Γ A t t₀ u u₀, [Γ |- t : A] -> [Γ |- u : A] -> isNf t t₀ -> isNf u u₀ -> eqnf t₀ u₀ ->
+  sncmp_convneu : forall Γ A t t' t₀ u u' u₀, [Γ |- t ~ t' : A] -> [Γ |- u ~ u' : A] -> isNf t t₀ -> isNf u u₀ -> eqnf t₀ u₀ ->
     (* we could also ask: *)
     (* [Γ |- t ≅ t₀ : A] -> [Γ |- u ≅ u₀ : A] -> *)
-    whne t -> whne u -> [Γ |- t ~ u : A];
+    [Γ |- t ~ u : A];
 }.
 
 (** Hints for gen_typing *)
