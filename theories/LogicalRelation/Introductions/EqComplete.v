@@ -330,7 +330,33 @@ Proof.
 induction 1; intros; inv_whne; tea.
 Qed.
 
-(*
+Lemma eqnf_tPair_dnf_fst_inv : forall A1 A2 B1 B2 a1 a2 b1 b2,
+  dnf a1 -> dnf a2 ->
+  eqnf (tPair A1 B1 a1 b1) (tPair A2 B2 a2 b2) -> eqnf a1 a2.
+Proof.
+intros * ?? Heq; unfold eqnf in *; cbn in Heq.
+assert (Hf1 : dnf (erase a1)) by now apply dnf_erase.
+assert (Hf2 : dnf (erase a2)) by now apply dnf_erase.
+destruct (eta_pair_intro (erase a1) (erase b1)) as [x1 y1|p1];
+destruct (eta_pair_intro (erase a2) (erase b2)) as [x2 y2|p2].
+- congruence.
+- inversion Hf2; subst.
+  repeat match goal with [ H : dne _ |- _ ] => inversion H; clear H end.
+- inversion Hf1; subst.
+  repeat match goal with [ H : dne _ |- _ ] => inversion H; clear H end.
+- congruence.
+Qed.
+
+Lemma eqnf_tPair_dne_fst_inv : forall A B a b n,
+  dne n -> eqnf (tPair A B a b) n -> eqnf a (tFst n).
+Proof.
+intros * ? Heq; unfold eqnf in *; cbn in Heq.
+assert (Hf2 : dne (erase n)) by now apply dne_erase.
+destruct (eta_pair_intro (erase a) (erase b)) as [x y|p]; cbn.
++ inversion Hf2; try congruence.
++ now f_equal.
+Qed.
+
 Lemma eqnf_nfeval_fst_compat : forall p p₀ q q₀ v₀ w₀,
   isNf p p₀ -> isNf q q₀ -> isNf (tFst p) v₀ -> isNf (tFst q) w₀ -> eqnf p₀ q₀ -> eqnf v₀ w₀.
 Proof.
@@ -354,13 +380,123 @@ destruct Hrp as [(A&B&a&b&?&?)|], Hrq as [(A'&B'&a'&b'&?&?)|]; subst.
   { eauto using dredalg_det, isnf_red, isnf_dnf. }
   match goal with [ H : isNf a' ?r |- _ ] => assert (r = w₀); [|subst r] end.
   { eauto using dredalg_det, isnf_red, isnf_dnf. }
-  unfold eqnf in *; cbn in Heq; clear - Heq.
-  destruct (eta_pair_intro (erase v₀) (erase b2)); destruct (eta_pair_intro (erase w₀) (erase b0)).
-  - congruence.
-  - destruct t0; try discriminate Heq.
-    injection Heq; intros; subst.
-    admit.
-Abort. *)
+  eauto using eqnf_tPair_dnf_fst_inv, isnf_dnf.
++ inversion Hhp; subst; [|match goal with [ H : whne _ |- _ ] => now inversion H end].
+  assert (whne q₀) by now eapply whne_same_head_whne.
+  assert (dne q₀) by eauto using dne_dnf_whne, isnf_dnf.
+  assert (Hrp := isNf_tPair_inv _ _ _ _ _ _ _ _ Hnfp); destruct Hrp.
+  match goal with [ H : isNf a ?r |- _ ] => assert (r = v₀); [|subst r] end.
+  { eauto using dredalg_det, isnf_red, isnf_dnf. }
+  assert (isNf (tFst wq) (tFst q₀)) by now eapply isNf_tFst.
+  assert (isNf (tFst q) (tFst q₀)) by eauto using isNf_exp, redalg_fst.
+  assert (w₀ = tFst q₀) by (now eapply isNf_irr); subst.
+  eauto using eqnf_tPair_dne_fst_inv, isnf_dnf.
++ assert (whne p₀) by now eapply whne_same_head_whne.
+  assert (dne p₀) by eauto using dne_dnf_whne, isnf_dnf.
+  inversion Hhq; subst; [|match goal with [ H : whne _ |- _ ] => now inversion H end].
+  assert (Hrq := isNf_tPair_inv _ _ _ _ _ _ _ _ Hnfq); destruct Hrq.
+  assert (isNf (tFst wp) (tFst p₀)) by now eapply isNf_tFst.
+  assert (isNf (tFst p) (tFst p₀)) by eauto using isNf_exp, redalg_fst.
+  assert (v₀ = tFst p₀) by (now eapply isNf_irr); subst.
+  match goal with [ H : isNf a' ?r |- _ ] => assert (r = w₀); [|subst r] end.
+  { eauto using dredalg_det, isnf_red, isnf_dnf. }
+  eauto using eqnf_tPair_dne_fst_inv, isnf_dnf, Symmetric_eqnf.
++ assert (whne p₀) by now eapply whne_same_head_whne.
+  assert (dne p₀) by eauto using dne_dnf_whne, isnf_dnf.
+  assert (whne q₀) by now eapply whne_same_head_whne.
+  assert (dne q₀) by eauto using dne_dnf_whne, isnf_dnf.
+  assert (isNf (tFst wp) (tFst p₀)) by now eapply isNf_tFst.
+  assert (isNf (tFst p) (tFst p₀)) by eauto using isNf_exp, redalg_fst.
+  assert (v₀ = tFst p₀) by (now eapply isNf_irr); subst.
+  assert (isNf (tFst wq) (tFst q₀)) by now eapply isNf_tFst.
+  assert (isNf (tFst q) (tFst q₀)) by eauto using isNf_exp, redalg_fst.
+  assert (w₀ = tFst q₀) by (now eapply isNf_irr); subst.
+  now eapply eqnf_tFst.
+Qed.
+
+Lemma eqnf_tPair_dnf_snd_inv : forall A1 A2 B1 B2 a1 a2 b1 b2,
+  dnf b1 -> dnf b2 ->
+  eqnf (tPair A1 B1 a1 b1) (tPair A2 B2 a2 b2) -> eqnf b1 b2.
+Proof.
+intros * ?? Heq; unfold eqnf in *; cbn in Heq.
+assert (Hf1 : dnf (erase b1)) by now apply dnf_erase.
+assert (Hf2 : dnf (erase b2)) by now apply dnf_erase.
+destruct (eta_pair_intro (erase a1) (erase b1)) as [x1 y1|p1];
+destruct (eta_pair_intro (erase a2) (erase b2)) as [x2 y2|p2].
+- congruence.
+- inversion Hf2; subst.
+  repeat match goal with [ H : dne _ |- _ ] => inversion H; clear H end.
+- inversion Hf1; subst.
+  repeat match goal with [ H : dne _ |- _ ] => inversion H; clear H end.
+- congruence.
+Qed.
+
+Lemma eqnf_tPair_dne_snd_inv : forall A B a b n,
+  dne n -> eqnf (tPair A B a b) n -> eqnf b (tSnd n).
+Proof.
+intros * ? Heq; unfold eqnf in *; cbn in Heq.
+assert (Hf2 : dne (erase n)) by now apply dne_erase.
+destruct (eta_pair_intro (erase a) (erase b)) as [x y|p]; cbn.
++ inversion Hf2; try congruence.
++ now f_equal.
+Qed.
+
+Lemma eqnf_nfeval_snd_compat : forall p p₀ q q₀ v₀ w₀,
+  isNf p p₀ -> isNf q q₀ -> isNf (tSnd p) v₀ -> isNf (tSnd q) w₀ -> eqnf p₀ q₀ -> eqnf v₀ w₀.
+Proof.
+assert (Hinv : forall p v₀, isNf (tSnd p) v₀ -> ∑ wf, ([p ⤳* wf] × whnf wf × ((∑ A, ∑ B, ∑ a, ∑ b, (wf = tPair A B a b) × [b ⇶* v₀]) + (whne wf)))).
+{ intros * [].
+  assert (Hr : [tSnd p ⇊ v₀]) by now apply dredalg_bigstep.
+  inversion Hr; subst; eexists; (split; [|split]); eauto 8 using whnf, bigstep_dredalg. }
+intros * ?? Hnp Hnq Heq.
+assert (Hrp := Hinv _ _ Hnp); assert (Hrq := Hinv _ _ Hnq).
+destruct Hrp as (wp&?&?&Hrp), Hrq as (wq&?&?&Hrq).
+assert (Hnfp : isNf wp p₀) by now eapply isNf_red.
+assert (Hnfq : isNf wq q₀) by now eapply isNf_red.
+assert (Hhp : same_head wp p₀) by eauto using isNf_whnf_same_head.
+assert (Hhq : same_head wq q₀) by eauto using isNf_whnf_same_head.
+destruct Hrp as [(A&B&a&b&?&?)|], Hrq as [(A'&B'&a'&b'&?&?)|]; subst.
++ inversion Hhp; subst; [|match goal with [ H : whne _ |- _ ] => now inversion H end].
+  inversion Hhq; subst; [|match goal with [ H : whne _ |- _ ] => now inversion H end].
+  assert (Hrp := isNf_tPair_inv _ _ _ _ _ _ _ _ Hnfp); destruct Hrp.
+  assert (Hrq := isNf_tPair_inv _ _ _ _ _ _ _ _ Hnfq); destruct Hrq.
+  match goal with [ H : isNf b ?r |- _ ] => assert (r = v₀); [|subst r] end.
+  { eauto using dredalg_det, isnf_red, isnf_dnf. }
+  match goal with [ H : isNf b' ?r |- _ ] => assert (r = w₀); [|subst r] end.
+  { eauto using dredalg_det, isnf_red, isnf_dnf. }
+  eauto using eqnf_tPair_dnf_snd_inv, isnf_dnf.
++ inversion Hhp; subst; [|match goal with [ H : whne _ |- _ ] => now inversion H end].
+  assert (whne q₀) by now eapply whne_same_head_whne.
+  assert (dne q₀) by eauto using dne_dnf_whne, isnf_dnf.
+  assert (Hrp := isNf_tPair_inv _ _ _ _ _ _ _ _ Hnfp); destruct Hrp.
+  match goal with [ H : isNf b ?r |- _ ] => assert (r = v₀); [|subst r] end.
+  { eauto using dredalg_det, isnf_red, isnf_dnf. }
+  assert (isNf (tSnd wq) (tSnd q₀)) by now eapply isNf_tSnd.
+  assert (isNf (tSnd q) (tSnd q₀)) by eauto using isNf_exp, redalg_snd.
+  assert (w₀ = tSnd q₀) by (now eapply isNf_irr); subst.
+  eauto using eqnf_tPair_dne_snd_inv, isnf_dnf.
++ assert (whne p₀) by now eapply whne_same_head_whne.
+  assert (dne p₀) by eauto using dne_dnf_whne, isnf_dnf.
+  inversion Hhq; subst; [|match goal with [ H : whne _ |- _ ] => now inversion H end].
+  assert (Hrq := isNf_tPair_inv _ _ _ _ _ _ _ _ Hnfq); destruct Hrq.
+  assert (isNf (tSnd wp) (tSnd p₀)) by now eapply isNf_tSnd.
+  assert (isNf (tSnd p) (tSnd p₀)) by eauto using isNf_exp, redalg_snd.
+  assert (v₀ = tSnd p₀) by (now eapply isNf_irr); subst.
+  match goal with [ H : isNf b' ?r |- _ ] => assert (r = w₀); [|subst r] end.
+  { eauto using dredalg_det, isnf_red, isnf_dnf. }
+  eauto using eqnf_tPair_dne_snd_inv, isnf_dnf, Symmetric_eqnf.
++ assert (whne p₀) by now eapply whne_same_head_whne.
+  assert (dne p₀) by eauto using dne_dnf_whne, isnf_dnf.
+  assert (whne q₀) by now eapply whne_same_head_whne.
+  assert (dne q₀) by eauto using dne_dnf_whne, isnf_dnf.
+  assert (isNf (tSnd wp) (tSnd p₀)) by now eapply isNf_tSnd.
+  assert (isNf (tSnd p) (tSnd p₀)) by eauto using isNf_exp, redalg_snd.
+  assert (v₀ = tSnd p₀) by (now eapply isNf_irr); subst.
+  assert (isNf (tSnd wq) (tSnd q₀)) by now eapply isNf_tSnd.
+  assert (isNf (tSnd q) (tSnd q₀)) by eauto using isNf_exp, redalg_snd.
+  assert (w₀ = tSnd q₀) by (now eapply isNf_irr); subst.
+  now eapply eqnf_tSnd.
+Qed.
 
 Lemma NeNf_whne : forall Γ A t u, [Γ ||-NeNf t ≅ u : A] -> whne t.
 Proof.
@@ -672,22 +808,35 @@ assert (∑ p2₀, isNf (tSnd p) p2₀) as [p2₀].
 assert (∑ q2₀, isNf (tSnd q) q2₀) as [q2₀].
 { replace q with q⟨@wk_id Γ⟩ by now bsimpl.
   now unshelve eapply hasNf_red, rqsnd. }
-unshelve econstructor.
-+ now exists p.
-+ now exists q.
-+ intros; cbn in *.
+assert (rpqfst : forall Δ (ρ : Δ ≤ Γ) (h : [|- Δ]),
+  [PolyRed.shpRed ΣA ρ h | Δ ||- tFst p⟨ρ⟩ ≅ tFst q⟨ρ⟩ : (ParamRedTy.domL ΣA)⟨ρ⟩ ≅ (ParamRedTy.domR ΣA)⟨ρ⟩]).
+{ intros; cbn in *.
   eapply Hdom.
   - eapply lrefl, rpfst.
   - eapply lrefl, rqfst.
   - now eapply (isNf_wk (tFst p)).
   - now eapply (isNf_wk (tFst q)).
   - eapply eqnf_ren; [eapply wk_inj|].
-    admit.
+    eauto using eqnf_nfeval_fst_compat. }
+unshelve econstructor.
++ now exists p.
++ now exists q.
++ exact rpqfst.
 + cbn in *.
-  admit.
-+ cbn in *.
-  admit.
-Admitted.
+  eapply sncmp_convtm; tea.
++ intros; cbn in *.
+  eapply Hcod.
+  - unshelve (eapply lrefl, irrLREq, rpsnd; reflexivity); tea.
+  - unshelve (eapply irrLRConv, lrefl, rqsnd); [tea|].
+    pose proof (rB := ΣA.(PolyRed.posRed)).
+    transitivity (ParamRedTy.codR ΣA)[tFst q⟨ρ⟩ .: ρ >> tRel].
+    * now unshelve (eapply rB, urefl, rpqfst).
+    * symmetry. now unshelve (eapply rB, rpqfst).
+  - now eapply (isNf_wk (tSnd p)).
+  - now eapply (isNf_wk (tSnd q)).
+  - eapply eqnf_ren; [eapply wk_inj|].
+    eauto using eqnf_nfeval_snd_compat.
+Qed.
 
 Lemma eqnf_complete_Id : forall Γ l A A',
   forall IA : [Γ ||-Id< l > A ≅ A'],
