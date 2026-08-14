@@ -169,6 +169,16 @@ Proof.
 intros * ? [] [] [] [] [] []; split; eauto using dredalg_idElim, dnf, dne, dne_dnf_whne, dredalg_whne.
 Qed.
 
+Lemma isNf_tQuote : forall A A₀ t t₀,
+  dnf t -> ~ closed0 t ->
+  isNf A A₀ -> isNf t t₀ ->
+  isNf (tQuote A t) (tQuote A₀ t₀).
+Proof.
+intros * ?? [] [].
+assert (t = t₀) by (eapply dredalg_det; eauto; reflexivity); subst t₀.
+split; eauto using dredalg_quote, dnf, dne.
+Qed.
+
 Lemma isNf_tDecide : forall A A₀ t t₀ u u₀,
   dnf t -> dnf u -> (~ closed0 t) + (~ closed0 u) ->
   isNf A A₀ -> isNf t t₀ -> isNf u u₀ ->
@@ -373,6 +383,14 @@ Lemma eqNf_tIdElim : forall A A' x x' P P' hr hr' y y' e e',
 Proof.
 intros * ?? [A₀ A₁] [x₀ x₁] [P₀ P₁] [hr₀ hr₁] [y₀ y₁] [e₀ e₁]; exists (tIdElim A₀ x₀ P₀ hr₀ y₀ e₀) (tIdElim A₁ x₁ P₁ hr₁ y₁ e₁);
 eauto using isNf_tIdElim, eqnf_tIdElim.
+Qed.
+
+Lemma eqNf_tQuote : forall A A' t t',
+  dnf t -> dnf t' -> ~ closed0 t -> ~ closed0 t' ->
+  eqNf A A' -> eqNf t t' -> eqNf (tQuote A t) (tQuote A' t').
+Proof.
+intros * ???? [A₀ A₁] [t₀ t₁]; exists (tQuote A₀ t₀) (tQuote A₁ t₁);
+eauto using isNf_tQuote, eqnf_tQuote.
 Qed.
 
 Lemma eqNf_tDecide : forall A A' t t' u u',

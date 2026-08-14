@@ -365,6 +365,7 @@ all: intros; case_rzbl; try constructor; cbn in *;
 + now apply scoped_SS_up.
 + now apply scoped_SS_up.
 + now apply eqNf_tIdElim.
++ now apply eqNf_tQuote.
 + now apply eqNf_tDecide.
 + now apply eqNf_tReflect.
 Qed.
@@ -401,8 +402,10 @@ all: intros; case_rzbl; try constructor; cbn in *;
 + now apply scoped_SS_up.
 + now apply scoped_SS_up.
 + now apply redalg_idElim.
++ now apply redalg_quote.
 + now apply redalg_decide.
 + now apply redalg_reflect.
++ apply well_scoped_qNat.
 + reflexivity.
 + now case_rzbl.
 + now case_rzbl.

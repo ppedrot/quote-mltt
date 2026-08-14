@@ -127,6 +127,10 @@ Section Definitions.
     [Γ |- y : A] ->
     [Γ |- e : tId A x y] ->
     [Γ |- tIdElim A x P hr y e : P[e .: y..]]
+  | wfTermQuote {Γ A t} :
+    [Γ |- A] ->
+    [Γ |- t ≅ t : A] ->
+    [Γ |- tQuote A t : tNat]
   | wfTermDecide {Γ} {A t u} :
     [Γ |- A] ->
     [Γ |- t ≅ t : A] ->
@@ -138,9 +142,6 @@ Section Definitions.
     [Γ |- u : A] ->
     [Γ |- e : tId tNat (tDecide A t u) tZero] ->
     [Γ |- tReflect A t u e : tId A t u]
-(*   | wfTermQuote {Γ} {t} : *)
-(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
-(*     [Γ |- tQuote t : tNat] *)
 (*   | wfTermStep {Γ} {t u} : *)
 (*     [Γ |- t ≅ t : arr tNat tNat] -> *)
 (*     [Γ |- u ≅ u : tNat] -> *)
@@ -193,6 +194,16 @@ Section Definitions.
     [Γ ,, A |- t : B] ->
     [Γ |- a : A] ->
     [Γ |- tApp (tLambda A t) a ≅ t[a..] : B[a..]]
+  | TermQuoteRed {Γ A t} :
+    [Γ |- A] ->
+    [Γ |- t ≅ t : A] ->
+    dnf t -> closed0 t ->
+    [Γ |- tQuote A t ≅ qNat (quote (erase t)) : tNat]
+  | TermQuoteCong {Γ A A' t t'} :
+    [Γ |- A] ->
+    [Γ |- A ≅ A'] ->
+    [Γ |- t ≅ t' : A] ->
+    [Γ |- tQuote A t ≅ tQuote A' t' : tNat]
   | TermDecideEvalEq {Γ} {A t u} :
     [Γ |- A] ->
     [Γ |- t ≅ t : A] ->
@@ -225,13 +236,6 @@ Section Definitions.
     [Γ |- u ≅ u' : A] ->
     [Γ |- e ≅ e' : tId tNat (tDecide A t u) tZero] ->
     [Γ |- tReflect A t u e ≅ tReflect A' t' u' e' : tId A t u]
-(*   | TermQuoteRed {Γ} {t} : *)
-(*     [Γ |- t ≅ t : arr tNat tNat] -> *)
-(*     dnf t -> closed0 t -> *)
-(*     [Γ |- tQuote t ≅ qNat (quote (erase t)) : tNat] *)
-(*   | TermQuoteCong {Γ} {t t'} : *)
-(*     [Γ |- t ≅ t' : arr tNat tNat] -> *)
-(*     [Γ |- tQuote t ≅ tQuote t' : tNat] *)
 (*   | TermStepRed {Γ} {t u k v} : *)
 (*     [Γ |- t ≅ t : arr tNat tNat] -> *)
 (*     [Γ |- run : arr tNat (arr tNat tPNat)] -> *)

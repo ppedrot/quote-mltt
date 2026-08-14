@@ -3,7 +3,7 @@ From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping Logi
 From LogRel.LogicalRelation Require Import Properties.
 From LogRel.Validity Require Import Validity Irrelevance Properties ValidityTactics.
 From LogRel.Validity.Introductions Require Import Application Universe Pi Lambda Var Nat Empty SimpleArr Sigma Id.
-From LogRel.Validity.Introductions Require Import Reflect.
+From LogRel.Validity.Introductions Require Import Quote Reflect.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -180,6 +180,16 @@ Section Fundamental.
     Unshelve. all: irrValid.
   Qed.
 
+  Lemma FundTmQuote : forall (Γ : context) (A t : term),
+    FundTy Γ A ->
+    FundTmEq Γ A t t -> FundTm Γ tNat (tQuote A t).
+  Proof.
+    intros * [] []; unshelve econstructor.
+    + assumption.
+    + apply natValid.
+    + unshelve eapply QuoteCongValid; irrValid.
+  Qed.
+
   Lemma FundTmDecide : forall (Γ : context) (A t u : term),
     FundTy Γ A -> FundTmEq Γ A t t -> FundTmEq Γ A u u -> FundTm Γ tNat (tDecide A t u).
   Proof.
@@ -206,15 +216,6 @@ Section Fundamental.
   Qed.
 
 (*
-  Lemma FundTmQuote : forall (Γ : context) (t : term),
-    FundTmEq Γ (arr tNat tNat) t t -> FundTm Γ tNat (tQuote t).
-  Proof.
-    intros * []; unshelve econstructor.
-    + assumption.
-    + apply natValid.
-    + eapply QuoteCongValid; irrValid.
-  Qed.
-
   Lemma FundTmStep : forall (Γ : context) (t u : term),
     FundTmEq Γ (arr tNat tNat) t t -> FundTmEq Γ tNat u u ->
     FundTm Γ (arr tNat (arr tNat tPNat)) run ->
@@ -293,6 +294,27 @@ Section Fundamental.
     intros * [] [] []; econstructor.
     eapply betaValid; irrValid.
     Unshelve. all: cycle 2; irrValid.
+  Qed.
+
+  Lemma FundTmEqQuoteEval : forall (Γ : context) (A t : term),
+    FundTy Γ A ->
+    FundTmEq Γ A t t -> dnf t -> Closed.closed0 t ->
+    FundTmEq Γ tNat (tQuote A t) (qNat (quote (erase t))).
+  Proof.
+  intros * [] [] ? ?; unshelve econstructor.
+  - assumption.
+  - apply natValid.
+  - unshelve eapply QuoteEvalValid; tea; irrValid.
+  Qed.
+
+  Lemma FundTmEqQuoteCong : forall (Γ : context) (A A' t t' : term),
+    FundTyEq Γ A A' ->
+    FundTmEq Γ A t t' -> FundTmEq Γ tNat (tQuote A t) (tQuote A' t').
+  Proof.
+  intros * [] []; unshelve econstructor.
+  - assumption.
+  - apply natValid.
+  - unshelve eapply QuoteCongValid; irrValid.
   Qed.
 
   Lemma FundTmEqDecideEvalEq : forall Γ A t u,
@@ -379,24 +401,6 @@ Section Fundamental.
   Qed.
 
 (*
-  Lemma FundTmEqQuoteEval : forall (Γ : context) (t : term),
-    FundTmEq Γ (arr tNat tNat) t t -> dnf t -> Closed.closed0 t ->
-    FundTmEq Γ tNat (tQuote t) (qNat (quote (erase t))).
-  Proof.
-  intros * []? ?; unshelve econstructor.
-  - assumption.
-  - apply natValid.
-  - apply evalQuoteValid; [irrValid|tea|tea].
-  Qed.
-
-  Lemma FundTmEqQuoteCong : forall (Γ : context) (t t' : term),
-    FundTmEq Γ (arr tNat tNat) t t' -> FundTmEq Γ tNat (tQuote t) (tQuote t').
-  Proof.
-  intros * []; unshelve econstructor.
-  - assumption.
-  - apply natValid.
-  - apply QuoteCongValid; irrValid.
-  Qed.
 
   Lemma FundTmEqStepEval : forall Γ t u k v,
     FundTmEq Γ (arr tNat tNat) t t ->
@@ -975,9 +979,9 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now eapply FundTmId.
   + intros; now eapply FundTmRefl.
   + intros; now eapply FundTmIdElim.
+  + intros; now eapply FundTmQuote.
   + intros; now apply FundTmDecide.
   + intros; now apply FundTmReflect.
-(*   + intros; now apply FundTmQuote. *)
 (*   + intros; now apply FundTmStep. *)
 (*   + intros; now apply FundTmReflect. *)
   + intros; now eapply FundTmConv.
@@ -989,13 +993,13 @@ Lemma Fundamental : (forall Γ : context, [ |-[ de ] Γ ] -> FundCon (ta := ta) 
   + intros; now apply FundTyEqSym.
   + intros; now eapply FundTyEqTrans.
   + intros; now apply FundTmEqBRed.
+  + intros; now apply FundTmEqQuoteEval.
+  + intros; now apply FundTmEqQuoteCong.
   + intros; now apply FundTmEqDecideEvalEq.
   + intros; now apply FundTmEqDecideEvalNeq.
   + intros; now apply FundTmEqDecideCong.
   + intros; now apply FundTmEqReflectEval.
   + intros; now apply FundTmEqReflectCong.
-(*   + intros; now apply FundTmEqQuoteEval. *)
-(*   + intros; now apply FundTmEqQuoteCong. *)
 (*   + intros; now eapply FundTmEqStepEval. *)
 (*   + intros; now eapply FundTmEqStepCong. *)
 (*   + intros; now apply FundTmEqReflectEval. *)

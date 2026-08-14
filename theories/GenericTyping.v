@@ -340,6 +340,10 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e : tId A x y] ->
       [Γ |- tIdElim A x P hr y e : P[e .: y..]];
+    ty_quote {Γ A t} :
+      [ Γ |- A ] ->
+      [ Γ |- t ≅ t : A ] ->
+      [ Γ |- tQuote A t : tNat ];
     ty_decide {Γ A t u} :
       [Γ |- A] ->
       [Γ |- t ≅ t : A] ->
@@ -351,9 +355,6 @@ Section GenericTyping.
       [Γ |- u : A] ->
       [Γ |- e : tId tNat (tDecide A t u) tZero] ->
       [Γ |- tReflect A t u e : tId A t u];
-(*     ty_quote {Γ} {t} : *)
-(*       [ Γ |- t ≅ t : arr tNat tNat ] -> *)
-(*       [ Γ |- tQuote t : tNat ]; *)
 (*     ty_step {Γ} {t u} : *)
 (*       [ Γ |- t ≅ t : arr tNat tNat ] -> *)
 (*       [ Γ |- u ≅ u : tNat ] -> *)
@@ -501,6 +502,13 @@ Section GenericTyping.
       [Γ |- y ≅ y' : A] ->
       [Γ |- e ~ e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ~ tIdElim A' x' P' hr' y' e' : P[e .: y..]];
+    convneu_quote {Γ A A' n n'} :
+      [Γ |- A] ->
+      [Γ |- A ≅ A'] ->
+      [Γ |- n ≅ n' : A] ->
+      dnf n -> dnf n' ->
+      ~ closed0 n -> ~ closed0 n' ->
+      [Γ |- tQuote A n ~ tQuote A' n' : tNat];
     convneu_decide {Γ A A' t t' u u'} :
       [Γ |- A] ->
       [Γ |- A ≅ A'] ->
@@ -515,13 +523,7 @@ Section GenericTyping.
       [Γ |- t ≅ t' : A] ->
       [Γ |- u ≅ u' : A] ->
       [Γ |- e ~ e' : tId tNat (tDecide A t u) tZero] ->
-      [Γ |- tReflect A t u e ~ tReflect A' t' u' e' : tId A t u]
-
-(*     convneu_quote {Γ n n'} : *)
-(*         [Γ |- n ≅ n' : arr tNat tNat] -> *)
-(*         dnf n -> dnf n' -> *)
-(*         ~ closed0 n -> ~ closed0 n' -> *)
-(*         [Γ |- tQuote n ~ tQuote n' : tNat]; *)
+      [Γ |- tReflect A t u e ~ tReflect A' t' u' e' : tId A t u];
 (*     convneu_step {Γ t t' t₀ u u' u₀} : *)
 (*       [Γ |- t ≅ t' : arr tNat tNat] -> *)
 (*       [Γ |- u ≅ u' : tNat] -> *)
@@ -631,6 +633,11 @@ Section GenericTyping.
       [Γ |- y : A] ->
       [Γ |- e ⤳* e' : tId A x y] ->
       [Γ |- tIdElim A x P hr y e ⤳* tIdElim A x P hr y e' : P[e .: y..]];
+    redtm_quote {Γ A t t'} :
+      [Γ |- A] ->
+      [Γ |- t ≅ t' : A] ->
+      [t ⇶* t'] ->
+      [Γ |- tQuote A t ⤳* tQuote A t' : tNat ];
     redtm_decide_eval_eq {Γ A t u} :
       [Γ |- A] ->
       [Γ |- t ≅ t : A] ->
@@ -667,13 +674,10 @@ Section GenericTyping.
       [Γ |- u : A] ->
       [Γ |- e ⤳* e' : tId tNat (tDecide A t u) tZero] ->
       [Γ |- tReflect A t u e ⤳* tReflect A t u e' : tId A t u];
-(*     redtm_evalquote {Γ t} : *)
-(*       [Γ |- t ≅ t : arr tNat tNat] -> dnf t -> closed0 t -> *)
-(*       [Γ |- tQuote t ⤳* qNat (quote (erase t)) : tNat]; *)
-(*     redtm_quote {Γ t t'} : *)
-(*       [Γ |- t ≅ t' : arr tNat tNat] -> *)
-(*       [ t ⇶* t' ] -> *)
-(*       [Γ |- tQuote t ⤳* tQuote t' : tNat ]; *)
+    redtm_evalquote {Γ A t} :
+      [Γ |- A] ->
+      [Γ |- t ≅ t : A] -> dnf t -> closed0 t ->
+      [Γ |- tQuote A t ⤳* qNat (quote (erase t)) : tNat];
 (*     redtm_evalstep {Γ t u k n} : *)
 (*       [Γ |- t ≅ t : arr tNat tNat] -> *)
 (*       [Γ |- run : arr tNat (arr tNat tPNat)] -> *)
