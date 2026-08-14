@@ -322,6 +322,53 @@ destruct req as [X X' x x'|]; cbn in *.
     now eapply NeNf.conv.
 Qed.
 
+Lemma ReflectEval : forall Γ l A A' X t t' u u' x (rΓ : [|- Γ])
+  (rNat := natRed (l := l) rΓ)
+  (rA : [Γ ||-<l> A ≅ A'])
+  (rX : [Γ ||-<l> X ≅ tNat])
+  (rId : [Γ ||-<l> tId A t u ≅ tId A' t' u'])
+  (rt : [rA | Γ ||- t ≅ t' : A ≅ A'])
+  (ru : [rA | Γ ||- u ≅ u' : A ≅ A'])
+  (rx1 : [rNat | Γ ||- x ≅ tZero : tNat])
+  (rx2 : [rNat | Γ ||- x ≅ tDecide A t u : tNat]),
+  [rId | Γ ||- tReflect A t u (tRefl X x) ≅ tRefl A' t' : tId A t u ≅ tId A' t' u'].
+Proof.
+intros.
+assert [Γ |- x : X].
+{ apply (ty_conv (A' := tNat)); escape; tea; now symmetry. }
+assert ([Γ |- tReflect A t u (tRefl X x) ⤳* tRefl A t : tId A t u]).
+{ apply redtm_reflect_eval; escape; tea. }
+assert [rA | Γ ||- t ≅ u : A ≅ A'].
+{ unshelve eapply DecideZeroRedComplete; tea.
+  + now eapply lrefl.
+  + now eapply lrefl.
+  + transitivity x; [|tea].
+    now symmetry. }
+assert [Γ |-[ ta ] t' : A'].
+{ eapply ty_conv; now escape. }
+assert [Γ |-[ ta ] u' : A'].
+{ eapply ty_conv; now escape. }
+assert [Γ ||-<l> tId A t t ≅ tId A' t' t'].
+{ now eapply IdRed. }
+assert [Γ ||-<l> tId A t t ≅ tId A t u].
+{ unshelve eapply IdRed.
+  + now eapply lrefl.
+  + now eapply irrLREq, lrefl, rt.
+  + eapply irrLREq; [|tea]; reflexivity. }
+assert [Γ ||-<l> tId A' t' u' ≅ tId A' t' t'].
+{ unshelve eapply IdRed.
+  + now eapply urefl.
+  + now eapply irrLRConv, urefl, rt.
+  + transitivity t; [|now unshelve eapply irrLRConv, rt].
+    symmetry; transitivity u; [|now unshelve eapply irrLRConv, ru].
+    now eapply irrLRConv. }
+enough [rId | Γ ||- tRefl A t ≅ tRefl A' t' : tId A t u ≅ tId A' t' u'].
+{ eapply redSubstTmEq; tea; apply redtmwf_refl.
+  apply (ty_conv (A' := tId A' t' t')); [|escape; now symmetry].
+  apply ty_refl; escape; tea. }
+unshelve eapply irrLRConv, reflCongRed; tea.
+Qed.
+
 Section ReflectCongValid.
 
   Context {Γ Γ' l} {A A' t t' u u' e e' : term}
@@ -350,5 +397,31 @@ Section ReflectCongValid.
   Qed.
 
 End ReflectCongValid.
+
+Section ReflectEvalValid.
+
+  Context {Γ Γ' l} {A X t u x : term}
+    (vΓ : [||-v Γ ≅ Γ'])
+    (vNat : [Γ ||-v<l> tNat | vΓ])
+    (vId0 : [Γ ||-v<l> tId A t u | vΓ])
+    (vA : [Γ ||-v<l> A | vΓ])
+    (vX : [Γ ||-v<l> X ≅ tNat | vΓ])
+    (vx1 : [Γ ||-v<l> x ≅ tDecide A t u : tNat | vΓ | vNat])
+    (vx2 : [Γ ||-v<l> x ≅ tZero : tNat | vΓ | vNat])
+    (vt : [Γ ||-v<l> t : A | vΓ | vA ])
+    (vu : [Γ ||-v<l> u : A | vΓ | vA ])
+  .
+
+  Lemma ReflectEvalValid :
+    [Γ ||-v<l> tReflect A t u (tRefl X x) ≅ tRefl A t : tId A t u | vΓ | vId0].
+  Proof.
+    econstructor; intros *; cbn.
+    instValid Vσσ'; simpl in *.
+    unshelve eapply irrLR, ReflectEval; tea.
+    + now eapply irrLR.
+    + now eapply irrLR.
+  Qed.
+
+End ReflectEvalValid.
 
 End Reflect.

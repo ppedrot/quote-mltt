@@ -195,7 +195,15 @@ Section Fundamental.
     FundTm Γ A u ->
     FundTm Γ (tId tNat (tDecide A t u) tZero) e -> FundTm Γ (tId A t u) (tReflect A t u e).
   Proof.
-  Admitted.
+    intros * [] [] [] []; econstructor.
+    unshelve eapply ReflectCongValid; tea.
+    + irrValid.
+    + apply natValid.
+    + irrValid.
+    + irrValid.
+    Unshelve.
+    unshelve eapply IdValid; irrValid.
+  Qed.
 
 (*
   Lemma FundTmQuote : forall (Γ : context) (t : term),
@@ -334,7 +342,17 @@ Section Fundamental.
     FundTmEq Γ tNat x (tDecide A t u) ->
     FundTmEq Γ tNat x tZero -> FundTmEq Γ (tId A t u) (tReflect A t u (tRefl X x)) (tRefl A t).
   Proof.
-  Admitted.
+    intros * [] [] [] [] [] []; econstructor.
+    eapply ReflectEvalValid; tea.
+    all: try irrValid.
+    Unshelve.
+    + eapply IdValid.
+      all: irrValid.
+    + apply natValid.
+    + irrValid.
+    Unshelve.
+    irrValid.
+  Qed.
 
   Lemma FundTmEqReflectCong : forall (Γ : context) (A A' t t' u u' e e' : term),
     FundTy Γ A ->
