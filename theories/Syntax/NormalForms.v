@@ -51,6 +51,7 @@ with dne : term -> Set :=
   | dne_tFst {n} : dne n -> dne (tFst n)
   | dne_tSnd {n} : dne n -> dne (tSnd n)
   | dne_tIdElim {A x P hr y e} : dnf A -> dnf x -> dnf P -> dnf hr -> dnf y -> dne e -> dne (tIdElim A x P hr y e)
+  | dne_tQuote {A t} : dnf A -> ~ closed0 t -> dnf t -> dne (tQuote A t)
   | dne_tDecide {A t u} : dnf A -> (~ is_closedn 0 t) + (~ is_closedn 0 u) -> dnf t -> dnf u -> dne (tDecide A t u)
   | dne_tReflect {A t u e} : dnf A -> dnf t -> dnf u -> dne e -> dne (tReflect A t u e)
   | dne_tReify {A t u e} : dnf A -> dnf t -> dnf u -> dne e -> dne (tReify A t u e)
@@ -62,10 +63,10 @@ Scheme
   Induction for dnf Sort Type with
   Induction for dne Sort Type.
 
-Definition dnf_dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 :=
+Definition dnf_dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 :=
   pair
-    (dnf_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22)
-    (dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22).
+    (dnf_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23)
+    (dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23).
 
 (** ** Weak-head normal forms and neutrals. *)
 
@@ -90,6 +91,7 @@ with whne : term -> Type :=
   | whne_tFst {p} : whne p -> whne (tFst p)
   | whne_tSnd {p} : whne p -> whne (tSnd p)
   | whne_tIdElim {A x P hr y e} : whne e -> whne (tIdElim A x P hr y e)
+  | whne_tQuote {A t} : ~ closed0 t -> dnf t -> whne (tQuote A t)
   | whne_tDecide {A t u} : (~ is_closedn 0 t) + (~ is_closedn 0 u) -> dnf t -> dnf u -> whne (tDecide A t u)
   | whne_tReflect {A t u e} : whne e -> whne (tReflect A t u e)
   | whne_tReify {A t u e} : whne e -> whne (tReify A t u e)
@@ -155,6 +157,8 @@ Lemma dnf_dne_ren : (forall t, dnf t -> forall ρ, dnf t⟨ρ⟩) × (forall t, 
 Proof.
 apply dnf_dne_rect; cbn; intros; try now econstructor.
 + constructor; try now eauto.
+  intros Hc; now apply closed0_ren_rev in Hc.
++ constructor; try now eauto.
   destruct s; [left|right];
   intros Hc; now apply closed0_ren_rev in Hc.
 Qed.
@@ -176,6 +180,10 @@ all: try now (
   match goal with H : dnf ?t |- _ => inversion H; subst; clear H end;
   match goal with H : dne ?t |- _ => inversion H; subst; clear H end;
   do 2 constructor; eauto; apply dne_dnf_whne; eauto using dnf_dne, dne_whne).
++ inversion H; subst; inversion H4; subst.
+  do 2 constructor; [eauto|now eintros ?%closed0_ren|eauto].
++ inversion H; subst.
+  constructor; [now eintros ?%closed0_ren|eauto].
 + inversion H; subst; inversion H6; subst.
   do 2 constructor; eauto.
   destruct H11; [left|right]; now eintros ?%closed0_ren.
@@ -467,6 +475,8 @@ Section RenWhnf.
     split.
     - apply whne_ren_rev.
     - induction 1 ; cbn; try now econstructor.
+      + econstructor; [|now eapply dnf_ren].
+        intros Hc; now apply closed0_ren_rev in Hc.
       + econstructor; try now eapply dnf_ren.
         destruct s; [left|right]; intros Hc; now apply closed0_ren_rev in Hc.
   Qed.
@@ -580,6 +590,7 @@ Fixpoint is_nf ne t {struct t} := match t with
 | tSnd t => is_nf true t
 | tIdElim A x P hr y e =>
   is_nf false A && is_nf false x && is_nf false P && is_nf false hr && is_nf false y && is_nf true e
+| tQuote A t => is_nf false A && is_nf false t && negb (is_closedn 0 t)
 | tDecide A t u =>
   is_nf false A && is_nf false t && is_nf false u && (negb (is_closedn 0 t) || negb (is_closedn 0 u))
 | tReflect A t u e =>
@@ -607,6 +618,7 @@ Fixpoint is_wnf ne t {struct t} := match t with
 | tFst t => is_wnf true t
 | tSnd t => is_wnf true t
 | tIdElim A x P hr y e => is_wnf true e
+| tQuote A t => is_dnf t && negb (is_closedn 0 t)
 | tDecide A t u => is_dnf t && is_dnf u && (negb (is_closedn 0 t) || negb (is_closedn 0 u))
 | tReflect A t u e => is_wnf true e
 | tReify A t u e => is_wnf true e
@@ -628,6 +640,7 @@ Proof.
 apply dnf_dne_rect; cbn; intros.
 all: repeat (apply andb_true_intro; split); eauto.
 + now apply is_nf_incl.
++ now apply Bool.eq_true_not_negb.
 + apply Bool.orb_true_intro; destruct s; [left|right]; now apply Bool.eq_true_not_negb.
 Qed.
 
@@ -641,6 +654,8 @@ all: try discriminate.
 all: try match goal with |- dnf _ => constructor end.
 all: try match goal with |- dne _ => constructor end.
 all: eauto using dnf, dne.
++ now eapply contraNnot.
++ now eapply contraNnot.
 + apply Bool.orb_true_elim in H0; destruct H0; [left|right]; now eapply contraNnot.
 + apply Bool.orb_true_elim in H0; destruct H0; [left|right]; now eapply contraNnot.
 Qed.
@@ -670,6 +685,8 @@ Proof.
 induction 1; cbn.
 all: repeat (apply andb_true_intro; split); eauto using whne, whnf.
 + now eapply dnf_dne_is_nf.
++ apply Bool.eq_true_not_negb; tea.
++ now eapply dnf_dne_is_nf.
 + now eapply dnf_dne_is_nf.
 + apply Bool.orb_true_intro; destruct s; [left|right]; now apply Bool.eq_true_not_negb.
 Qed.
@@ -679,6 +696,9 @@ Proof.
 induction t; cbn; intros; try discriminate.
 all: repeat match goal with H : _ |- _ => apply andb_prop in H; destruct H end.
 all: eauto using whne, whnf.
++ constructor.
+  - unfold closed0; destruct is_closedn; cbn in *; congruence.
+  - now apply is_nf_dnf_dne.
 + constructor; try now apply is_nf_dnf_dne.
   apply Bool.orb_true_elim in H0; destruct H0; [left|right]; now eapply contraNnot.
 Qed.

@@ -116,6 +116,13 @@ eapply scoped_subs; [apply Ht|].
 intros [|]; cbn; eauto with arith.
 Qed.
 
+Lemma well_scoped_qNat : forall Γ n, well_scoped Γ (qNat n).
+Proof.
+intros Γ n; revert Γ; induction n; cbn.
++ constructor.
++ split; [|constructor]; apply IHn.
+Qed.
+
 Create HintDb rzbltyping.
 
 Inductive WfContextRzbl : context -> Set :=
@@ -154,6 +161,7 @@ all: try (
 ).
 + apply scoped_subst1; cbn; tea.
   now apply scoped_up_S.
++ apply well_scoped_qNat.
 + apply scoped_SS_up.
   unshelve eapply (IHHr (cons _ (cons _ Γ)));
   cbn; eauto using scoped_up_SS, term.

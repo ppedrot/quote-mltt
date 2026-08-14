@@ -182,12 +182,15 @@ Definition eval_body (eval : bool -> term -> option term) (murec : term -> optio
         Some (tReify A t u e)
       else Some (tReify A t u e)
     else None
-(*
-  | tQuote t =>
+  | tQuote A t =>
     let* t := eval true t in
     if is_closedn 0 t then
       Some (qNat (quote (erase t)))
-    else Some (tQuote t)
+    else if deep then
+      let* A := eval true A in
+      Some (tQuote A t)
+    else Some (tQuote A t)
+(*
   | tStep t u =>
     let* t := eval true t in
     let* u := eval true u in
@@ -266,9 +269,9 @@ Inductive bigstep : bool -> term -> term -> Set :=
 | bs_reify_ne : forall A t u e e₀,
   [e ↓ e₀] -> whne e₀ -> [tReify A t u e ↓ tReify A t u e₀]
 
+| bs_quote_eval : forall A t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote A t ↓ qNat (quote (erase t₀))]
+| bs_quote_ne : forall A t t₀, [t ⇊ t₀] -> ~ closed0 t₀ -> [tQuote A t ↓ tQuote A t₀]
 (*
-| bs_quote_eval : forall t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote t ↓ qNat (quote (erase t₀))]
-| bs_quote_ne : forall t t₀, [t ⇊ t₀] -> ~ closed0 t₀ -> [tQuote t ↓ tQuote t₀]
 | bs_step_eval : forall t t₀ u u₀ n k k',
   [t ⇊ t₀] -> [u ⇊ qNat u₀] -> closed0 t₀ ->
   murec (fun k => eval true (tApp (erase t₀) (qNat u₀)) k) k = Some (k', qNat n) ->
@@ -338,9 +341,9 @@ Inductive bigstep : bool -> term -> term -> Set :=
   [n ⇊ e₀] -> [A ⇊ A₀] -> [t ⇊ t₀] -> [u ⇊ u₀] ->
   [tReify A t u e ⇊ tReify A₀ t₀ u₀ e₀]
 
+| dbs_quote_eval : forall A t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote A t ⇊ qNat (quote (erase t₀))]
+| dbs_quote_ne : forall A A₀ t t₀, [t ⇊ t₀] -> ~ closed0 t₀ -> [A ⇊ A₀] -> [tQuote A t ⇊ tQuote A₀ t₀]
 (*
-| dbs_quote_eval : forall t t₀, [t ⇊ t₀] -> closed0 t₀ -> [tQuote t ⇊ qNat (quote (erase t₀))]
-| dbs_quote_ne : forall t t₀, [t ⇊ t₀] -> ~ closed0 t₀ -> [tQuote t ⇊ tQuote t₀]
 | dbs_step_eval : forall t t₀ u u₀ n k k',
   [t ⇊ t₀] -> [u ⇊ qNat u₀] -> closed0 t₀ ->
   murec (fun k => eval true (tApp (erase t₀) (qNat u₀)) k) k = Some (k', qNat n) ->
@@ -496,6 +499,15 @@ all: try now (
   - casenf; [|discriminate].
     destruct deep; [|congruence].
     repeat expandopt.
+    repeat (erewrite IHk; [|Lia.lia|tea]); cbn; congruence.
++ repeat expandopt.
+  erewrite IHk; [|Lia.lia|tea]; cbn [bindopt].
+  destruct is_closedn; cbn in *; destruct is_closedn; cbn in *; try congruence.
+  - destruct deep; [|congruence].
+    repeat expandopt; cbn.
+    repeat (erewrite IHk; [|Lia.lia|tea]); cbn; congruence.
+  - destruct deep; [|congruence].
+    repeat expandopt; cbn.
     repeat (erewrite IHk; [|Lia.lia|tea]); cbn; congruence.
 + repeat expandopt.
   erewrite IHk; [|Lia.lia|tea]; cbn [bindopt].
@@ -804,11 +816,11 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
 | reifySubst {A t u e e'} :
   OneRedAlg (deep := false) e e' ->
   [ tReify A t u e ⤳ tReify A t u e' ]
-(*
-| termEvalAlg {t} :
+| termEvalAlg {A t} :
   dnf t ->
   closed0 t ->
-  [ tQuote t ⤳ qNat (quote (erase t)) ]
+  [ tQuote A t ⤳ qNat (quote (erase t)) ]
+(*
 | termStepAlg {t u n k k'} :
   dnf t ->
   closed0 t ->
@@ -890,6 +902,12 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   dne e -> dnf A -> dnf x -> dnf P -> dnf hr ->
   [ y ⤳ y' ] -> [ tIdElim A x P hr y e ⤳ tIdElim A x P hr y' e ]
 
+| quoteSubst {A t t'} :
+  @OneRedAlg true t t' ->
+  [ tQuote A t ⤳ tQuote A t' ]
+| quoteDom {A A' t} : deep ->
+  dnf t -> ~ closed0 t -> [ A ⤳ A' ] -> [ tQuote A t ⤳ tQuote A' t ]
+
 | decideArg1 {A t t' u} :
   @OneRedAlg true t t' ->
   [ tDecide A t u ⤳ tDecide A t' u ]
@@ -928,9 +946,6 @@ Inductive OneRedAlg {deep : bool} : term -> term -> Type :=
   [ tReify A t u e ⤳ tReify A t u' e ]
 
 (*
-| quoteSubst {t t'} :
-  @OneRedAlg true t t' ->
-  [ tQuote t ⤳ tQuote t' ]
 | stepHead {t t' u} :
   @OneRedAlg true t t' ->
   [ tStep t u ⤳ tStep t' u ]
@@ -1063,6 +1078,7 @@ Proof.
   - destruct H2; auto.
   - eelim dnf_nored; [|tea]; tea.
   - eelim dnf_nored; [|tea]; tea.
+  - eelim dnf_nored; [|tea]; tea.
 Qed.
 
 Lemma whnf_nored n u :
@@ -1115,6 +1131,10 @@ Proof.
   - inversion H; subst.
     eapply IHred; [|trivial].
     now constructor.
+  - inversion H ; subst.
+    contradiction.
+  - inversion H; subst.
+    eelim dnf_nored; [|tea]; tea.
   - inversion H; subst.
     eelim dnf_nored; [|tea]; tea.
   - inversion H; subst.
@@ -1172,6 +1192,8 @@ Lemma dred_whne : forall t u, [t ⇶ u] -> whne t -> whne u.
 Proof.
 intros t u Hr Ht; revert u Hr.
 induction Ht; intros ? Hr; inversion Hr; subst; first [constructor; now eauto using dred_ored|now inv_whne|idtac].
++ contradiction.
++ now eelim dnf_nored.
 + destruct s as [|s]; [contradiction|now elim s].
 + destruct s as [|s]; [contradiction|now elim s].
 + eelim dnf_nored; [|tea]; tea.
@@ -1279,6 +1301,9 @@ all: try now (econstructor; try apply dnf_ren; try apply dne_ren; try apply whne
   rewrite !erase_is_closed0_ren_id; tea.
 + constructor; eauto using dnf_ren, closed0_ren.
   rewrite !erase_is_closed0_ren_id; tea.
++ rewrite quote_ren; tea.
+  constructor; [now apply dnf_ren|now apply closed0_ren].
++ constructor; eauto using dnf_ren, closed0_ren_rev.
 + constructor; eauto using dnf_ren, closed0_ren.
   destruct s; eauto using closed0_ren_rev.
 Qed.
@@ -1371,6 +1396,12 @@ all: try now (constructor; eauto using @OneRedAlg, whne_ren_rev, dne_ren_rev, dn
   rewrite !(erase_is_closed0_ren_id _ ρ) in * |- ; eauto using closed0_ren_rev.
 + constructor; eauto using closed0_ren_rev, dnf_ren_rev.
   rewrite !(erase_is_closed0_ren_id _ ρ) in * |- ; eauto using closed0_ren_rev.
++ assert (closed0 t₀2) by now eapply closed0_ren_rev.
+  rewrite <- quote_ren in Hu; tea.
+  apply ren_inj_inv in Hu; tea.
+  rewrite <- Hu.
+  constructor; [now eapply dnf_ren_rev|tea].
++ constructor; eauto using closed0_ren_rev, dnf_ren_rev, closed0_ren.
 + constructor; eauto using closed0_ren_rev, dnf_ren_rev.
   destruct s as [s|s]; [left|right]; intro; elim s; eauto using closed0_ren.
 Qed.
@@ -1454,11 +1485,13 @@ all: repeat match goal with H : forall (t : term) (ρ : nat -> nat), _ |- _ =>
 end.
 all: let t := lazymatch goal with |- ∑ n, ?t = _ => t end in
      try (let t := unren t in now eexists t).
+all: try now eexists (tQuote _ _); reflexivity.
 all: try now eexists (tReflect _ _ _ _); reflexivity.
 all: try now eexists (tReify _ _ _ _); reflexivity.
 all: try now eexists (tDecide _ _ _); reflexivity.
 + assert (Hrw : forall t u, t⟨upRen_term_term ρ⟩[(u⟨ρ⟩)..] = (t[u..])⟨ρ⟩) by now asimpl.
   rewrite Hrw; now eexists.
++ eexists (qNat _); symmetry; eapply qNat_ren.
 Qed.
 
 Lemma dredalg_ren_adj : forall deep t u ρ, ren_inj ρ -> @RedClosureAlg deep t⟨ρ⟩ u -> ∑ u', u = u'⟨ρ⟩.
@@ -1537,6 +1570,13 @@ Lemma redalg_idElim {A x P hr y t t'} : [t ⤳* t'] -> [tIdElim A x P hr y t ⤳
 Proof.
   induction 1; [reflexivity|].
   econstructor; tea; now constructor.
+Qed.
+
+Lemma redalg_quote {A t t'} : [t ⇶* t'] -> [tQuote A t ⤳* tQuote A t'].
+Proof.
+induction 1; [reflexivity|].
+econstructor; [|tea].
+now constructor.
 Qed.
 
 Lemma redalg_decide {A t t' u u'} : [t ⇶* t'] -> dnf t' -> [u ⇶* u'] -> [tDecide A t u ⤳* tDecide A t' u'].
@@ -1816,6 +1856,7 @@ all: try match goal with H : forall n : nat, _ |- _ => now apply H end.
 + constructor.
 + constructor.
 + constructor.
++ apply closedn_qNat.
 Qed.
 
 Lemma dredalg_closedn : forall t u n, [t ⇶* u] -> closedn n t -> closedn n u.
@@ -1826,6 +1867,17 @@ Qed.
 Lemma dredalg_closed0 : forall t u, [t ⇶* u] -> closed0 t -> closed0 u.
 Proof.
 intros; now eapply dredalg_closedn.
+Qed.
+
+Lemma dredalg_quote : forall A A₀ t,
+  dnf t -> ~ closed0 t ->
+  [A ⇶* A₀] ->
+  [tQuote A t ⇶* tQuote A₀ t].
+Proof.
+intros * Ht Hc HA; induction HA.
++ reflexivity.
++ econstructor; [|tea].
+  now constructor.
 Qed.
 
 Lemma dredalg_decide : forall A A₀ t u,
@@ -1908,6 +1960,7 @@ all: try now (inversion Heval; subst; eauto using bigstep, whnf, whne).
  destruct deep; eauto using bigstep, dnf_bigstep.
 + apply bigstep_dnf_det in Heval; [subst|repeat constructor].
  destruct deep; eauto using bigstep, dnf_bigstep.
++ apply bigstep_dnf_det in Heval; [subst|apply dnf_qNat]; destruct deep; eauto using bigstep, dnf_bigstep.
 + assert (Ht' : whne t') by now eapply dred_whne.
   inversion Heval; subst.
   - eapply bigstep_nf in Ht'; [|tea]; now inv_whne.
@@ -1995,12 +2048,13 @@ Lemma bigstep_dredalg : forall deep t r, bigstep deep t r -> RedClosureAlg (deep
 Proof.
 induction 1; eauto using @RedClosureAlg, @OneRedAlg, gred_trans, gred_red,
   redalg_app, redalg_natElim, redalg_natEmpty, redalg_fst, redalg_snd, redalg_idElim,
-  redalg_decide, redalg_reflect, redalg_reify,
+  redalg_quote, redalg_decide, redalg_reflect, redalg_reify,
   dredalg_prod, dredalg_lambda, dredalg_app, dredalg_succ,
   dredalg_sig, dredalg_pair, dredalg_fst, dredalg_snd, dredalg_id, dredalg_refl,
   bigstep_dnf, bigstep_whne_dne.
 + eauto 8 using gred_trans, @OneRedAlg, redalg_decide, bigstep_dnf, redalg_one_step.
 + eauto 8 using gred_trans, @OneRedAlg, redalg_decide, bigstep_dnf, redalg_one_step.
++ eauto 7 using gred_trans, @OneRedAlg, redalg_quote, bigstep_dnf, redalg_one_step.
 + etransitivity; [|apply dredalg_app; eauto using bigstep_dnf, bigstep_whne_dne].
   eauto using gred_red, bigstep_dnf, bigstep_whne_dne, redalg_app.
 + etransitivity; [|apply dredalg_natElim; eauto using bigstep_dnf, bigstep_whne_dne].
@@ -2019,6 +2073,8 @@ induction 1; eauto using @RedClosureAlg, @OneRedAlg, gred_trans, gred_red,
   eauto using dredalg_reflect, gred_red, bigstep_dnf, bigstep_whne_dne.
 + etransitivity; [now eapply gred_red, redalg_reify|].
   eauto using dredalg_reify, gred_red, bigstep_dnf, bigstep_whne_dne.
++ eauto 7 using gred_red, gred_trans, @OneRedAlg, redalg_quote, bigstep_dnf, redalg_one_step.
++ eauto 7 using gred_red, gred_trans, @OneRedAlg, redalg_quote, dredalg_quote, bigstep_dnf, redalg_one_step.
 Qed.
 
 Lemma eval_dredalg : forall k deep t r, eval deep t k = Some r -> RedClosureAlg (deep := deep) t r.
@@ -2043,6 +2099,7 @@ all: try match goal with H : dne _ |- _ => now inversion H end.
 + destruct H4 as [H4|H4].
   - elim H4; rewrite closedn_unannot; tea.
   - elim H4; rewrite closedn_unannot; tea.
++ elim H3; unfold closed0; rewrite closedn_unannot; tea.
 Qed.
 
 Lemma gredalg_unannot_dnf_id : forall deep t u,

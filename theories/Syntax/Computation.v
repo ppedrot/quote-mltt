@@ -189,6 +189,10 @@ unfold closedn; induction n; intros; cbn in *.
 - apply IHn.
 Qed.
 
+(** Axiomatic definition of a computation model internal to MLTT *)
+
+Axiom quote : term -> nat.
+
 (*
 Definition qTotal (t u k v : nat) :=
   tPair tNat (tEval (tApp (tApp model.(run) (qNat t)) (qNat u)) (tRel 0) (qNat v))

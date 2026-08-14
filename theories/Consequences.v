@@ -170,6 +170,7 @@ Proof.
   repeat match goal with H : _ /\ _ |- _ => destruct H end;
   eauto; tea.
   - destruct v; tea.
+  - elim n; now eapply (allfv_closed nil).
   - destruct s as [n|n]; elim n; now eapply (allfv_closed nil).
 Qed.
 

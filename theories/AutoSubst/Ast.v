@@ -26,6 +26,7 @@ Inductive term : Type :=
   | tId : term -> term -> term -> term
   | tRefl : term -> term -> term
   | tIdElim : term -> term -> term -> term -> term -> term -> term
+  | tQuote : term -> term -> term
   | tDecide : term -> term -> term -> term
   | tReflect : term -> term -> term -> term -> term
   | tReify : term -> term -> term -> term -> term.
@@ -165,6 +166,13 @@ exact (eq_trans
          (ap (fun x => tIdElim t0 t1 t2 t3 t4 x) H5)).
 Qed.
 
+Lemma congr_tQuote {s0 : term} {s1 : term} {t0 : term} {t1 : term}
+  (H0 : s0 = t0) (H1 : s1 = t1) : tQuote s0 s1 = tQuote t0 t1.
+Proof.
+exact (eq_trans (eq_trans eq_refl (ap (fun x => tQuote x s1) H0))
+         (ap (fun x => tQuote t0 x) H1)).
+Qed.
+
 Lemma congr_tDecide {s0 : term} {s1 : term} {s2 : term} {t0 : term}
   {t1 : term} {t2 : term} (H0 : s0 = t0) (H1 : s1 = t1) (H2 : s2 = t2) :
   tDecide s0 s1 s2 = tDecide t0 t1 t2.
@@ -240,6 +248,7 @@ Fixpoint ren_term (xi_term : nat -> nat) (s : term) {struct s} : term :=
       tIdElim (ren_term xi_term s0) (ren_term xi_term s1)
         (ren_term (upRen_term_term (upRen_term_term xi_term)) s2)
         (ren_term xi_term s3) (ren_term xi_term s4) (ren_term xi_term s5)
+  | tQuote s0 s1 => tQuote (ren_term xi_term s0) (ren_term xi_term s1)
   | tDecide s0 s1 s2 =>
       tDecide (ren_term xi_term s0) (ren_term xi_term s1)
         (ren_term xi_term s2)
@@ -298,6 +307,8 @@ term :=
         (subst_term (up_term_term (up_term_term sigma_term)) s2)
         (subst_term sigma_term s3) (subst_term sigma_term s4)
         (subst_term sigma_term s5)
+  | tQuote s0 s1 =>
+      tQuote (subst_term sigma_term s0) (subst_term sigma_term s1)
   | tDecide s0 s1 s2 =>
       tDecide (subst_term sigma_term s0) (subst_term sigma_term s1)
         (subst_term sigma_term s2)
@@ -373,6 +384,9 @@ subst_term sigma_term s = s :=
         (idSubst_term sigma_term Eq_term s3)
         (idSubst_term sigma_term Eq_term s4)
         (idSubst_term sigma_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote (idSubst_term sigma_term Eq_term s0)
+        (idSubst_term sigma_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide (idSubst_term sigma_term Eq_term s0)
         (idSubst_term sigma_term Eq_term s1)
@@ -460,6 +474,9 @@ ren_term xi_term s = ren_term zeta_term s :=
         (extRen_term xi_term zeta_term Eq_term s3)
         (extRen_term xi_term zeta_term Eq_term s4)
         (extRen_term xi_term zeta_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote (extRen_term xi_term zeta_term Eq_term s0)
+        (extRen_term xi_term zeta_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide (extRen_term xi_term zeta_term Eq_term s0)
         (extRen_term xi_term zeta_term Eq_term s1)
@@ -548,6 +565,9 @@ subst_term sigma_term s = subst_term tau_term s :=
         (ext_term sigma_term tau_term Eq_term s3)
         (ext_term sigma_term tau_term Eq_term s4)
         (ext_term sigma_term tau_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote (ext_term sigma_term tau_term Eq_term s0)
+        (ext_term sigma_term tau_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide (ext_term sigma_term tau_term Eq_term s0)
         (ext_term sigma_term tau_term Eq_term s1)
@@ -645,6 +665,9 @@ Fixpoint compRenRen_term (xi_term : nat -> nat) (zeta_term : nat -> nat)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s3)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s4)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
+        (compRenRen_term xi_term zeta_term rho_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s1)
@@ -750,6 +773,9 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
         (compRenSubst_term xi_term tau_term theta_term Eq_term s3)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s4)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide
         (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
@@ -876,6 +902,10 @@ ren_term zeta_term (subst_term sigma_term s) = subst_term theta_term s :=
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s3)
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s4)
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
@@ -1006,6 +1036,10 @@ subst_term tau_term (subst_term sigma_term s) = subst_term theta_term s :=
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s3)
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s4)
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
@@ -1165,6 +1199,9 @@ Fixpoint rinst_inst_term (xi_term : nat -> nat) (sigma_term : nat -> term)
         (rinst_inst_term xi_term sigma_term Eq_term s3)
         (rinst_inst_term xi_term sigma_term Eq_term s4)
         (rinst_inst_term xi_term sigma_term Eq_term s5)
+  | tQuote s0 s1 =>
+      congr_tQuote (rinst_inst_term xi_term sigma_term Eq_term s0)
+        (rinst_inst_term xi_term sigma_term Eq_term s1)
   | tDecide s0 s1 s2 =>
       congr_tDecide (rinst_inst_term xi_term sigma_term Eq_term s0)
         (rinst_inst_term xi_term sigma_term Eq_term s1)
@@ -1414,6 +1451,8 @@ Fixpoint allfv_term (p_term : nat -> Prop) (s : term) {struct s} : Prop :=
               (and (allfv_term p_term s3)
                  (and (allfv_term p_term s4)
                     (and (allfv_term p_term s5) True)))))
+  | tQuote s0 s1 =>
+      and (allfv_term p_term s0) (and (allfv_term p_term s1) True)
   | tDecide s0 s1 s2 =>
       and (allfv_term p_term s0)
         (and (allfv_term p_term s1) (and (allfv_term p_term s2) True))
@@ -1503,6 +1542,9 @@ Fixpoint allfvTriv_term (p_term : nat -> Prop) (H_term : forall x, p_term x)
               (conj (allfvTriv_term p_term H_term s3)
                  (conj (allfvTriv_term p_term H_term s4)
                     (conj (allfvTriv_term p_term H_term s5) I)))))
+  | tQuote s0 s1 =>
+      conj (allfvTriv_term p_term H_term s0)
+        (conj (allfvTriv_term p_term H_term s1) I)
   | tDecide s0 s1 s2 =>
       conj (allfvTriv_term p_term H_term s0)
         (conj (allfvTriv_term p_term H_term s1)
@@ -1839,6 +1881,21 @@ allfv_term p_term s -> allfv_term q_term s :=
                               end
                           end)
                        I)))))
+  | tQuote s0 s1 =>
+      fun HP =>
+      conj
+        (allfvImpl_term p_term q_term H_term s0
+           match HP with
+           | conj HP _ => HP
+           end)
+        (conj
+           (allfvImpl_term p_term q_term H_term s1
+              match HP with
+              | conj _ HP => match HP with
+                             | conj HP _ => HP
+                             end
+              end)
+           I)
   | tDecide s0 s1 s2 =>
       fun HP =>
       conj
@@ -2269,6 +2326,20 @@ allfv_term (funcomp p_term xi_term) s :=
                               end
                           end)
                        I)))))
+  | tQuote s0 s1 =>
+      fun H =>
+      conj
+        (allfvRenL_term p_term xi_term s0 match H with
+                                          | conj H _ => H
+                                          end)
+        (conj
+           (allfvRenL_term p_term xi_term s1
+              match H with
+              | conj _ H => match H with
+                            | conj H _ => H
+                            end
+              end)
+           I)
   | tDecide s0 s1 s2 =>
       fun H =>
       conj
@@ -2700,6 +2771,20 @@ allfv_term p_term (ren_term xi_term s)
                               end
                           end)
                        I)))))
+  | tQuote s0 s1 =>
+      fun H =>
+      conj
+        (allfvRenR_term p_term xi_term s0 match H with
+                                          | conj H _ => H
+                                          end)
+        (conj
+           (allfvRenR_term p_term xi_term s1
+              match H with
+              | conj _ H => match H with
+                            | conj H _ => H
+                            end
+              end)
+           I)
   | tDecide s0 s1 s2 =>
       fun H =>
       conj
