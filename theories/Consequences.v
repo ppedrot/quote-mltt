@@ -1,27 +1,9 @@
 (** * LogRel.Consequences: important meta-theoretic consequences of normalization: canonicity of natural numbers and consistency. *)
 From Coq Require Import CRelationClasses.
-From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping DeepTyping LogicalRelation Fundamental.
+From LogRel Require Import Utils Syntax.All GenericTyping DeclarativeTyping RealizabilityTyping LogicalRelation Fundamental.
 
 Import DeclarativeTypingData WeakDeclarativeTypingData.
-
-Module Import SNDeclarativeTypingProperties.
-
-Import DeepTypingData.
-Import DeepTypingProperties.
-
-Declare Instance SNCompleteTypingDeepProperties : SNCompleteTypingProperties nf _ _ _ _ _ _. (* FIXME: not true yet *)
-
-#[export] Instance SNTypingDeclProperties : SNTypingProperties de _ _ _ _ _.
-Proof.
-split; intros * Hc.
-apply Fundamental in Hc as [].
-eapply Properties.escapeValidTm in Vtu as (?&?&Vtu).
-apply snty_nf in Vtu as (t₀&u₀&?&?&?&?&?); prod_splitter; eauto using nfconvtm_conv.
-Qed.
-
-Declare Instance SNCompleteTypingDeclProperties : SNCompleteTypingProperties de _ _ _ _ _ _. (* FIXME: not true yet *)
-
-End SNDeclarativeTypingProperties.
+Import RealizabilityTypingData RealizabilityTypingProperties.
 
 Import Allfv.
 
@@ -170,11 +152,21 @@ repeat (apply andb_true_intro; split); eauto.
   intros [|[|]]; cbn; eauto.
 Qed.
 
-Lemma no_neutral_empty_ctx {A t} : whne t -> [ε |-[de] t : A] -> False.
+Lemma well_scoped_allfv : forall Γ t, well_scoped Γ t -> allfv_term (mem_ctx Γ) t.
+Proof.
+intros * H; eapply allfvImpl_term, H; cbn; clear t H.
+induction Γ; cbn; intros n Hn.
++ now eelim PeanoNat.Nat.nlt_0_r.
++ destruct n as [|n]; cbn; [constructor|].
+  now apply IHΓ, PeanoNat.lt_S_n.
+Qed.
+
+Lemma no_neutral_empty_ctx {A t} : whne t -> [ε |-[rz] t : A] -> False.
 Proof.
   intros Hne Ht.
-  apply typing_fv in Ht as [_ Ht].
-  clear A; induction Hne; cbn in Ht;
+  destruct Ht as [? ? Ht].
+  apply well_scoped_allfv in Ht.
+  induction Hne; cbn in Ht;
   repeat match goal with H : _ /\ _ |- _ => destruct H end;
   eauto; tea.
   - destruct v; tea.
@@ -188,9 +180,9 @@ Proof.
   repeat econstructor.
 Qed.
 
-Import DeclarativeProperties.WeakDeclarativeTypingProperties.
+(* Import DeclarativeProperties.WeakDeclarativeTypingProperties. *)
 
-Lemma consistency {t} : [ε |- t : tEmpty] -> False.
+Lemma consistency {t} : [ε |-[de] t : tEmpty] -> False.
 Proof.
   intros H.
   assert (Ht : [LREmpty_ one red_empty_empty | ε ||- t : tEmpty]).
@@ -200,15 +192,12 @@ Proof.
   }
   destruct Ht, eq.
   eapply (no_neutral_empty_ctx (t := nfL)); tea.
-  now eapply convneu_whne.
+  eapply convneu_whne, conv.
 Qed.
 
 (** Strong normalization *)
 
 Section SN.
-
-Import DeepTyping.DeepTypingData.
-Import DeepTyping.DeepTypingProperties.
 
 Lemma strong_normalization : forall Γ A t, [Γ |-[de] t : A] -> ∑ v, [t ⇊ v].
 Proof.
@@ -236,19 +225,24 @@ Section NatCanonicityInduction.
     - intros *  ? ? ? ? [n].
       exists n.
       etransitivity; [|tea].
-      eapply DeclarativeProperties.RedConvTeC, redL.
+      eapply convtm_exp; [..|eapply lrefl, eq].
+      all: eauto using tmr_wf_r, tmr_wf_red.
+      + apply redtm_refl, redL.
+      + apply wft_nat; constructor.
+      + apply convty_term, convtm_nat; constructor.
     - exists 0 ; cbn.
+      eapply convtm_zero.
       now repeat constructor.
     - intros ? ? _ [n].
       exists (S n) ; simpl.
-      now econstructor.
+      now eapply convtm_succ.
     - intros ? ? [? ?].
       exfalso.
       eapply (no_neutral_empty_ctx (t := ne)); tea.
       now eapply convneu_whne.
   Qed.
 
-  Lemma _nat_canonicity {t} : [ε |- t : tNat] ->
+  Lemma _nat_canonicity {t} : [ε |-[de] t : tNat] ->
   ∑ n : nat, [ε |- t ≅ qNat n : tNat].
   Proof.
     intros Ht.
@@ -265,8 +259,8 @@ End NatCanonicityInduction.
 
 Section NatCanonicityDeepRed.
 
-Import DeepTyping.DeepTypingData.
-Import DeepTyping.DeepTypingProperties.
+(* Import DeepTyping.DeepTypingData. *)
+(* Import DeepTyping.DeepTypingProperties. *)
 
 (*
 Lemma _nat_canonicity_dred {t} : [ε |-[de] t : tNat] -> ∑ n : nat, [t ⇊ qNat n].
@@ -292,7 +286,7 @@ Qed.*)
 
 End NatCanonicityDeepRed.
 
-Lemma nat_canonicity {t} : [ε |- t : tNat] ->
+Lemma nat_canonicity {t} : [ε |-[de] t : tNat] ->
   ∑ n : nat, [ε |- t ≅ qNat n : tNat].
 Proof.
   now apply _nat_canonicity.

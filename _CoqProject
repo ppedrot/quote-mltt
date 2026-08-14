@@ -27,7 +27,6 @@ theories/Syntax/All.v
 
 theories/GenericTyping.v
 theories/DeclarativeTyping.v
-theories/DeepTyping.v
 theories/RealizabilityTyping.v
 
 theories/TypingProperties/DeclarativeProperties.v
