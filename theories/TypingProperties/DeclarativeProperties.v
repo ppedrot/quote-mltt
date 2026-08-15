@@ -120,6 +120,8 @@ Section TypingWk.
         * rewrite <- wk_up_wk1, wk1_ren_on; cbn; constructor; tea; constructor.
       + rewrite wk_refl, <- subst_ren_wk_up2; eauto.
     - intros; cbn; now constructor.
+    - intros; cbn; constructor; eauto.
+      now apply H6.
     - intros; cbn; now constructor.
 (*
     - intros * _ IH **; cbn.
@@ -179,6 +181,9 @@ Section TypingWk.
       unfold ren1, Ren1_well_wk; rewrite (quote_ren t ρ); [|tea].
       constructor; eauto using closed0_ren, dnf_ren.
     - intros; cbn; now constructor.
+    - intros; cbn; now constructor.
+    - intros; cbn; constructor; eauto.
+      now apply H8.
     - intros; cbn; constructor; eauto using dnf_ren, closed0_ren.
       unfold eqnf.
       etransitivity; [now apply erase_is_closed0_ren_id|].
@@ -815,6 +820,8 @@ Module WeakDeclarativeTypingProperties.
   - intros * ??????? []; split; now econstructor.
   - intros * ???????; econstructor; eauto using whne.
     constructor; tea.
+  - intros * ???? []; split; eauto using whne.
+    constructor; tea.
   - intros; econstructor; eauto using whne.
     eapply TermConv; [now constructor|].
     assert [|- Γ] by gen_typing.
@@ -943,6 +950,16 @@ Module WeakDeclarativeTypingProperties.
     + now apply redalg_quote.
     + constructor; tea.
       now constructor.
+  - intros; split.
+    + constructor; tea.
+      eapply ty_conv; [constructor|]; tea.
+      symmetry; apply convty_Id; now symmetry.
+    + apply redalg_one_step; now constructor.
+    + constructor; tea.
+  - intros * ??? []; split.
+    + constructor; tea.
+    + now apply redalg_inject.
+    + constructor; tea; now constructor.
   - intros; split.
     + now constructor.
     + apply redalg_one_step; now constructor.

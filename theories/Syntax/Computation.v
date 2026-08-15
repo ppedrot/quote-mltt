@@ -192,6 +192,7 @@ Qed.
 (** Axiomatic definition of a computation model internal to MLTT *)
 
 Axiom quote : term -> nat.
+Axiom quote_inj : forall t u, quote t = quote u -> t = u.
 
 (*
 Definition qTotal (t u k v : nat) :=

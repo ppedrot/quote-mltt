@@ -179,6 +179,15 @@ assert (t = t₀) by (eapply dredalg_det; eauto; reflexivity); subst t₀.
 split; eauto using dredalg_quote, dnf, dne.
 Qed.
 
+Lemma isNf_tInject : forall A A₀ t t₀ u u₀ e e₀,
+  whne e ->
+  isNf A A₀ -> isNf t t₀ -> isNf u u₀ -> isNf e e₀ ->
+  isNf (tInject A t u e) (tInject A₀ t₀ u₀ e₀).
+Proof.
+intros * ? [] [] [] [].
+split; eauto using dredalg_inject, dnf, dne, dne_dnf_whne, dredalg_whne.
+Qed.
+
 Lemma isNf_tDecide : forall A A₀ t t₀ u u₀,
   dnf t -> dnf u -> (~ closed0 t) + (~ closed0 u) ->
   isNf A A₀ -> isNf t t₀ -> isNf u u₀ ->
@@ -391,6 +400,14 @@ Lemma eqNf_tQuote : forall A A' t t',
 Proof.
 intros * ???? [A₀ A₁] [t₀ t₁]; exists (tQuote A₀ t₀) (tQuote A₁ t₁);
 eauto using isNf_tQuote, eqnf_tQuote.
+Qed.
+
+Lemma eqNf_tInject : forall A A' t t' u u' e e',
+  whne e -> whne e' ->
+  eqNf A A' -> eqNf t t' -> eqNf u u' -> eqNf e e' -> eqNf (tInject A t u e) (tInject A' t' u' e').
+Proof.
+intros * ?? [A₀ A₁] [t₀ t₁] [u₀ u₁] [e₀ e₁]; exists (tInject A₀ t₀ u₀ e₀) (tInject A₁ t₁ u₁ e₁);
+eauto using isNf_tInject, eqnf_tInject.
 Qed.
 
 Lemma eqNf_tDecide : forall A A' t t' u u',

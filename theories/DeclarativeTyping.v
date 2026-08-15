@@ -131,6 +131,12 @@ Section Definitions.
     [Γ |- A] ->
     [Γ |- t ≅ t : A] ->
     [Γ |- tQuote A t : tNat]
+  | wfTermInject {Γ A t u e} :
+    [Γ |- A] ->
+    [Γ |- t : A] ->
+    [Γ |- u : A] ->
+    [Γ |- e : tId tNat (tQuote A t) (tQuote A u) ] ->
+    [Γ |- tInject A t u e : tId A t u]
   | wfTermDecide {Γ} {A t u} :
     [Γ |- A] ->
     [Γ |- t ≅ t : A] ->
@@ -204,6 +210,22 @@ Section Definitions.
     [Γ |- A ≅ A'] ->
     [Γ |- t ≅ t' : A] ->
     [Γ |- tQuote A t ≅ tQuote A' t' : tNat]
+  | TermInjectEval {Γ A X t u x} :
+    [Γ |- A] ->
+    [Γ |- X] ->
+    [Γ |- X ≅ tNat] ->
+    [Γ |- t : A] ->
+    [Γ |- u : A] ->
+    [Γ |- x ≅ tQuote A t : tNat] ->
+    [Γ |- x ≅ tQuote A u : tNat] ->
+    [Γ |- tInject A t u (tRefl X x) ≅ tRefl A t : tId A t u]
+  | TermInjectCong {Γ A A' t t' u u' e e'} :
+    [Γ |- A] ->
+    [Γ |- A ≅ A'] ->
+    [Γ |- t ≅ t' : A] ->
+    [Γ |- u ≅ u' : A] ->
+    [Γ |- e ≅ e' : tId tNat (tQuote A t) (tQuote A u) ] ->
+    [Γ |- tInject A t u e ≅ tInject A' t' u' e' : tId A t u]
   | TermDecideEvalEq {Γ} {A t u} :
     [Γ |- A] ->
     [Γ |- t ≅ t : A] ->

@@ -93,6 +93,7 @@ theories/Validity/Introductions/Empty.v
 theories/Validity/Introductions/Sigma.v
 theories/Validity/Introductions/Id.v
 theories/Validity/Introductions/Quote.v
+theories/Validity/Introductions/Inject.v
 theories/Validity/Introductions/Reflect.v
 
 theories/Fundamental.v

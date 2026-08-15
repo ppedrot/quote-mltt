@@ -344,6 +344,12 @@ Section GenericTyping.
       [ Γ |- A ] ->
       [ Γ |- t ≅ t : A ] ->
       [ Γ |- tQuote A t : tNat ];
+    ty_inject {Γ A t u e} :
+      [ Γ |- A ] ->
+      [ Γ |- t : A ] ->
+      [ Γ |- u : A ] ->
+      [ Γ |- e : tId tNat (tQuote A t) (tQuote A u) ] ->
+      [ Γ |- tInject A t u e : tId A t u ];
     ty_decide {Γ A t u} :
       [Γ |- A] ->
       [Γ |- t ≅ t : A] ->
@@ -509,6 +515,13 @@ Section GenericTyping.
       dnf n -> dnf n' ->
       ~ closed0 n -> ~ closed0 n' ->
       [Γ |- tQuote A n ~ tQuote A' n' : tNat];
+    convneu_inject {Γ A A' t t' u u' e e'} :
+      [Γ |- A] ->
+      [Γ |- A ≅ A'] ->
+      [Γ |- t ≅ t' : A] ->
+      [Γ |- u ≅ u' : A] ->
+      [Γ |- e ~ e' : tId tNat (tQuote A t) (tQuote A u) ] ->
+      [Γ |- tInject A t u e ~ tInject A' t' u' e' : tId A t u];
     convneu_decide {Γ A A' t t' u u'} :
       [Γ |- A] ->
       [Γ |- A ≅ A'] ->
@@ -638,6 +651,22 @@ Section GenericTyping.
       [Γ |- t ≅ t' : A] ->
       [t ⇶* t'] ->
       [Γ |- tQuote A t ⤳* tQuote A t' : tNat ];
+    redtm_inject_eval {Γ A X t u x} :
+      [Γ |- A] ->
+      [Γ |- X] ->
+      [Γ |- t : A] ->
+      [Γ |- u : A] ->
+      [Γ |- x : X] ->
+      [Γ |- X ≅ tNat] ->
+      [Γ |- x ≅ tQuote A t : tNat] ->
+      [Γ |- x ≅ tQuote A u : tNat] ->
+      [Γ |- tInject A t u (tRefl X x) ⤳* tRefl A t : tId A t u ];
+    redtm_inject {Γ A t u e e'} :
+      [Γ |- A] ->
+      [Γ |- t : A] ->
+      [Γ |- u : A] ->
+      [Γ |- e ⤳* e' : tId tNat (tQuote A t) (tQuote A u)] ->
+      [Γ |- tInject A t u e ⤳* tInject A t u e' : tId A t u];
     redtm_decide_eval_eq {Γ A t u} :
       [Γ |- A] ->
       [Γ |- t ≅ t : A] ->
