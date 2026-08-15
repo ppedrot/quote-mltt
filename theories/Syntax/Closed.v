@@ -34,6 +34,9 @@ match t with
   (andb (is_closedn (S (S n)) P)
     (andb (is_closedn n hr) (andb (is_closedn n y) (is_closedn n e)))))
 | tQuote A t => andb (is_closedn n A) (is_closedn n t)
+| tInject A t u e =>
+  andb (is_closedn n A)
+    (andb (is_closedn n t) (andb (is_closedn n u) (is_closedn n e)))
 | tDecide A t u =>
   andb (is_closedn n A)
     (andb (is_closedn n t) (is_closedn n u))

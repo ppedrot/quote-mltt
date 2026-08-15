@@ -27,6 +27,7 @@ Inductive term : Type :=
   | tRefl : term -> term -> term
   | tIdElim : term -> term -> term -> term -> term -> term -> term
   | tQuote : term -> term -> term
+  | tInject : term -> term -> term -> term -> term
   | tDecide : term -> term -> term -> term
   | tReflect : term -> term -> term -> term -> term
   | tReify : term -> term -> term -> term -> term.
@@ -173,6 +174,20 @@ exact (eq_trans (eq_trans eq_refl (ap (fun x => tQuote x s1) H0))
          (ap (fun x => tQuote t0 x) H1)).
 Qed.
 
+Lemma congr_tInject {s0 : term} {s1 : term} {s2 : term} {s3 : term}
+  {t0 : term} {t1 : term} {t2 : term} {t3 : term} (H0 : s0 = t0)
+  (H1 : s1 = t1) (H2 : s2 = t2) (H3 : s3 = t3) :
+  tInject s0 s1 s2 s3 = tInject t0 t1 t2 t3.
+Proof.
+exact (eq_trans
+         (eq_trans
+            (eq_trans
+               (eq_trans eq_refl (ap (fun x => tInject x s1 s2 s3) H0))
+               (ap (fun x => tInject t0 x s2 s3) H1))
+            (ap (fun x => tInject t0 t1 x s3) H2))
+         (ap (fun x => tInject t0 t1 t2 x) H3)).
+Qed.
+
 Lemma congr_tDecide {s0 : term} {s1 : term} {s2 : term} {t0 : term}
   {t1 : term} {t2 : term} (H0 : s0 = t0) (H1 : s1 = t1) (H2 : s2 = t2) :
   tDecide s0 s1 s2 = tDecide t0 t1 t2.
@@ -249,6 +264,9 @@ Fixpoint ren_term (xi_term : nat -> nat) (s : term) {struct s} : term :=
         (ren_term (upRen_term_term (upRen_term_term xi_term)) s2)
         (ren_term xi_term s3) (ren_term xi_term s4) (ren_term xi_term s5)
   | tQuote s0 s1 => tQuote (ren_term xi_term s0) (ren_term xi_term s1)
+  | tInject s0 s1 s2 s3 =>
+      tInject (ren_term xi_term s0) (ren_term xi_term s1)
+        (ren_term xi_term s2) (ren_term xi_term s3)
   | tDecide s0 s1 s2 =>
       tDecide (ren_term xi_term s0) (ren_term xi_term s1)
         (ren_term xi_term s2)
@@ -309,6 +327,9 @@ term :=
         (subst_term sigma_term s5)
   | tQuote s0 s1 =>
       tQuote (subst_term sigma_term s0) (subst_term sigma_term s1)
+  | tInject s0 s1 s2 s3 =>
+      tInject (subst_term sigma_term s0) (subst_term sigma_term s1)
+        (subst_term sigma_term s2) (subst_term sigma_term s3)
   | tDecide s0 s1 s2 =>
       tDecide (subst_term sigma_term s0) (subst_term sigma_term s1)
         (subst_term sigma_term s2)
@@ -387,6 +408,11 @@ subst_term sigma_term s = s :=
   | tQuote s0 s1 =>
       congr_tQuote (idSubst_term sigma_term Eq_term s0)
         (idSubst_term sigma_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject (idSubst_term sigma_term Eq_term s0)
+        (idSubst_term sigma_term Eq_term s1)
+        (idSubst_term sigma_term Eq_term s2)
+        (idSubst_term sigma_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide (idSubst_term sigma_term Eq_term s0)
         (idSubst_term sigma_term Eq_term s1)
@@ -477,6 +503,11 @@ ren_term xi_term s = ren_term zeta_term s :=
   | tQuote s0 s1 =>
       congr_tQuote (extRen_term xi_term zeta_term Eq_term s0)
         (extRen_term xi_term zeta_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject (extRen_term xi_term zeta_term Eq_term s0)
+        (extRen_term xi_term zeta_term Eq_term s1)
+        (extRen_term xi_term zeta_term Eq_term s2)
+        (extRen_term xi_term zeta_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide (extRen_term xi_term zeta_term Eq_term s0)
         (extRen_term xi_term zeta_term Eq_term s1)
@@ -568,6 +599,11 @@ subst_term sigma_term s = subst_term tau_term s :=
   | tQuote s0 s1 =>
       congr_tQuote (ext_term sigma_term tau_term Eq_term s0)
         (ext_term sigma_term tau_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject (ext_term sigma_term tau_term Eq_term s0)
+        (ext_term sigma_term tau_term Eq_term s1)
+        (ext_term sigma_term tau_term Eq_term s2)
+        (ext_term sigma_term tau_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide (ext_term sigma_term tau_term Eq_term s0)
         (ext_term sigma_term tau_term Eq_term s1)
@@ -668,6 +704,11 @@ Fixpoint compRenRen_term (xi_term : nat -> nat) (zeta_term : nat -> nat)
   | tQuote s0 s1 =>
       congr_tQuote (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
+        (compRenRen_term xi_term zeta_term rho_term Eq_term s1)
+        (compRenRen_term xi_term zeta_term rho_term Eq_term s2)
+        (compRenRen_term xi_term zeta_term rho_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide (compRenRen_term xi_term zeta_term rho_term Eq_term s0)
         (compRenRen_term xi_term zeta_term rho_term Eq_term s1)
@@ -776,6 +817,12 @@ subst_term tau_term (ren_term xi_term s) = subst_term theta_term s :=
   | tQuote s0 s1 =>
       congr_tQuote (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
         (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s1)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s2)
+        (compRenSubst_term xi_term tau_term theta_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide
         (compRenSubst_term xi_term tau_term theta_term Eq_term s0)
@@ -906,6 +953,12 @@ ren_term zeta_term (subst_term sigma_term s) = subst_term theta_term s :=
       congr_tQuote
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s1)
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s2)
+        (compSubstRen_term sigma_term zeta_term theta_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide
         (compSubstRen_term sigma_term zeta_term theta_term Eq_term s0)
@@ -1040,6 +1093,12 @@ subst_term tau_term (subst_term sigma_term s) = subst_term theta_term s :=
       congr_tQuote
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s1)
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s2)
+        (compSubstSubst_term sigma_term tau_term theta_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide
         (compSubstSubst_term sigma_term tau_term theta_term Eq_term s0)
@@ -1202,6 +1261,11 @@ Fixpoint rinst_inst_term (xi_term : nat -> nat) (sigma_term : nat -> term)
   | tQuote s0 s1 =>
       congr_tQuote (rinst_inst_term xi_term sigma_term Eq_term s0)
         (rinst_inst_term xi_term sigma_term Eq_term s1)
+  | tInject s0 s1 s2 s3 =>
+      congr_tInject (rinst_inst_term xi_term sigma_term Eq_term s0)
+        (rinst_inst_term xi_term sigma_term Eq_term s1)
+        (rinst_inst_term xi_term sigma_term Eq_term s2)
+        (rinst_inst_term xi_term sigma_term Eq_term s3)
   | tDecide s0 s1 s2 =>
       congr_tDecide (rinst_inst_term xi_term sigma_term Eq_term s0)
         (rinst_inst_term xi_term sigma_term Eq_term s1)
@@ -1453,6 +1517,10 @@ Fixpoint allfv_term (p_term : nat -> Prop) (s : term) {struct s} : Prop :=
                     (and (allfv_term p_term s5) True)))))
   | tQuote s0 s1 =>
       and (allfv_term p_term s0) (and (allfv_term p_term s1) True)
+  | tInject s0 s1 s2 s3 =>
+      and (allfv_term p_term s0)
+        (and (allfv_term p_term s1)
+           (and (allfv_term p_term s2) (and (allfv_term p_term s3) True)))
   | tDecide s0 s1 s2 =>
       and (allfv_term p_term s0)
         (and (allfv_term p_term s1) (and (allfv_term p_term s2) True))
@@ -1545,6 +1613,11 @@ Fixpoint allfvTriv_term (p_term : nat -> Prop) (H_term : forall x, p_term x)
   | tQuote s0 s1 =>
       conj (allfvTriv_term p_term H_term s0)
         (conj (allfvTriv_term p_term H_term s1) I)
+  | tInject s0 s1 s2 s3 =>
+      conj (allfvTriv_term p_term H_term s0)
+        (conj (allfvTriv_term p_term H_term s1)
+           (conj (allfvTriv_term p_term H_term s2)
+              (conj (allfvTriv_term p_term H_term s3) I)))
   | tDecide s0 s1 s2 =>
       conj (allfvTriv_term p_term H_term s0)
         (conj (allfvTriv_term p_term H_term s1)
@@ -1896,6 +1969,45 @@ allfv_term p_term s -> allfv_term q_term s :=
                              end
               end)
            I)
+  | tInject s0 s1 s2 s3 =>
+      fun HP =>
+      conj
+        (allfvImpl_term p_term q_term H_term s0
+           match HP with
+           | conj HP _ => HP
+           end)
+        (conj
+           (allfvImpl_term p_term q_term H_term s1
+              match HP with
+              | conj _ HP => match HP with
+                             | conj HP _ => HP
+                             end
+              end)
+           (conj
+              (allfvImpl_term p_term q_term H_term s2
+                 match HP with
+                 | conj _ HP =>
+                     match HP with
+                     | conj _ HP => match HP with
+                                    | conj HP _ => HP
+                                    end
+                     end
+                 end)
+              (conj
+                 (allfvImpl_term p_term q_term H_term s3
+                    match HP with
+                    | conj _ HP =>
+                        match HP with
+                        | conj _ HP =>
+                            match HP with
+                            | conj _ HP =>
+                                match HP with
+                                | conj HP _ => HP
+                                end
+                            end
+                        end
+                    end)
+                 I)))
   | tDecide s0 s1 s2 =>
       fun HP =>
       conj
@@ -2340,6 +2452,43 @@ allfv_term (funcomp p_term xi_term) s :=
                             end
               end)
            I)
+  | tInject s0 s1 s2 s3 =>
+      fun H =>
+      conj
+        (allfvRenL_term p_term xi_term s0 match H with
+                                          | conj H _ => H
+                                          end)
+        (conj
+           (allfvRenL_term p_term xi_term s1
+              match H with
+              | conj _ H => match H with
+                            | conj H _ => H
+                            end
+              end)
+           (conj
+              (allfvRenL_term p_term xi_term s2
+                 match H with
+                 | conj _ H =>
+                     match H with
+                     | conj _ H => match H with
+                                   | conj H _ => H
+                                   end
+                     end
+                 end)
+              (conj
+                 (allfvRenL_term p_term xi_term s3
+                    match H with
+                    | conj _ H =>
+                        match H with
+                        | conj _ H =>
+                            match H with
+                            | conj _ H => match H with
+                                          | conj H _ => H
+                                          end
+                            end
+                        end
+                    end)
+                 I)))
   | tDecide s0 s1 s2 =>
       fun H =>
       conj
@@ -2785,6 +2934,43 @@ allfv_term p_term (ren_term xi_term s)
                             end
               end)
            I)
+  | tInject s0 s1 s2 s3 =>
+      fun H =>
+      conj
+        (allfvRenR_term p_term xi_term s0 match H with
+                                          | conj H _ => H
+                                          end)
+        (conj
+           (allfvRenR_term p_term xi_term s1
+              match H with
+              | conj _ H => match H with
+                            | conj H _ => H
+                            end
+              end)
+           (conj
+              (allfvRenR_term p_term xi_term s2
+                 match H with
+                 | conj _ H =>
+                     match H with
+                     | conj _ H => match H with
+                                   | conj H _ => H
+                                   end
+                     end
+                 end)
+              (conj
+                 (allfvRenR_term p_term xi_term s3
+                    match H with
+                    | conj _ H =>
+                        match H with
+                        | conj _ H =>
+                            match H with
+                            | conj _ H => match H with
+                                          | conj H _ => H
+                                          end
+                            end
+                        end
+                    end)
+                 I)))
   | tDecide s0 s1 s2 =>
       fun H =>
       conj

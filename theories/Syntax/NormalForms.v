@@ -52,6 +52,7 @@ with dne : term -> Set :=
   | dne_tSnd {n} : dne n -> dne (tSnd n)
   | dne_tIdElim {A x P hr y e} : dnf A -> dnf x -> dnf P -> dnf hr -> dnf y -> dne e -> dne (tIdElim A x P hr y e)
   | dne_tQuote {A t} : dnf A -> ~ closed0 t -> dnf t -> dne (tQuote A t)
+  | dne_tInject {A t u e} : dnf A -> dnf t -> dnf u -> dne e -> dne (tInject A t u e)
   | dne_tDecide {A t u} : dnf A -> (~ is_closedn 0 t) + (~ is_closedn 0 u) -> dnf t -> dnf u -> dne (tDecide A t u)
   | dne_tReflect {A t u e} : dnf A -> dnf t -> dnf u -> dne e -> dne (tReflect A t u e)
   | dne_tReify {A t u e} : dnf A -> dnf t -> dnf u -> dne e -> dne (tReify A t u e)
@@ -63,10 +64,10 @@ Scheme
   Induction for dnf Sort Type with
   Induction for dne Sort Type.
 
-Definition dnf_dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 :=
+Definition dnf_dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 p24 :=
   pair
-    (dnf_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23)
-    (dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23).
+    (dnf_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 p24)
+    (dne_rect P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 p24).
 
 (** ** Weak-head normal forms and neutrals. *)
 
@@ -92,6 +93,7 @@ with whne : term -> Type :=
   | whne_tSnd {p} : whne p -> whne (tSnd p)
   | whne_tIdElim {A x P hr y e} : whne e -> whne (tIdElim A x P hr y e)
   | whne_tQuote {A t} : ~ closed0 t -> dnf t -> whne (tQuote A t)
+  | whne_tInject {A t u e} : whne e -> whne (tInject A t u e)
   | whne_tDecide {A t u} : (~ is_closedn 0 t) + (~ is_closedn 0 u) -> dnf t -> dnf u -> whne (tDecide A t u)
   | whne_tReflect {A t u e} : whne e -> whne (tReflect A t u e)
   | whne_tReify {A t u e} : whne e -> whne (tReify A t u e)
@@ -591,6 +593,7 @@ Fixpoint is_nf ne t {struct t} := match t with
 | tIdElim A x P hr y e =>
   is_nf false A && is_nf false x && is_nf false P && is_nf false hr && is_nf false y && is_nf true e
 | tQuote A t => is_nf false A && is_nf false t && negb (is_closedn 0 t)
+| tInject A t u e => is_nf false A && is_nf false t && is_nf false u && is_nf true e
 | tDecide A t u =>
   is_nf false A && is_nf false t && is_nf false u && (negb (is_closedn 0 t) || negb (is_closedn 0 u))
 | tReflect A t u e =>
@@ -619,6 +622,7 @@ Fixpoint is_wnf ne t {struct t} := match t with
 | tSnd t => is_wnf true t
 | tIdElim A x P hr y e => is_wnf true e
 | tQuote A t => is_dnf t && negb (is_closedn 0 t)
+| tInject A t u e => is_wnf true e
 | tDecide A t u => is_dnf t && is_dnf u && (negb (is_closedn 0 t) || negb (is_closedn 0 u))
 | tReflect A t u e => is_wnf true e
 | tReify A t u e => is_wnf true e

@@ -38,6 +38,9 @@ Inductive pred : term -> term -> Set :=
   [tIdElim A x P hr y (tRefl B z) ⇉ hr']
 | pred_quote {A A' t t'} : [A ⇉ A'] -> [t ⇉ t'] -> [tQuote A t ⇉ tQuote A' t']
 | pred_quoteeval {A t} : dnf (unannot t) -> closed0 t -> [tQuote A t ⇉ qNat (quote (erase t))]
+| pred_inject {A A' t t' u u' e e'} : [A ⇉ A'] -> [t ⇉ t'] -> [u ⇉ u'] -> [e ⇉ e'] -> [tInject A t u e ⇉ tInject A' t' u' e']
+| pred_injecteval {A A' X t t' u x} : [A ⇉ A'] -> [t ⇉ t'] -> [tInject A t u (tRefl X x) ⇉ tRefl A' t']
+
 | pred_decide {A A' t t' u u'} : [A ⇉ A'] -> [t ⇉ t'] -> [u ⇉ u'] -> [tDecide A t u ⇉ tDecide A' t' u']
 | pred_decideeval_eq {A t u} :
   dnf (unannot t) -> closed0 t -> dnf (unannot u) -> closed0 u -> term_beq (erase t) (erase u) ->
@@ -94,6 +97,7 @@ all: try now (f_equal; eauto).
 all: try match goal with H : forall u, [?t ⇉ u] -> _, H' : [?t ⇉ ?u] |- _ => specialize (H _ H'); cbn in H; injection H; intros; subst end.
 all: try now (f_equal; tea).
 + inversion d; subst; inversion H12.
++ inversion d; subst; inversion H10.
 + inversion d; subst; inversion H10.
 + inversion d; subst; inversion H8.
 Qed.
@@ -356,6 +360,12 @@ all: try now saturate_diamond; eauto 10 using pred.
   - now rewrite <- Heq.
   - unfold closed0; rewrite <- closedn_unannot, <- Heq, closedn_unannot; tea.
 + eexists; split; eapply pred_refl.
++ inversion H7; subst.
+  clear IHt4; saturate_diamond.
+  eexists; split; eauto using pred.
++ inversion H9; subst.
+  clear IHt4; saturate_diamond.
+  eexists; split; eauto using pred.
 + eexists; split; [|eapply pred_refl].
   assert (Heqt : unannot t2 = unannot t') by now apply pred_unannot_id.
   assert (Hequ : unannot t3 = unannot u') by now apply pred_unannot_id.

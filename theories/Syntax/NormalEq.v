@@ -47,6 +47,7 @@ match t with
 | tRefl A t => noccurn n A && noccurn n t
 | tIdElim A x P hr y t => noccurn n A && noccurn n x && noccurn (S (S n)) P && noccurn n hr && noccurn n y && noccurn n t
 | tQuote A t => noccurn n A && noccurn n t
+| tInject A t u e => noccurn n A && noccurn n t && noccurn n u && noccurn n e
 | tDecide A t u => noccurn n A && noccurn n t && noccurn n u
 | tReflect A t u e => noccurn n A && noccurn n t && noccurn n u && noccurn n e
 | tReify A t u e => noccurn n A && noccurn n t && noccurn n u && noccurn n e
@@ -163,6 +164,7 @@ Fixpoint erase (t : term) := match t with
 | tRefl A t => tRefl (erase A) (erase t)
 | tIdElim A x P hr y t => tIdElim (erase A) (erase x) (erase P) (erase hr) (erase y) (erase t)
 | tQuote A t => tQuote (erase A) (erase t)
+| tInject A t u e => tInject (erase A) (erase t) (erase u) (erase e)
 | tDecide A t u => tDecide (erase A) (erase t) (erase u)
 | tReflect A t u e => tReflect (erase A) (erase t) (erase u) (erase e)
 | tReify A t u e => tReify (erase A) (erase t) (erase u) (erase e)
@@ -457,6 +459,7 @@ Fixpoint unannot (t : term) := match t with
 | tRefl A t => tRefl (unannot A) (unannot t)
 | tIdElim A x P hr y t => tIdElim (unannot A) (unannot x) (unannot P) (unannot hr) (unannot y) (unannot t)
 | tQuote A t => tQuote (unannot A) (unannot t)
+| tInject A t u e => tInject (unannot A) (unannot t) (unannot u) (unannot e)
 | tDecide A t u => tDecide (unannot A) (unannot t) (unannot u)
 | tReflect A t u e => tReflect (unannot A) (unannot t) (unannot u) (unannot e)
 | tReify A t u e => tReify (unannot A) (unannot t) (unannot u) (unannot e)
@@ -489,6 +492,7 @@ Fixpoint etared (t : term) := match t with
 | tRefl A t => tRefl (etared A) (etared t)
 | tIdElim A x P hr y t => tIdElim (etared A) (etared x) (etared P) (etared hr) (etared y) (etared t)
 | tQuote A t => tQuote (etared A) (etared t)
+| tInject A t u e => tInject (etared A) (etared t) (etared u) (etared e)
 | tDecide A t u => tDecide (etared A) (etared t) (etared u)
 | tReflect A t u e => tReflect (etared A) (etared t) (etared u) (etared e)
 | tReify A t u e => tReify (etared A) (etared t) (etared u) (etared e)
@@ -850,6 +854,12 @@ Proof.
 unfold eqnf; cbn; now intros -> ->.
 Qed.
 
+Lemma eqnf_tInject {A A' t t' u u' e e'} :
+  eqnf A A' -> eqnf t t' -> eqnf u u' -> eqnf e e' -> eqnf (tInject A t u e) (tInject A' t' u' e').
+Proof.
+unfold eqnf; cbn; now intros -> -> -> ->.
+Qed.
+
 Lemma eqnf_tDecide {A A' t t' u u'} :
   eqnf A A' -> eqnf t t' -> eqnf u u' -> eqnf (tDecide A t u) (tDecide A' t' u').
 Proof.
@@ -1096,6 +1106,13 @@ Proof.
 unfold eqannot; cbn; congruence.
 Qed.
 
+Lemma eqannot_tInject : forall A A' t t' u u' e e', eqannot A A' -> eqannot t t' -> eqannot u u' ->
+  eqannot e e' ->
+  eqannot (tInject A t u e) (tInject A' t' u' e').
+Proof.
+unfold eqannot; cbn; congruence.
+Qed.
+
 Lemma eqannot_tDecide : forall A A' t t' u u', eqannot A A' -> eqannot t t' -> eqannot u u' ->
   eqannot (tDecide A t u) (tDecide A' t' u').
 Proof.
@@ -1142,6 +1159,7 @@ all: eauto using dnf, dne.
   apply Compare_dec.leb_complete in H0; Lia.lia.
 + eauto 7 using dnf, dne.
 + eauto 10 using dnf, dne.
++ eauto 7 using dnf, dne.
 + constructor; destruct s; eauto.
 + eauto 10 using dnf, dne.
 + eauto 10 using dnf, dne.
