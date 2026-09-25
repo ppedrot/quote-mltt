@@ -4,6 +4,7 @@ From LogRel.LogicalRelation Require Import Properties.
 From LogRel.LogicalRelation.Introductions Require Import Universe Nat Sigma SimpleArr Id.
 From LogRel.Validity Require Import Validity Irrelevance Properties.
 From LogRel.Validity Require Import Universe Nat SimpleArr Quote.
+From LogRel Require Eval.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
@@ -676,13 +677,19 @@ destruct (minimize f k0) as (k&Hk&Hlt); unfold f in *; clear f.
     * eapply eval_mon in Hk0; [|tea]; congruence.
 Qed.
 
-Axiom run_spec_None : forall t u k,
+Lemma run_spec_None : forall t u k,
   eval true (tApp t (qNat u)) k = None ->
   [tApp (tApp (tApp run (qNat (quote t))) (qNat u)) (qNat k) ⇶* tZero].
+Proof.
+exact LogRel.Eval.run_spec_None.
+Qed.
 
-Axiom run_spec_Some : forall t u k v,
+Lemma run_spec_Some : forall t u k v,
   eval true (tApp t (qNat u)) k = Some (qNat v) ->
   [tApp (tApp (tApp run (qNat (quote t))) (qNat u)) (qNat k) ⇶* tSucc (qNat v)].
+Proof.
+exact LogRel.Eval.run_spec_Some.
+Qed.
 
 Lemma reify_EvalStep {Γ l t n v} (rNat : [Γ ||-<l> tNat]) :
   (forall k, [rNat | Γ ||- qRun t n k : tNat]) ->

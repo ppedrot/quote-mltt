@@ -2348,6 +2348,50 @@ rewrite Heval in H.
 exact (RNat_dred _ _ H).
 Qed.
 
+(** ** The [run] primitive of the computation model *)
+
+Lemma tRun_closed : forall σ, subst_term σ tRun = tRun.
+Proof. closed_tac tRun. Qed.
+#[export] Hint Rewrite tRun_closed : closed.
+
+Lemma tRunNat_closed : forall σ, subst_term σ tRunNat = tRunNat.
+Proof. closed_tac tRunNat. Qed.
+#[export] Hint Rewrite tRunNat_closed : closed.
+
+Lemma tRunNat_spec : forall c t w u z k, RNat c (quote t) -> RNat w u -> RNat z k ->
+  RNat (apps tRunNat ⟪c; w; z⟫)
+    (match eval true (tApp t (qNat u)) k with None => 0 | Some v => encN (uNat v) end).
+Proof.
+intros * Hc Hw Hz; beta_tac tRunNat.
+assert (Hr : RNat (apps tRun ⟪cnode 4 ⟪c; apps cQNat ⟪w⟫⟫; z⟫) (encO (eval true (tApp t (qNat u)) k))).
+{ apply tRun_spec; [|tea].
+  apply (cnode_spec 4 ⟪_; _⟫ ⟪_; _⟫); rnats; [tea|now apply cQNat_spec]. }
+destruct eval as [v|]; cbn [encO] in Hr.
++ eapply (cIfz_succ N); [exact Hr|].
+  now apply cUNat_spec, RNat_pred_encO.
++ apply (cIfz_zero N); [tea|apply RNat_zero].
+Qed.
+
+Lemma run_spec_None : forall t u k,
+  eval true (tApp t (qNat u)) k = None ->
+  [tApp (tApp (tApp run (qNat (Computation.quote t))) (qNat u)) (qNat k) ⇶* tZero].
+Proof.
+intros t u k Heval.
+assert (H := tRunNat_spec _ t _ u _ k (RNat_qNat _) (RNat_qNat _) (RNat_qNat _)).
+rewrite Heval in H.
+exact (RNat_dred _ _ H).
+Qed.
+
+Lemma run_spec_Some : forall t u k v,
+  eval true (tApp t (qNat u)) k = Some (qNat v) ->
+  [tApp (tApp (tApp run (qNat (Computation.quote t))) (qNat u)) (qNat k) ⇶* tSucc (qNat v)].
+Proof.
+intros t u k v Heval.
+assert (H := tRunNat_spec _ t _ u _ k (RNat_qNat _) (RNat_qNat _) (RNat_qNat _)).
+rewrite Heval, uNat_qNat in H.
+exact (RNat_dred _ _ H).
+Qed.
+
 (** ** Typing *)
 
 Section Wf.
@@ -2885,6 +2929,15 @@ Proof. ty_comb cState. Qed.
 
 Lemma tRun_ty {Γ} : [|- Γ] -> [Γ |- tRun : ety (Arr N (Arr N N))].
 Proof. ty_comb tRun. Qed.
+#[local] Hint Resolve tRun_ty : tyc.
+
+Lemma tRunNat_ty {Γ} : [|- Γ] -> [Γ |- tRunNat : ety (Arr N (Arr N (Arr N N)))].
+Proof. ty_comb tRunNat. Qed.
+
+Lemma ty_run_model {Γ} : [|- Γ] -> [Γ |- run : arr tNat (arr tNat tPNat)].
+Proof.
+intros; exact (tRunNat_ty H8).
+Qed.
 
 Lemma ty_run : [ nil |- tRun : tProd tNat (tProd tNat tNat) ].
 Proof.

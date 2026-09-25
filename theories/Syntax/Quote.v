@@ -635,3 +635,12 @@ Arguments cState : simpl never.
 
 Definition tRun := lams ⟪tNat; tNat⟫
   (apps cBody ⟪apps cState ⟪tRel 0; tZero⟫; apps cState ⟪tRel 0; tSucc tZero; tZero⟫; tSucc tZero; tRel 1⟫).
+Arguments tRun : simpl never.
+
+(** [tRunNat c u k] runs the term coded by [c] on the numeral [u] for [k] steps:
+    it returns [0] if the evaluation runs out of fuel and [S v] if it returns the
+    numeral [v]. This is the [run] primitive of the computation model. *)
+Definition tRunNat := lams ⟪tNat; tNat; tNat⟫
+  (apps (cIfz N) ⟪apps tRun ⟪cnode 4 ⟪tRel 2; apps cQNat ⟪tRel 1⟫⟫; tRel 0⟫; tZero;
+    apps cUNat ⟪apps cPred ⟪apps tRun ⟪cnode 4 ⟪tRel 2; apps cQNat ⟪tRel 1⟫⟫; tRel 0⟫⟫⟫⟫).
+Arguments tRunNat : simpl never.

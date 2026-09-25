@@ -1,5 +1,5 @@
 (** * LogRel.Computation: internal definitions related to the computation model. *)
-From Coq Require Import ssrbool.
+From Coq Require Import ssrbool Lia.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Closed.
 From LogRel.Syntax Require Import Quote.
@@ -190,17 +190,52 @@ unfold closedn; induction n; intros; cbn in *.
 - apply IHn.
 Qed.
 
-(** Axiomatic definition of a computation model internal to MLTT *)
+(** Definition of a computation model internal to MLTT *)
 
 Definition quote := Quote.quote.
 
 Opaque quote.
 Arguments quote : simpl never.
 
-Axiom run : term.
+(** Strict closedness, taking type annotations into account. *)
+Fixpoint closedb (n : nat) (t : term) {struct t} : bool :=
+match t with
+| tRel m => Nat.ltb m n
+| tSort _ | tNat | tZero | tEmpty => true
+| tProd A B | tLambda A B | tSig A B => closedb n A && closedb (S n) B
+| tApp t u | tStep t u | tReflect t u | tRefl t u => closedb n t && closedb n u
+| tSucc t | tFst t | tSnd t | tQuote t => closedb n t
+| tNatElim P hz hs t => closedb (S n) P && closedb n hz && closedb n hs && closedb n t
+| tEmptyElim P t => closedb (S n) P && closedb n t
+| tPair A B a b => closedb n A && closedb (S n) B && closedb n a && closedb n b
+| tId A t u => closedb n A && closedb n t && closedb n u
+| tIdElim A x P hr y e =>
+  closedb n A && closedb n x && closedb (S (S n)) P && closedb n hr && closedb n y && closedb n e
+end.
 
-(** Slightly contrived way to state that [run] is closed. *)
-Axiom run_subst : forall (σ : nat -> term), run[σ] = run.
+Lemma closedb_subst : forall t n σ, closedb n t = true ->
+  (forall m, m < n -> σ m = tRel m) -> t[σ] = t.
+Proof.
+assert (Hup : forall n σ, (forall m, m < n -> σ m = tRel m) ->
+  forall m, m < S n -> up_term_term σ m = tRel m).
+{ intros n σ Hσ [|m] Hm; cbn; [reflexivity|].
+  unfold funcomp; rewrite Hσ; [reflexivity|lia]. }
+induction t; intros k σ Ht Hσ.
+1: cbn; apply Hσ; now apply PeanoNat.Nat.ltb_lt.
+all: cbn in *.
+all: repeat match goal with H : _ && _ = true |- _ => apply andb_prop in H; destruct H end.
+all: f_equal; eauto.
+Qed.
+
+Definition run := Quote.tRunNat.
+
+Lemma run_subst : forall (σ : nat -> term), run[σ] = run.
+Proof.
+intros; apply (closedb_subst _ 0); [vm_compute; reflexivity|lia].
+Qed.
+
+Opaque run.
+Arguments run : simpl never.
 
 Lemma run_ren : forall ρ, run⟨ρ⟩ = run.
 Proof.
@@ -216,17 +251,15 @@ Definition tTotal t u :=
 Lemma tTotal_ren : forall t u ρ,
   (tTotal t u)⟨ρ⟩ = tTotal t⟨ρ⟩ u⟨ρ⟩.
 Proof.
-intros; unfold tTotal; cbn - [tEval].
-f_equal; rewrite tEval_ren; cbn; do 2 f_equal; try now asimpl.
+intros; unfold tTotal; rewrite tEval_ren; cbn - [tEval].
 now rewrite run_ren.
 Qed.
 
 Lemma tTotal_subst : forall t u σ,
   (tTotal t u)[σ] = tTotal t[σ] u[σ].
 Proof.
-intros; unfold tTotal; cbn - [tEval].
-f_equal; rewrite tEval_subst; cbn; do 2 f_equal; try now asimpl.
-f_equal; apply run_subst.
+intros; unfold tTotal; rewrite tEval_subst; cbn - [tEval].
+now rewrite run_subst.
 Qed.
 
 (*
