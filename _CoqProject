@@ -24,6 +24,7 @@ theories/Syntax/UntypedReduction.v
 theories/Syntax/Sections.v
 theories/Syntax/All.v
 
+theories/Eval.v
 theories/GenericTyping.v
 theories/DeclarativeTyping.v
 theories/DeepTyping.v
