@@ -2005,11 +2005,6 @@ Qed.
 
 (** *** Quote *)
 
-(** The evaluation function [eval] relies on the abstract Gödel numbering of
-    [Computation]. Since this development cannot modify the latter, we assume
-    that it coincides with our numbering on closed terms. *)
-Axiom quote_link : forall t, closed0 t -> Computation.quote t = quote t.
-
 Definition quote_code (ev : bool -> term -> option term) (t : term) : nat :=
   match ev true t with
   | None => 0
@@ -2221,8 +2216,7 @@ all: try match goal with |- R N (tApp (tApp (tApp cCanon _) _) _) _ =>
   unfold quote_code; cbn.
   destruct (ev true t) as [t'|]; [|reflexivity]; cbn.
   remember (is_closedn 0 t') as c eqn:Hc; symmetry in Hc; destruct c; [|reflexivity].
-  rewrite quote_link; [reflexivity|].
-  unfold closed0; now rewrite erase_is_closedn.
+  reflexivity.
 (** Step and reflect *)
 + eapply RNat_conv; [apply (cStepB_spec E ev M mu x (tStep t1 t2) t1 t2 (qNat 19) 19 cFinStep); tea; try (discriminate + rnum + reflexivity); apply cFinStep_spec|].
   unfold step_code, step_core; cbn.

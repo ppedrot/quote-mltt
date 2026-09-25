@@ -2,6 +2,7 @@
 From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Closed.
+From LogRel.Syntax Require Import Quote.
 
 (** A bunch of helpers and notations *)
 
@@ -191,7 +192,11 @@ Qed.
 
 (** Axiomatic definition of a computation model internal to MLTT *)
 
-Axiom quote : term -> nat.
+Definition quote := Quote.quote.
+
+Opaque quote.
+Arguments quote : simpl never.
+
 Axiom run : term.
 
 (** Slightly contrived way to state that [run] is closed. *)
