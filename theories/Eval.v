@@ -1,9 +1,9 @@
-(** * LogRel.Eval: a Gödel numbering of terms and an internal step-indexed evaluator.
+(** * LogRel.Eval: specification of the Gödel numbering and of the internal evaluator.
 
-  We define a Gödel numbering [quote] of terms into natural numbers, and a
-  System T term [tRun] such that [tRun (quote t) k] computes [eval true t k],
-  i.e. returns [0] when the evaluation runs out of fuel and [S (quote v)] when
-  it returns [v].
+  The Gödel numbering [quote] and the System T term [tRun] are defined in
+  [LogRel.Syntax.Quote]. We prove here that [quote] is injective and that
+  [tRun (quote t) k] computes [eval true t k], i.e. returns [0] when the
+  evaluation runs out of fuel and [S (quote v)] when it returns [v].
 
   The internal evaluator is proved correct w.r.t. a call-by-name logical
   relation [RNat t n] stating that [t] weak-head reduces hereditarily to the
@@ -16,6 +16,7 @@
 From Stdlib Require Import Lia Arith List Cantor.
 From LogRel Require Import Utils Syntax.All.
 From LogRel Require Import GenericTyping.
+From LogRel.Syntax Require Import Quote.
 
 #[local] Notation "⟪ ⟫" := nil (format "⟪ ⟫").
 (* The autosubst notation [t ..] prevents the use of recursive notations. *)
@@ -30,15 +31,6 @@ Set Default Goal Selector "!".
 #[local] Open Scope bool_scope.
 
 (** ** Pairing functions *)
-
-Fixpoint tri (n : nat) : nat := match n with
-| 0 => 0
-| S i => S i + tri i
-end.
-
-(** Cantor pairing *)
-Definition npair (x y : nat) : nat := y + tri (y + x).
-Arguments npair : simpl never.
 
 Definition nfst (n : nat) : nat := Datatypes.fst (Cantor.of_nat n).
 Definition nsnd (n : nat) : nat := Datatypes.snd (Cantor.of_nat n).
@@ -82,12 +74,6 @@ Qed.
 
 (** ** Gödel numbering of terms *)
 
-(** Lists of numbers *)
-Fixpoint lcode (l : list nat) : nat := match l with
-| nil => 0
-| x :: l => S (npair x (lcode l))
-end.
-
 Lemma lcode_inj : forall l l', lcode l = lcode l' -> l = l'.
 Proof.
 induction l as [|x l IHl]; intros [|x' l'] H; cbn in *; try discriminate; [reflexivity|].
@@ -101,80 +87,6 @@ destruct Hx as [->|Hx].
 + pose proof (npair_ge_l x (lcode l)); lia.
 + pose proof (npair_ge_r y (lcode l)); specialize (IHl x Hx); lia.
 Qed.
-
-(** A node of the syntax tree is coded by its tag and its payload. *)
-Definition node (tag : nat) (payload : nat) := S (npair tag payload).
-Arguments node : simpl never.
-
-Definition tag_of (t : term) : nat := match t with
-| tRel _ => 0
-| tSort _ => 1
-| tProd _ _ => 2
-| tLambda _ _ => 3
-| tApp _ _ => 4
-| tNat => 5
-| tZero => 6
-| tSucc _ => 7
-| tNatElim _ _ _ _ => 8
-| tEmpty => 9
-| tEmptyElim _ _ => 10
-| tSig _ _ => 11
-| tPair _ _ _ _ => 12
-| tFst _ => 13
-| tSnd _ => 14
-| tId _ _ _ => 15
-| tRefl _ _ => 16
-| tIdElim _ _ _ _ _ _ => 17
-| tQuote _ => 18
-| tStep _ _ => 19
-| tReflect _ _ => 20
-end.
-
-(** The direct subterms of a term, from left to right. *)
-Definition fields (t : term) : list term := match t with
-| tRel _ | tSort _ | tNat | tZero | tEmpty => nil
-| tProd A B => ⟪A; B⟫
-| tLambda A t => ⟪A; t⟫
-| tApp t u => ⟪t; u⟫
-| tSucc t => ⟪t⟫
-| tNatElim P hz hs n => ⟪P; hz; hs; n⟫
-| tEmptyElim P e => ⟪P; e⟫
-| tSig A B => ⟪A; B⟫
-| tPair A B a b => ⟪A; B; a; b⟫
-| tFst p => ⟪p⟫
-| tSnd p => ⟪p⟫
-| tId A x y => ⟪A; x; y⟫
-| tRefl A x => ⟪A; x⟫
-| tIdElim A x P hr y e => ⟪A; x; P; hr; y; e⟫
-| tQuote t => ⟪t⟫
-| tStep t u => ⟪t; u⟫
-| tReflect t u => ⟪t; u⟫
-end.
-
-Fixpoint quote (t : term) : nat := match t with
-| tRel n => node 0 n
-| tSort _ => node 1 (lcode nil)
-| tProd A B => node 2 (lcode ⟪quote A; quote B⟫)
-| tLambda A t => node 3 (lcode ⟪quote A; quote t⟫)
-| tApp t u => node 4 (lcode ⟪quote t; quote u⟫)
-| tNat => node 5 (lcode nil)
-| tZero => node 6 (lcode nil)
-| tSucc t => node 7 (lcode ⟪quote t⟫)
-| tNatElim P hz hs n => node 8 (lcode ⟪quote P; quote hz; quote hs; quote n⟫)
-| tEmpty => node 9 (lcode nil)
-| tEmptyElim P e => node 10 (lcode ⟪quote P; quote e⟫)
-| tSig A B => node 11 (lcode ⟪quote A; quote B⟫)
-| tPair A B a b => node 12 (lcode ⟪quote A; quote B; quote a; quote b⟫)
-| tFst p => node 13 (lcode ⟪quote p⟫)
-| tSnd p => node 14 (lcode ⟪quote p⟫)
-| tId A x y => node 15 (lcode ⟪quote A; quote x; quote y⟫)
-| tRefl A x => node 16 (lcode ⟪quote A; quote x⟫)
-| tIdElim A x P hr y e =>
-  node 17 (lcode ⟪quote A; quote x; quote P; quote hr; quote y; quote e⟫)
-| tQuote t => node 18 (lcode ⟪quote t⟫)
-| tStep t u => node 19 (lcode ⟪quote t; quote u⟫)
-| tReflect t u => node 20 (lcode ⟪quote t; quote u⟫)
-end.
 
 Lemma quote_rel : forall n, quote (tRel n) = node 0 n.
 Proof.
@@ -212,14 +124,6 @@ unfold node; pose proof (npair_ge_r (tag_of t) (lcode (map quote (fields t)))); 
 Qed.
 
 (** ** A call-by-name logical relation for System T *)
-
-(** Simple types *)
-Inductive ty := N | Arr (A B : ty).
-
-Fixpoint ety (T : ty) : term := match T with
-| N => tNat
-| Arr A B => arr (ety A) (ety B)
-end.
 
 Lemma ety_subst : forall T σ, (ety T)[σ] = ety T.
 Proof.
@@ -291,21 +195,10 @@ intros t n; revert t; induction n; intros t Ht; cbn in *.
   now apply dredalg_succ.
 Qed.
 
-
 (** From now on, we reason abstractly about [RNat]. *)
 Arguments RNat : simpl never.
 
 (** Iterated abstractions and applications *)
-
-Fixpoint lams (As : list term) (b : term) : term := match As with
-| nil => b
-| cons A As => tLambda A (lams As b)
-end.
-
-Fixpoint apps (t : term) (us : list term) : term := match us with
-| nil => t
-| cons u us => apps (tApp t u) us
-end.
 
 Fixpoint srev (us : list term) (σ : nat -> term) : nat -> term := match us with
 | nil => σ
@@ -469,13 +362,9 @@ Definition b2n (b : bool) : nat := if b then 1 else 0.
 
 Definition ifz {X} (n : nat) (x y : X) : X := match n with 0 => x | S _ => y end.
 
-(** [λ x _ _. x] *)
-Definition cConstS (T : ty) := lams ⟪ety T; tNat; ety T⟫ (tRel 2).
-
 Lemma cConstS_closed : forall T σ, subst_term σ (cConstS T) = cConstS T.
 Proof. closed_tac cConstS. Qed.
 #[export] Hint Rewrite cConstS_closed : closed.
-Arguments cConstS : simpl never.
 
 Lemma cConstS_spec : forall T t x, R T t x -> R (Arr N (Arr T T)) (apps (cConstS T) ⟪t⟫) (fun _ _ => x).
 Proof.
@@ -483,14 +372,9 @@ intros; cbn [R]; intros.
 beta_tac cConstS; tea.
 Qed.
 
-(** [if n = 0 then a else b] *)
-Definition cIfz (T : ty) :=
-  lams ⟪tNat; ety T; ety T⟫ (tNatElim (ety T)⟨↑⟩ (tRel 1) (apps (cConstS T) ⟪tRel 0⟫) (tRel 2)).
-
 Lemma cIfz_closed : forall T σ, subst_term σ (cIfz T) = cIfz T.
 Proof. closed_tac cIfz. Qed.
 #[export] Hint Rewrite cIfz_closed : closed.
-Arguments cIfz : simpl never.
 
 Lemma cIfz_spec : forall T n m a x b y, RNat n m -> R T a x -> R T b y ->
   R T (apps (cIfz T) ⟪n; a; b⟫) (ifz m x y).
@@ -500,38 +384,27 @@ replace (ifz m x y) with (natrec x (fun _ _ => y) m) by now destruct m.
 apply R_natElim; [tea|now apply cConstS_spec|tea].
 Qed.
 
-(** [λ _ r. S r] *)
-Definition cSuccS := lams ⟪tNat; tNat⟫ (tSucc (tRel 0)).
-
 Lemma cSuccS_closed : forall σ, subst_term σ cSuccS = cSuccS.
 Proof. closed_tac cSuccS. Qed.
 #[export] Hint Rewrite cSuccS_closed : closed.
-Arguments cSuccS : simpl never.
 
 Lemma cSuccS_spec : R (Arr N (Arr N N)) cSuccS (fun _ r => S r).
 Proof.
 cbn [R]; intros; beta_tac cSuccS; now apply RNat_succ.
 Qed.
 
-(** [λ i _. i] *)
-Definition cProjS := lams ⟪tNat; tNat⟫ (tRel 1).
-
 Lemma cProjS_closed : forall σ, subst_term σ cProjS = cProjS.
 Proof. closed_tac cProjS. Qed.
 #[export] Hint Rewrite cProjS_closed : closed.
-Arguments cProjS : simpl never.
 
 Lemma cProjS_spec : R (Arr N (Arr N N)) cProjS (fun i _ => i).
 Proof.
 cbn [R]; intros; beta_tac cProjS; tea.
 Qed.
 
-Definition cAdd := lams ⟪tNat; tNat⟫ (tNatElim tNat (tRel 0) cSuccS (tRel 1)).
-
 Lemma cAdd_closed : forall σ, subst_term σ cAdd = cAdd.
 Proof. closed_tac cAdd. Qed.
 #[export] Hint Rewrite cAdd_closed : closed.
-Arguments cAdd : simpl never.
 
 Lemma cAdd_spec : forall u a v b, RNat u a -> RNat v b -> RNat (apps cAdd ⟪u; v⟫) (a + b).
 Proof.
@@ -540,12 +413,9 @@ rewrite <- natrec_add.
 apply R_natElim; [tea|apply cSuccS_spec|tea].
 Qed.
 
-Definition cPred := lams ⟪tNat⟫ (tNatElim tNat tZero cProjS (tRel 0)).
-
 Lemma cPred_closed : forall σ, subst_term σ cPred = cPred.
 Proof. closed_tac cPred. Qed.
 #[export] Hint Rewrite cPred_closed : closed.
-Arguments cPred : simpl never.
 
 Lemma cPred_spec : forall u a, RNat u a -> RNat (apps cPred ⟪u⟫) (pred a).
 Proof.
@@ -554,25 +424,18 @@ replace (pred a) with (natrec 0 (fun i _ => i) a) by now destruct a.
 apply R_natElim; [apply RNat_zero|apply cProjS_spec|tea].
 Qed.
 
-(** [λ _ r. pred r] *)
-Definition cPredS := lams ⟪tNat; tNat⟫ (apps cPred ⟪tRel 0⟫).
-
 Lemma cPredS_closed : forall σ, subst_term σ cPredS = cPredS.
 Proof. closed_tac cPredS. Qed.
 #[export] Hint Rewrite cPredS_closed : closed.
-Arguments cPredS : simpl never.
 
 Lemma cPredS_spec : R (Arr N (Arr N N)) cPredS (fun _ r => pred r).
 Proof.
 cbn [R]; intros; beta_tac cPredS; now apply cPred_spec.
 Qed.
 
-Definition cSub := lams ⟪tNat; tNat⟫ (tNatElim tNat (tRel 1) cPredS (tRel 0)).
-
 Lemma cSub_closed : forall σ, subst_term σ cSub = cSub.
 Proof. closed_tac cSub. Qed.
 #[export] Hint Rewrite cSub_closed : closed.
-Arguments cSub : simpl never.
 
 Lemma cSub_spec : forall u a v b, RNat u a -> RNat v b -> RNat (apps cSub ⟪u; v⟫) (a - b).
 Proof.
@@ -581,13 +444,9 @@ rewrite <- natrec_sub.
 apply R_natElim; [tea|apply cPredS_spec|tea].
 Qed.
 
-Definition cEqb := lams ⟪tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cAdd ⟪apps cSub ⟪tRel 1; tRel 0⟫; apps cSub ⟪tRel 0; tRel 1⟫⟫; tSucc tZero; tZero⟫).
-
 Lemma cEqb_closed : forall σ, subst_term σ cEqb = cEqb.
 Proof. closed_tac cEqb. Qed.
 #[export] Hint Rewrite cEqb_closed : closed.
-Arguments cEqb : simpl never.
 
 Lemma cEqb_spec : forall u a v b, RNat u a -> RNat v b -> RNat (apps cEqb ⟪u; v⟫) (b2n (Nat.eqb a b)).
 Proof.
@@ -598,13 +457,9 @@ destruct (Nat.eqb_spec a b).
 + remember (a - b + (b - a)) as k; destruct k; [lia|reflexivity].
 Qed.
 
-Definition cLtb := lams ⟪tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cSub ⟪tSucc (tRel 1); tRel 0⟫; tSucc tZero; tZero⟫).
-
 Lemma cLtb_closed : forall σ, subst_term σ cLtb = cLtb.
 Proof. closed_tac cLtb. Qed.
 #[export] Hint Rewrite cLtb_closed : closed.
-Arguments cLtb : simpl never.
 
 Lemma cLtb_spec : forall u a v b, RNat u a -> RNat v b -> RNat (apps cLtb ⟪u; v⟫) (b2n (Nat.ltb a b)).
 Proof.
@@ -615,12 +470,9 @@ destruct (Nat.ltb_spec a b).
 + replace (S a - b) with (S (a - b)) by lia; reflexivity.
 Qed.
 
-Definition cAndb := lams ⟪tNat; tNat⟫ (apps (cIfz N) ⟪tRel 1; tZero; tRel 0⟫).
-
 Lemma cAndb_closed : forall σ, subst_term σ cAndb = cAndb.
 Proof. closed_tac cAndb. Qed.
 #[export] Hint Rewrite cAndb_closed : closed.
-Arguments cAndb : simpl never.
 
 Lemma cAndb_spec : forall u a v b, RNat u (b2n a) -> RNat v (b2n b) ->
   RNat (apps cAndb ⟪u; v⟫) (b2n (andb a b)).
@@ -630,12 +482,9 @@ eapply R_conv; [apply cIfz_spec; [tea|apply RNat_zero|tea]|].
 now destruct a.
 Qed.
 
-Definition cOrb := lams ⟪tNat; tNat⟫ (apps (cIfz N) ⟪tRel 1; tRel 0; tSucc tZero⟫).
-
 Lemma cOrb_closed : forall σ, subst_term σ cOrb = cOrb.
 Proof. closed_tac cOrb. Qed.
 #[export] Hint Rewrite cOrb_closed : closed.
-Arguments cOrb : simpl never.
 
 Lemma cOrb_spec : forall u a v b, RNat u (b2n a) -> RNat v (b2n b) ->
   RNat (apps cOrb ⟪u; v⟫) (b2n (orb a b)).
@@ -645,12 +494,9 @@ eapply R_conv; [apply cIfz_spec; [tea|tea|apply RNat_succ, RNat_zero]|].
 now destruct a.
 Qed.
 
-Definition cNegb := lams ⟪tNat⟫ (apps (cIfz N) ⟪tRel 0; tSucc tZero; tZero⟫).
-
 Lemma cNegb_closed : forall σ, subst_term σ cNegb = cNegb.
 Proof. closed_tac cNegb. Qed.
 #[export] Hint Rewrite cNegb_closed : closed.
-Arguments cNegb : simpl never.
 
 Lemma cNegb_spec : forall u a, RNat u (b2n a) -> RNat (apps cNegb ⟪u⟫) (b2n (negb a)).
 Proof.
@@ -661,25 +507,18 @@ Qed.
 
 (** Cantor pairing *)
 
-(** [λ i m. S i + m] *)
-Definition cTriS := lams ⟪tNat; tNat⟫ (apps cAdd ⟪tSucc (tRel 1); tRel 0⟫).
-
 Lemma cTriS_closed : forall σ, subst_term σ cTriS = cTriS.
 Proof. closed_tac cTriS. Qed.
 #[export] Hint Rewrite cTriS_closed : closed.
-Arguments cTriS : simpl never.
 
 Lemma cTriS_spec : R (Arr N (Arr N N)) cTriS (fun i m => S i + m).
 Proof.
 cbn [R]; intros; beta_tac cTriS; apply cAdd_spec; [apply RNat_succ|]; tea.
 Qed.
 
-Definition cTri := lams ⟪tNat⟫ (tNatElim tNat tZero cTriS (tRel 0)).
-
 Lemma cTri_closed : forall σ, subst_term σ cTri = cTri.
 Proof. closed_tac cTri. Qed.
 #[export] Hint Rewrite cTri_closed : closed.
-Arguments cTri : simpl never.
 
 Lemma cTri_spec : forall u a, RNat u a -> RNat (apps cTri ⟪u⟫) (tri a).
 Proof.
@@ -688,13 +527,9 @@ rewrite <- natrec_tri.
 apply R_natElim; [apply RNat_zero|apply cTriS_spec|tea].
 Qed.
 
-Definition cPair := lams ⟪tNat; tNat⟫
-  (apps cAdd ⟪tRel 0; apps cTri ⟪apps cAdd ⟪tRel 0; tRel 1⟫⟫⟫).
-
 Lemma cPair_closed : forall σ, subst_term σ cPair = cPair.
 Proof. closed_tac cPair. Qed.
 #[export] Hint Rewrite cPair_closed : closed.
-Arguments cPair : simpl never.
 
 Lemma cPair_spec : forall u a v b, RNat u a -> RNat v b -> RNat (apps cPair ⟪u; v⟫) (npair a b).
 Proof.
@@ -702,13 +537,9 @@ intros; beta_tac cPair.
 unfold npair; apply cAdd_spec; [tea|apply cTri_spec, cAdd_spec; tea].
 Qed.
 
-(** Pairs of numbers represented as functions [0 ↦ x; S _ ↦ y]. *)
-Definition cMkp := lams ⟪tNat; tNat; tNat⟫ (apps (cIfz N) ⟪tRel 0; tRel 2; tRel 1⟫).
-
 Lemma cMkp_closed : forall σ, subst_term σ cMkp = cMkp.
 Proof. closed_tac cMkp. Qed.
 #[export] Hint Rewrite cMkp_closed : closed.
-Arguments cMkp : simpl never.
 
 Lemma cMkp_spec : forall u a v b, RNat u a -> RNat v b ->
   R (Arr N N) (apps cMkp ⟪u; v⟫) (fun i => ifz i a b).
@@ -717,23 +548,13 @@ intros; cbn [R]; intros; beta_tac cMkp.
 apply cIfz_spec; tea.
 Qed.
 
-Definition cUnpS := lams ⟪tNat; ety (Arr N N)⟫
-  (apps (cIfz (Arr N N)) ⟪apps (tRel 0) ⟪tZero⟫;
-    apps cMkp ⟪tSucc (apps (tRel 0) ⟪tSucc tZero⟫); tZero⟫;
-    apps cMkp ⟪apps cPred ⟪apps (tRel 0) ⟪tZero⟫⟫; tSucc (apps (tRel 0) ⟪tSucc tZero⟫)⟫⟫).
-
 Lemma cUnpS_closed : forall σ, subst_term σ cUnpS = cUnpS.
 Proof. closed_tac cUnpS. Qed.
 #[export] Hint Rewrite cUnpS_closed : closed.
-Arguments cUnpS : simpl never.
-
-Definition cUnpair := lams ⟪tNat⟫
-  (tNatElim (ety (Arr N N))⟨↑⟩ (apps cMkp ⟪tZero; tZero⟫) cUnpS (tRel 0)).
 
 Lemma cUnpair_closed : forall σ, subst_term σ cUnpair = cUnpair.
 Proof. closed_tac cUnpair. Qed.
 #[export] Hint Rewrite cUnpair_closed : closed.
-Arguments cUnpair : simpl never.
 
 Lemma nfst_S : forall m, nfst (S m) = ifz (nfst m) (S (nsnd m)) (pred (nfst m)).
 Proof.
@@ -769,24 +590,18 @@ Proof.
 intros u a Hu; split; beta_tac cUnpair; now apply cUnpair_state.
 Qed.
 
-Definition cFst := lams ⟪tNat⟫ (apps cUnpair ⟪tRel 0; tZero⟫).
-
 Lemma cFst_closed : forall σ, subst_term σ cFst = cFst.
 Proof. closed_tac cFst. Qed.
 #[export] Hint Rewrite cFst_closed : closed.
-Arguments cFst : simpl never.
 
 Lemma cFst_spec : forall u a, RNat u a -> RNat (apps cFst ⟪u⟫) (nfst a).
 Proof.
 intros; beta_tac cFst; now apply cUnpair_spec.
 Qed.
 
-Definition cSnd := lams ⟪tNat⟫ (apps cUnpair ⟪tRel 0; tSucc tZero⟫).
-
 Lemma cSnd_closed : forall σ, subst_term σ cSnd = cSnd.
 Proof. closed_tac cSnd. Qed.
 #[export] Hint Rewrite cSnd_closed : closed.
-Arguments cSnd : simpl never.
 
 Lemma cSnd_spec : forall u a, RNat u a -> RNat (apps cSnd ⟪u⟫) (nsnd a).
 Proof.
@@ -809,13 +624,9 @@ eapply R_exp; [eapply gred_trans; [apply (redalg_natElim Hr)|eapply redSuccAlg; 
 beta_tac cConstS; tea.
 Qed.
 
-(** [if b then a else c] *)
-Definition cIte (T : ty) := lams ⟪tNat; ety T; ety T⟫ (apps (cIfz T) ⟪tRel 2; tRel 0; tRel 1⟫).
-
 Lemma cIte_closed : forall T σ, subst_term σ (cIte T) = cIte T.
 Proof. closed_tac cIte. Qed.
 #[export] Hint Rewrite cIte_closed : closed.
-Arguments cIte : simpl never.
 
 Lemma cIte_true : forall T n a x c, RNat n 1 -> R T a x -> R T (apps (cIte T) ⟪n; a; c⟫) x.
 Proof.
@@ -833,12 +644,6 @@ Proof.
 intros; destruct b; [now apply cIte_true|now apply cIte_false].
 Qed.
 
-(** Case analysis on a small number *)
-Fixpoint switch (T : ty) (n : term) (bs : list term) (d : term) : term := match bs with
-| nil => d
-| cons b bs => apps (cIfz T) ⟪n; b; switch T (apps cPred ⟪n⟫) bs d⟫
-end.
-
 Lemma switch_spec : forall T bs d n m x, RNat n m -> R T (nth m bs d) x -> R T (switch T n bs d) x.
 Proof.
 intros T bs d; induction bs as [|b bs IHbs]; intros n m x Hn Hx; cbn [switch].
@@ -852,12 +657,6 @@ Qed.
 
 (** ** Course-of-value recursion *)
 
-(** A default inhabitant of each type *)
-Fixpoint dflt (T : ty) : term := match T with
-| N => tZero
-| Arr A B => tLambda (ety A) (dflt B)
-end.
-
 Lemma dflt_closed : forall T σ, subst_term σ (dflt T) = dflt T.
 Proof.
 induction T; intros; cbn; [reflexivity|].
@@ -865,24 +664,13 @@ now rewrite ety_subst_term, IHT2.
 Qed.
 #[export] Hint Rewrite dflt_closed : closed.
 
-(** [λ alg _ F. alg F] *)
-Definition cIgn1 (T : ty) :=
-  lams ⟪ety (Arr (Arr N T) (Arr N T)); tNat; ety (Arr N T)⟫ (apps (tRel 2) ⟪tRel 0⟫).
-
 Lemma cIgn1_closed : forall T σ, subst_term σ (cIgn1 T) = cIgn1 T.
 Proof. closed_tac cIgn1. Qed.
 #[export] Hint Rewrite cIgn1_closed : closed.
-Arguments cIgn1 : simpl never.
-
-(** [cRec alg x] iterates [alg] [S x] times on a dummy function and applies it to [x]. *)
-Definition cRec (T : ty) :=
-  lams ⟪ety (Arr (Arr N T) (Arr N T)); tNat⟫
-    (apps (tNatElim (ety (Arr N T))⟨↑⟩ (dflt (Arr N T)) (apps (cIgn1 T) ⟪tRel 1⟫) (tSucc (tRel 0))) ⟪tRel 0⟫).
 
 Lemma cRec_closed : forall T σ, subst_term σ (cRec T) = cRec T.
 Proof. closed_tac cRec. Qed.
 #[export] Hint Rewrite cRec_closed : closed.
-Arguments cRec : simpl never.
 
 Section cRec.
 
@@ -916,12 +704,9 @@ End cRec.
 
 (** ** Lists *)
 
-Definition cCons := lams ⟪tNat; tNat⟫ (tSucc (apps cPair ⟪tRel 1; tRel 0⟫)).
-
 Lemma cCons_closed : forall σ, subst_term σ cCons = cCons.
 Proof. closed_tac cCons. Qed.
 #[export] Hint Rewrite cCons_closed : closed.
-Arguments cCons : simpl never.
 
 Lemma cCons_spec : forall u a v b, RNat u a -> RNat v b -> RNat (apps cCons ⟪u; v⟫) (S (npair a b)).
 Proof.
@@ -963,45 +748,31 @@ Proof.
 intros; apply nsnd_npair.
 Qed.
 
-Definition cHd := lams ⟪tNat⟫ (apps cFst ⟪apps cPred ⟪tRel 0⟫⟫).
-
 Lemma cHd_closed : forall σ, subst_term σ cHd = cHd.
 Proof. closed_tac cHd. Qed.
 #[export] Hint Rewrite cHd_closed : closed.
-Arguments cHd : simpl never.
 
 Lemma cHd_spec : forall u a, RNat u a -> RNat (apps cHd ⟪u⟫) (hd_code a).
 Proof.
 intros; beta_tac cHd; now apply cFst_spec, cPred_spec.
 Qed.
 
-Definition cTl := lams ⟪tNat⟫ (apps cSnd ⟪apps cPred ⟪tRel 0⟫⟫).
-
 Lemma cTl_closed : forall σ, subst_term σ cTl = cTl.
 Proof. closed_tac cTl. Qed.
 #[export] Hint Rewrite cTl_closed : closed.
-Arguments cTl : simpl never.
 
 Lemma cTl_spec : forall u a, RNat u a -> RNat (apps cTl ⟪u⟫) (tl_code a).
 Proof.
 intros; beta_tac cTl; now apply cSnd_spec, cPred_spec.
 Qed.
 
-(** [λ _ F l. F (tl l)] *)
-Definition cNthS := lams ⟪tNat; ety (Arr N N); tNat⟫ (apps (tRel 1) ⟪apps cTl ⟪tRel 0⟫⟫).
-
 Lemma cNthS_closed : forall σ, subst_term σ cNthS = cNthS.
 Proof. closed_tac cNthS. Qed.
 #[export] Hint Rewrite cNthS_closed : closed.
-Arguments cNthS : simpl never.
-
-Definition cNth := lams ⟪tNat; tNat⟫
-  (apps (tNatElim (ety (Arr N N))⟨↑⟩ cHd cNthS (tRel 1)) ⟪tRel 0⟫).
 
 Lemma cNth_closed : forall σ, subst_term σ cNth = cNth.
 Proof. closed_tac cNth. Qed.
 #[export] Hint Rewrite cNth_closed : closed.
-Arguments cNth : simpl never.
 
 Lemma cNth_spec : forall u i v l, RNat u i -> RNat v (lcode l) -> RNat (apps cNth ⟪u; v⟫) (nth i l 0).
 Proof.
@@ -1025,23 +796,13 @@ Fixpoint mapi {A B : Type} (f : nat -> A -> B) (i : nat) (l : list A) : list B :
 | cons x l => cons (f i x) (mapi f (S i) l)
 end.
 
-(** [λ g rec l i. if l = 0 then 0 else cons (g i (hd l)) (rec (tl l) (S i))] *)
-Definition cMapiAlg := lams ⟪ety (Arr N (Arr N N)); ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cIfz N) ⟪tRel 1; tZero;
-    apps cCons ⟪apps (tRel 3) ⟪tRel 0; apps cHd ⟪tRel 1⟫⟫; apps (tRel 2) ⟪apps cTl ⟪tRel 1⟫; tSucc (tRel 0)⟫⟫⟫).
-
 Lemma cMapiAlg_closed : forall σ, subst_term σ cMapiAlg = cMapiAlg.
 Proof. closed_tac cMapiAlg. Qed.
 #[export] Hint Rewrite cMapiAlg_closed : closed.
-Arguments cMapiAlg : simpl never.
-
-Definition cMapi := lams ⟪ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cRec (Arr N N)) ⟪apps cMapiAlg ⟪tRel 2⟫; tRel 0; tRel 1⟫).
 
 Lemma cMapi_closed : forall σ, subst_term σ cMapi = cMapi.
 Proof. closed_tac cMapi. Qed.
 #[export] Hint Rewrite cMapi_closed : closed.
-Arguments cMapi : simpl never.
 
 Lemma cMapi_spec {X Y : Type} (cx : X -> nat) (cy : Y -> nat) (gm : nat -> X -> Y) (g : term) :
   forall l,
@@ -1083,22 +844,13 @@ Proof.
 induction l as [|[] l IHl]; cbn; eauto.
 Qed.
 
-(** [λ rec l. if l = 0 then 1 else if hd l = 0 then 0 else rec (tl l)] *)
-Definition cLAllAlg := lams ⟪ety (Arr N N); tNat⟫
-  (apps (cIfz N) ⟪tRel 0; tSucc tZero;
-    apps (cIfz N) ⟪apps cHd ⟪tRel 0⟫; tZero; apps (tRel 1) ⟪apps cTl ⟪tRel 0⟫⟫⟫⟫).
-
 Lemma cLAllAlg_closed : forall σ, subst_term σ cLAllAlg = cLAllAlg.
 Proof. closed_tac cLAllAlg. Qed.
 #[export] Hint Rewrite cLAllAlg_closed : closed.
-Arguments cLAllAlg : simpl never.
-
-Definition cLAll := lams ⟪tNat⟫ (apps (cRec N) ⟪cLAllAlg; tRel 0⟫).
 
 Lemma cLAll_closed : forall σ, subst_term σ cLAll = cLAll.
 Proof. closed_tac cLAll. Qed.
 #[export] Hint Rewrite cLAll_closed : closed.
-Arguments cLAll : simpl never.
 
 Lemma cLAll_spec : forall z l, RNat z (lcode l) -> RNat (apps cLAll ⟪z⟫) (lall l).
 Proof.
@@ -1134,15 +886,12 @@ induction l; intros; cbn; [reflexivity|].
 now rewrite qNat_subst, IHl.
 Qed.
 
-Definition cTable (tab : list nat) := lams ⟪tNat⟫ (switch N (tRel 0) (map qNat tab) tZero).
-
 Lemma cTable_closed : forall tab σ, subst_term σ (cTable tab) = cTable tab.
 Proof.
 intros; unfold cTable; cbn [lams subst_term].
 now rewrite switch_subst, map_qNat_subst.
 Qed.
 #[export] Hint Rewrite cTable_closed : closed.
-Arguments cTable : simpl never.
 
 Lemma cTable_spec : forall tab u g, RNat u g -> RNat (apps (cTable tab) ⟪u⟫) (nth g tab 0).
 Proof.
@@ -1160,17 +909,6 @@ revert g; induction tab as [|x tab IHtab]; intros [|g]; cbn.
 + apply IHtab.
 Qed.
 
-(** Position of the field with binders, if any (6 otherwise). *)
-Definition bpos_tab := ⟪6; 6; 1; 1; 6; 6⟫ ++ ⟪6; 6; 0; 6; 0; 1⟫ ++ ⟪1; 6; 6; 6; 6; 2⟫ ++ ⟪6; 6; 6⟫.
-(** Number of binders of that field. *)
-Definition bcnt_tab := ⟪0; 0; 1; 1; 0; 0⟫ ++ ⟪0; 0; 1; 0; 1; 1⟫ ++ ⟪1; 0; 0; 0; 0; 2⟫ ++ ⟪0; 0; 0⟫.
-(** Number of leading fields that are ignored annotations. *)
-Definition ignn_tab := ⟪0; 0; 0; 1; 0; 0⟫ ++ ⟪0; 0; 0; 0; 0; 0⟫ ++ ⟪2; 0; 0; 0; 0; 0⟫ ++ ⟪0; 0; 0⟫.
-(** Position of the scrutinee of eliminators (6 otherwise). *)
-Definition scr_tab := ⟪6; 6; 6; 6; 0; 6⟫ ++ ⟪6; 6; 3; 6; 1; 6⟫ ++ ⟪6; 0; 0; 6; 6; 5⟫ ++ ⟪6; 6; 6⟫.
-(** Kind of node: 0 = variable, 1 = canonical form, 2 = eliminator, 3 = quote-like primitive. *)
-Definition kind_tab := ⟪0; 1; 1; 1; 2; 1⟫ ++ ⟪1; 1; 2; 1; 2; 1⟫ ++ ⟪1; 2; 2; 1; 1; 2⟫ ++ ⟪3; 3; 3⟫.
-
 (** Number of binders of the field [i] of a node tagged [g]. *)
 Definition bnd (g i : nat) : nat := if Nat.eqb i (nth g bpos_tab 0) then nth g bcnt_tab 0 else 0.
 (** Is the field [i] of a node tagged [g] an ignored annotation? *)
@@ -1178,13 +916,9 @@ Definition ignb (g i : nat) : bool := Nat.ltb i (nth g ignn_tab 0).
 Definition scr (g : nat) : nat := nth g scr_tab 0.
 Definition kind (g : nat) : nat := nth g kind_tab 0.
 
-Definition cBnd := lams ⟪tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪tRel 0; apps (cTable bpos_tab) ⟪tRel 1⟫⟫; apps (cTable bcnt_tab) ⟪tRel 1⟫; tZero⟫).
-
 Lemma cBnd_closed : forall σ, subst_term σ cBnd = cBnd.
 Proof. closed_tac cBnd. Qed.
 #[export] Hint Rewrite cBnd_closed : closed.
-Arguments cBnd : simpl never.
 
 Lemma cBnd_spec : forall u g v i, RNat u g -> RNat v i -> RNat (apps cBnd ⟪u; v⟫) (bnd g i).
 Proof.
@@ -1192,12 +926,9 @@ intros; beta_tac cBnd; unfold bnd.
 apply cIte_spec; [apply cEqb_spec; [tea|now apply cTable_spec]|now apply cTable_spec|apply RNat_zero].
 Qed.
 
-Definition cIgn := lams ⟪tNat; tNat⟫ (apps cLtb ⟪tRel 0; apps (cTable ignn_tab) ⟪tRel 1⟫⟫).
-
 Lemma cIgn_closed : forall σ, subst_term σ cIgn = cIgn.
 Proof. closed_tac cIgn. Qed.
 #[export] Hint Rewrite cIgn_closed : closed.
-Arguments cIgn : simpl never.
 
 Lemma cIgn_spec : forall u g v i, RNat u g -> RNat v i -> RNat (apps cIgn ⟪u; v⟫) (b2n (ignb g i)).
 Proof.
@@ -1281,14 +1012,9 @@ Proof.
 intros c []; intros Ht; try (now elim Ht); reflexivity.
 Qed.
 
-(** [λ rec x p i y. rec y (bnd (tag x) i + p)] *)
-Definition cBindF := lams ⟪ety (Arr N (Arr N N)); tNat; tNat; tNat; tNat⟫
-  (apps (tRel 4) ⟪tRel 0; apps cAdd ⟪apps cBnd ⟪apps cHd ⟪tRel 3⟫; tRel 1⟫; tRel 2⟫⟫).
-
 Lemma cBindF_closed : forall σ, subst_term σ cBindF = cBindF.
 Proof. closed_tac cBindF. Qed.
 #[export] Hint Rewrite cBindF_closed : closed.
-Arguments cBindF : simpl never.
 
 (** Generic specification of a map over the fields of a node with binders *)
 Lemma cMapi_bind {X : Type} (fm : term -> nat -> X) (cx : X -> nat) : forall rec t u w p,
@@ -1307,23 +1033,13 @@ apply cAdd_spec; [|tea].
 apply cBnd_spec; [now apply RNat_tag|tea].
 Qed.
 
-(** [λ rec x c. if tag x = 0 then var (if n < c then n else S n) else node (tag x) (mapi (λ i y. rec y (bnd i + c)) (fields x))] *)
-Definition cShiftAlg := lams ⟪ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 1⟫;
-    apps cCons ⟪tZero; apps (cIte N) ⟪apps cLtb ⟪apps cTl ⟪tRel 1⟫; tRel 0⟫; apps cTl ⟪tRel 1⟫; tSucc (apps cTl ⟪tRel 1⟫)⟫⟫;
-    apps cCons ⟪apps cHd ⟪tRel 1⟫; apps cMapi ⟪apps cBindF ⟪tRel 2; tRel 1; tRel 0⟫; tZero; apps cTl ⟪tRel 1⟫⟫⟫⟫).
-
 Lemma cShiftAlg_closed : forall σ, subst_term σ cShiftAlg = cShiftAlg.
 Proof. closed_tac cShiftAlg. Qed.
 #[export] Hint Rewrite cShiftAlg_closed : closed.
-Arguments cShiftAlg : simpl never.
-
-Definition cShift := lams ⟪tNat; tNat⟫ (apps (cRec (Arr N N)) ⟪cShiftAlg; tRel 1; tRel 0⟫).
 
 Lemma cShift_closed : forall σ, subst_term σ cShift = cShift.
 Proof. closed_tac cShift. Qed.
 #[export] Hint Rewrite cShift_closed : closed.
-Arguments cShift : simpl never.
 
 Lemma cShift_spec : forall u t v c, RNat u (quote t) -> RNat v c ->
   RNat (apps cShift ⟪u; v⟫) (quote (shift_at c t)).
@@ -1375,21 +1091,13 @@ Proof.
 intros k u []; intros Ht; try (now elim Ht); reflexivity.
 Qed.
 
-(** [λ _ r. shift r 0] *)
-Definition cShiftNS := lams ⟪tNat; tNat⟫ (apps cShift ⟪tRel 0; tZero⟫).
-
 Lemma cShiftNS_closed : forall σ, subst_term σ cShiftNS = cShiftNS.
 Proof. closed_tac cShiftNS. Qed.
 #[export] Hint Rewrite cShiftNS_closed : closed.
-Arguments cShiftNS : simpl never.
-
-(** [λ k u. shiftᵏ u] *)
-Definition cShiftN := lams ⟪tNat; tNat⟫ (tNatElim tNat (tRel 0) cShiftNS (tRel 1)).
 
 Lemma cShiftN_closed : forall σ, subst_term σ cShiftN = cShiftN.
 Proof. closed_tac cShiftN. Qed.
 #[export] Hint Rewrite cShiftN_closed : closed.
-Arguments cShiftN : simpl never.
 
 Lemma cShiftN_spec : forall w k z u, RNat w k -> RNat z (quote u) ->
   RNat (apps cShiftN ⟪w; z⟫) (quote (Nat.iter k (shift_at 0) u)).
@@ -1403,27 +1111,13 @@ refine (natElim_ind (fun k t => R N t (quote (Nat.iter k (shift_at 0) u))) _ _ _
   now apply cShift_spec, RNat_zero.
 Qed.
 
-(** [λ u rec x k. if tag x = 0 then (subst var) else node (tag x) (mapi (λ i y. rec y (bnd i + k)) (fields x))] *)
-Definition cSubstAlg := lams ⟪tNat; ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 1⟫;
-    apps (cIte N) ⟪apps cLtb ⟪apps cTl ⟪tRel 1⟫; tRel 0⟫; apps cCons ⟪tZero; apps cTl ⟪tRel 1⟫⟫;
-      apps (cIte N) ⟪apps cEqb ⟪apps cTl ⟪tRel 1⟫; tRel 0⟫; apps cShiftN ⟪tRel 0; tRel 3⟫;
-        apps cCons ⟪tZero; apps cPred ⟪apps cTl ⟪tRel 1⟫⟫⟫⟫⟫;
-    apps cCons ⟪apps cHd ⟪tRel 1⟫; apps cMapi ⟪apps cBindF ⟪tRel 2; tRel 1; tRel 0⟫; tZero; apps cTl ⟪tRel 1⟫⟫⟫⟫).
-
 Lemma cSubstAlg_closed : forall σ, subst_term σ cSubstAlg = cSubstAlg.
 Proof. closed_tac cSubstAlg. Qed.
 #[export] Hint Rewrite cSubstAlg_closed : closed.
-Arguments cSubstAlg : simpl never.
-
-(** [λ k u t. t[⇑ᵏ u..]] *)
-Definition cSubst := lams ⟪tNat; tNat; tNat⟫
-  (apps (cRec (Arr N N)) ⟪apps cSubstAlg ⟪tRel 1⟫; tRel 0; tRel 2⟫).
 
 Lemma cSubst_closed : forall σ, subst_term σ cSubst = cSubst.
 Proof. closed_tac cSubst. Qed.
 #[export] Hint Rewrite cSubst_closed : closed.
-Arguments cSubst : simpl never.
 
 Lemma cSubst_spec : forall w k z u v t, RNat w k -> RNat z (quote u) -> RNat v (quote t) ->
   RNat (apps cSubst ⟪w; z; v⟫) (quote (subst_at k u t)).
@@ -1482,23 +1176,13 @@ Proof.
 intros n []; intros Ht; try (now elim Ht); cbn; bool_brute noccurn.
 Qed.
 
-(** [λ rec x n. if tag x = 0 then ¬ (var x = n) else all (mapi (λ i y. rec y (bnd i + n)) (fields x))] *)
-Definition cNoccAlg := lams ⟪ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 1⟫;
-    apps cNegb ⟪apps cEqb ⟪apps cTl ⟪tRel 1⟫; tRel 0⟫⟫;
-    apps cLAll ⟪apps cMapi ⟪apps cBindF ⟪tRel 2; tRel 1; tRel 0⟫; tZero; apps cTl ⟪tRel 1⟫⟫⟫⟫).
-
 Lemma cNoccAlg_closed : forall σ, subst_term σ cNoccAlg = cNoccAlg.
 Proof. closed_tac cNoccAlg. Qed.
 #[export] Hint Rewrite cNoccAlg_closed : closed.
-Arguments cNoccAlg : simpl never.
-
-Definition cNocc := lams ⟪tNat; tNat⟫ (apps (cRec (Arr N N)) ⟪cNoccAlg; tRel 1; tRel 0⟫).
 
 Lemma cNocc_closed : forall σ, subst_term σ cNocc = cNocc.
 Proof. closed_tac cNocc. Qed.
 #[export] Hint Rewrite cNocc_closed : closed.
-Arguments cNocc : simpl never.
 
 Lemma cNocc_spec : forall u t v n, RNat u (quote t) -> RNat v n ->
   RNat (apps cNocc ⟪u; v⟫) (b2n (noccurn n t)).
@@ -1524,33 +1208,17 @@ Proof.
 intros n []; intros Ht; try (now elim Ht); cbn; bool_brute is_closedn.
 Qed.
 
-(** [λ rec x p i y. ign (tag x) i || rec y (bnd (tag x) i + p)] *)
-Definition cClosF := lams ⟪ety (Arr N (Arr N N)); tNat; tNat; tNat; tNat⟫
-  (apps cOrb ⟪apps cIgn ⟪apps cHd ⟪tRel 3⟫; tRel 1⟫;
-    apps (tRel 4) ⟪tRel 0; apps cAdd ⟪apps cBnd ⟪apps cHd ⟪tRel 3⟫; tRel 1⟫; tRel 2⟫⟫⟫).
-
 Lemma cClosF_closed : forall σ, subst_term σ cClosF = cClosF.
 Proof. closed_tac cClosF. Qed.
 #[export] Hint Rewrite cClosF_closed : closed.
-Arguments cClosF : simpl never.
-
-(** [λ rec x n. if tag x = 0 then var x < n else all (mapi (λ i y. ign i || rec y (bnd i + n)) (fields x))] *)
-Definition cClosAlg := lams ⟪ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 1⟫;
-    apps cLtb ⟪apps cTl ⟪tRel 1⟫; tRel 0⟫;
-    apps cLAll ⟪apps cMapi ⟪apps cClosF ⟪tRel 2; tRel 1; tRel 0⟫; tZero; apps cTl ⟪tRel 1⟫⟫⟫⟫).
 
 Lemma cClosAlg_closed : forall σ, subst_term σ cClosAlg = cClosAlg.
 Proof. closed_tac cClosAlg. Qed.
 #[export] Hint Rewrite cClosAlg_closed : closed.
-Arguments cClosAlg : simpl never.
-
-Definition cClosed := lams ⟪tNat; tNat⟫ (apps (cRec (Arr N N)) ⟪cClosAlg; tRel 1; tRel 0⟫).
 
 Lemma cClosed_closed : forall σ, subst_term σ cClosed = cClosed.
 Proof. closed_tac cClosed. Qed.
 #[export] Hint Rewrite cClosed_closed : closed.
-Arguments cClosed : simpl never.
 
 Lemma cClosed_spec : forall u t v n, RNat u (quote t) -> RNat v n ->
   RNat (apps cClosed ⟪u; v⟫) (b2n (is_closedn n t)).
@@ -1574,13 +1242,9 @@ apply (cIfz_tag N u t); [tea| |].
   apply cBnd_spec; [now apply RNat_tag|tea].
 Qed.
 
-(** [λ _ y. closed₀ y] *)
-Definition cClos0F := lams ⟪tNat; tNat⟫ (apps cClosed ⟪tRel 0; tZero⟫).
-
 Lemma cClos0F_closed : forall σ, subst_term σ cClos0F = cClos0F.
 Proof. closed_tac cClos0F. Qed.
 #[export] Hint Rewrite cClos0F_closed : closed.
-Arguments cClos0F : simpl never.
 
 Lemma cMapi_closed0 : forall t u, tag_of t <> 0 -> RNat u (quote t) ->
   RNat (apps cLAll ⟪apps cMapi ⟪cClos0F; tZero; apps cTl ⟪u⟫⟫⟫)
@@ -1608,37 +1272,17 @@ all: repeat match goal with |- context [is_nf ?m ?u] => destruct (is_nf m u) end
 all: bool_brute is_closedn.
 Qed.
 
-(** [λ rec x i y. ign (tag x) i || rec y (i = scr (tag x))] *)
-Definition cNfF := lams ⟪ety (Arr N (Arr N N)); tNat; tNat; tNat⟫
-  (apps cOrb ⟪apps cIgn ⟪apps cHd ⟪tRel 2⟫; tRel 1⟫;
-    apps (tRel 3) ⟪tRel 0; apps cEqb ⟪tRel 1; apps (cTable scr_tab) ⟪apps cHd ⟪tRel 2⟫⟫⟫⟫⟫).
-
 Lemma cNfF_closed : forall σ, subst_term σ cNfF = cNfF.
 Proof. closed_tac cNfF. Qed.
 #[export] Hint Rewrite cNfF_closed : closed.
-Arguments cNfF : simpl never.
-
-Definition cNfAlg := lams ⟪ety (Arr N (Arr N N)); tNat; tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 1⟫; tSucc tZero;
-    apps cAndb ⟪apps cAndb ⟪
-      apps cOrb ⟪apps cNegb ⟪apps cEqb ⟪apps (cTable kind_tab) ⟪apps cHd ⟪tRel 1⟫⟫; tSucc tZero⟫⟫;
-                 apps cNegb ⟪apps cEqb ⟪tRel 0; tSucc tZero⟫⟫⟫;
-      apps cLAll ⟪apps cMapi ⟪apps cNfF ⟪tRel 2; tRel 1⟫; tZero; apps cTl ⟪tRel 1⟫⟫⟫⟫;
-      apps cOrb ⟪apps cNegb ⟪apps cEqb ⟪apps (cTable kind_tab) ⟪apps cHd ⟪tRel 1⟫⟫; qNat 3⟫⟫;
-                 apps cNegb ⟪apps cLAll ⟪apps cMapi ⟪cClos0F; tZero; apps cTl ⟪tRel 1⟫⟫⟫⟫⟫⟫⟫).
 
 Lemma cNfAlg_closed : forall σ, subst_term σ cNfAlg = cNfAlg.
 Proof. closed_tac cNfAlg. Qed.
 #[export] Hint Rewrite cNfAlg_closed : closed.
-Arguments cNfAlg : simpl never.
-
-(** [cNf t p] decides [is_nf (p = 1) t] *)
-Definition cNf := lams ⟪tNat; tNat⟫ (apps (cRec (Arr N N)) ⟪cNfAlg; tRel 1; tRel 0⟫).
 
 Lemma cNf_closed : forall σ, subst_term σ cNf = cNf.
 Proof. closed_tac cNf. Qed.
 #[export] Hint Rewrite cNf_closed : closed.
-Arguments cNf : simpl never.
 
 Lemma cNf_spec : forall u t v ne, RNat u (quote t) -> RNat v (b2n ne) ->
   RNat (apps cNf ⟪u; v⟫) (b2n (is_nf ne t)).
@@ -1668,13 +1312,9 @@ apply (cIfz_tag N u t); [tea| |].
     * now apply cMapi_closed0.
 Qed.
 
-(** [λ _ y. dnf y] *)
-Definition cDnfF := lams ⟪tNat; tNat⟫ (apps cNf ⟪tRel 0; tZero⟫).
-
 Lemma cDnfF_closed : forall σ, subst_term σ cDnfF = cDnfF.
 Proof. closed_tac cDnfF. Qed.
 #[export] Hint Rewrite cDnfF_closed : closed.
-Arguments cDnfF : simpl never.
 
 Lemma cMapi_dnf : forall t u, tag_of t <> 0 -> RNat u (quote t) ->
   RNat (apps cLAll ⟪apps cMapi ⟪cDnfF; tZero; apps cTl ⟪u⟫⟫⟫)
@@ -1735,25 +1375,13 @@ intros; eapply RNat_conv; [now apply RNat_nth_field|].
 now apply nth_map_quote.
 Qed.
 
-Definition cWhneAlg := lams ⟪ety (Arr N N); tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 0⟫; tSucc tZero;
-    apps (cIte N) ⟪apps cEqb ⟪apps (cTable kind_tab) ⟪apps cHd ⟪tRel 0⟫⟫; tSucc tZero⟫; tZero;
-      apps (cIte N) ⟪apps cEqb ⟪apps (cTable kind_tab) ⟪apps cHd ⟪tRel 0⟫⟫; qNat 2⟫;
-        apps (tRel 1) ⟪apps cNth ⟪apps (cTable scr_tab) ⟪apps cHd ⟪tRel 0⟫⟫; apps cTl ⟪tRel 0⟫⟫⟫;
-        apps cAndb ⟪apps cLAll ⟪apps cMapi ⟪cDnfF; tZero; apps cTl ⟪tRel 0⟫⟫⟫;
-          apps cNegb ⟪apps cLAll ⟪apps cMapi ⟪cClos0F; tZero; apps cTl ⟪tRel 0⟫⟫⟫⟫⟫⟫⟫⟫).
-
 Lemma cWhneAlg_closed : forall σ, subst_term σ cWhneAlg = cWhneAlg.
 Proof. closed_tac cWhneAlg. Qed.
 #[export] Hint Rewrite cWhneAlg_closed : closed.
-Arguments cWhneAlg : simpl never.
-
-Definition cWhne := lams ⟪tNat⟫ (apps (cRec N) ⟪cWhneAlg; tRel 0⟫).
 
 Lemma cWhne_closed : forall σ, subst_term σ cWhne = cWhne.
 Proof. closed_tac cWhne. Qed.
 #[export] Hint Rewrite cWhne_closed : closed.
-Arguments cWhne : simpl never.
 
 Lemma cWhne_spec : forall u t, RNat u (quote t) -> RNat (apps cWhne ⟪u⟫) (b2n (is_whne t)).
 Proof.
@@ -1779,10 +1407,6 @@ Qed.
 
 (** ** Erasure *)
 
-(** Some constant codes *)
-Definition code_rel0 := apps cCons ⟪tZero; tZero⟫.
-Definition code_U := apps cCons ⟪tSucc tZero; tZero⟫.
-
 Lemma code_rel0_spec : RNat code_rel0 (quote (tRel 0)).
 Proof.
 apply cCons_node; apply RNat_zero.
@@ -1792,12 +1416,6 @@ Lemma code_U_spec : RNat code_U (quote U).
 Proof.
 apply cCons_node; [rnum|apply RNat_zero].
 Qed.
-
-(** Building nodes *)
-Fixpoint clist (ts : list term) : term := match ts with
-| nil => tZero
-| cons t ts => apps cCons ⟪t; clist ts⟫
-end.
 
 Fixpoint RNats (ts : list term) (xs : list nat) : Type := match ts, xs with
 | nil, nil => unit
@@ -1811,8 +1429,6 @@ induction ts as [|t ts IHts]; intros [|x xs] H; cbn in H; try (now elim H).
 + apply RNat_zero.
 + destruct H; now apply cCons_lcode.
 Qed.
-
-Definition cnode (g : nat) (ts : list term) := apps cCons ⟪qNat g; clist ts⟫.
 
 Lemma cnode_spec : forall g ts xs, RNats ts xs -> RNat (cnode g ts) (node g (lcode xs)).
 Proof.
@@ -1854,19 +1470,9 @@ unfold erasePair; cbn.
 destruct (term_beq_spec a b); [subst; now elim (Hab b)|reflexivity].
 Qed.
 
-Definition cEraseLam := lams ⟪tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 4⟫;
-    apps (cIte N) ⟪apps cEqb ⟪apps cNth ⟪tSucc tZero; apps cTl ⟪tRel 0⟫⟫; code_rel0⟫;
-      apps (cIte N) ⟪apps cNocc ⟪apps cNth ⟪tZero; apps cTl ⟪tRel 0⟫⟫; tZero⟫;
-        apps cSubst ⟪tZero; code_U; apps cNth ⟪tZero; apps cTl ⟪tRel 0⟫⟫⟫;
-        cnode 3 ⟪code_U; tRel 0⟫⟫;
-      cnode 3 ⟪code_U; tRel 0⟫⟫;
-    cnode 3 ⟪code_U; tRel 0⟫⟫).
-
 Lemma cEraseLam_closed : forall σ, subst_term σ cEraseLam = cEraseLam.
 Proof. closed_tac cEraseLam. Qed.
 #[export] Hint Rewrite cEraseLam_closed : closed.
-Arguments cEraseLam : simpl never.
 
 Lemma cEraseLam_spec : forall u t, RNat u (quote t) -> RNat (apps cEraseLam ⟪u⟫) (quote (eraseLam t)).
 Proof.
@@ -1897,19 +1503,9 @@ destruct (Nat.eqb_spec (quote t2) (quote (tRel 0))) as [He|Hne].
   apply cIte_false; [exact Hrel|exact Hfb].
 Qed.
 
-Definition cErasePair := lams ⟪tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 1⟫; qNat 13⟫;
-    apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 14⟫;
-      apps (cIte N) ⟪apps cEqb ⟪apps cNth ⟪tZero; apps cTl ⟪tRel 1⟫⟫; apps cNth ⟪tZero; apps cTl ⟪tRel 0⟫⟫⟫;
-        apps cNth ⟪tZero; apps cTl ⟪tRel 1⟫⟫;
-        cnode 12 ⟪code_U; code_U; tRel 1; tRel 0⟫⟫;
-      cnode 12 ⟪code_U; code_U; tRel 1; tRel 0⟫⟫;
-    cnode 12 ⟪code_U; code_U; tRel 1; tRel 0⟫⟫).
-
 Lemma cErasePair_closed : forall σ, subst_term σ cErasePair = cErasePair.
 Proof. closed_tac cErasePair. Qed.
 #[export] Hint Rewrite cErasePair_closed : closed.
-Arguments cErasePair : simpl never.
 
 Lemma cErasePair_spec : forall u a v b, RNat u (quote a) -> RNat v (quote b) ->
   RNat (apps cErasePair ⟪u; v⟫) (quote (erasePair a b)).
@@ -1937,34 +1533,17 @@ destruct (Nat.eqb_spec (quote a) (quote b)) as [He|Hne].
   apply cIte_false; [eapply RNat_conv; [now apply cEqb_spec|now apply Nat.eqb_neq in Hne; rewrite Hne]|exact Hfb].
 Qed.
 
-(** [λ rec _ y. rec y] *)
-Definition cRecF := lams ⟪ety (Arr N N); tNat; tNat⟫ (apps (tRel 2) ⟪tRel 0⟫).
-
 Lemma cRecF_closed : forall σ, subst_term σ cRecF = cRecF.
 Proof. closed_tac cRecF. Qed.
 #[export] Hint Rewrite cRecF_closed : closed.
-Arguments cRecF : simpl never.
-
-Definition cEraseAlg := lams ⟪ety (Arr N N); tNat⟫
-  (apps (cIfz N) ⟪apps cHd ⟪tRel 0⟫; tRel 0;
-    apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 3⟫;
-      apps cEraseLam ⟪apps (tRel 1) ⟪apps cNth ⟪tSucc tZero; apps cTl ⟪tRel 0⟫⟫⟫⟫;
-      apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 12⟫;
-        apps cErasePair ⟪apps (tRel 1) ⟪apps cNth ⟪qNat 2; apps cTl ⟪tRel 0⟫⟫⟫;
-          apps (tRel 1) ⟪apps cNth ⟪qNat 3; apps cTl ⟪tRel 0⟫⟫⟫⟫;
-        apps cCons ⟪apps cHd ⟪tRel 0⟫; apps cMapi ⟪apps cRecF ⟪tRel 1⟫; tZero; apps cTl ⟪tRel 0⟫⟫⟫⟫⟫⟫).
 
 Lemma cEraseAlg_closed : forall σ, subst_term σ cEraseAlg = cEraseAlg.
 Proof. closed_tac cEraseAlg. Qed.
 #[export] Hint Rewrite cEraseAlg_closed : closed.
-Arguments cEraseAlg : simpl never.
-
-Definition cErase := lams ⟪tNat⟫ (apps (cRec N) ⟪cEraseAlg; tRel 0⟫).
 
 Lemma cErase_closed : forall σ, subst_term σ cErase = cErase.
 Proof. closed_tac cErase. Qed.
 #[export] Hint Rewrite cErase_closed : closed.
-Arguments cErase : simpl never.
 
 Lemma quote_erase_view : forall t, tag_of t <> 0 -> tag_of t <> 3 -> tag_of t <> 12 ->
   quote (erase t) = node (tag_of t) (lcode (map quote (mapi (fun _ f => erase f) 0 (fields t)))).
@@ -2008,24 +1587,13 @@ Qed.
 
 Definition encN (o : option nat) : nat := match o with None => 0 | Some n => S n end.
 
-Definition cUNatAlg := lams ⟪ety (Arr N N); tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 6⟫; tSucc tZero;
-    apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 7⟫;
-      apps (cIfz N) ⟪apps (tRel 1) ⟪apps cNth ⟪tZero; apps cTl ⟪tRel 0⟫⟫⟫; tZero;
-        tSucc (apps (tRel 1) ⟪apps cNth ⟪tZero; apps cTl ⟪tRel 0⟫⟫⟫)⟫;
-      tZero⟫⟫).
-
 Lemma cUNatAlg_closed : forall σ, subst_term σ cUNatAlg = cUNatAlg.
 Proof. closed_tac cUNatAlg. Qed.
 #[export] Hint Rewrite cUNatAlg_closed : closed.
-Arguments cUNatAlg : simpl never.
-
-Definition cUNat := lams ⟪tNat⟫ (apps (cRec N) ⟪cUNatAlg; tRel 0⟫).
 
 Lemma cUNat_closed : forall σ, subst_term σ cUNat = cUNat.
 Proof. closed_tac cUNat. Qed.
 #[export] Hint Rewrite cUNat_closed : closed.
-Arguments cUNat : simpl never.
 
 Lemma cUNat_spec : forall u t, RNat u (quote t) -> RNat (apps cUNat ⟪u⟫) (encN (uNat t)).
 Proof.
@@ -2052,20 +1620,13 @@ destruct (Nat.eqb_spec (tag_of t) 7) as [H7|H7].
   destruct t; try (apply RNat_zero); now elim H6 + elim H7.
 Qed.
 
-(** [λ _ r. code (tSucc r)] *)
-Definition cQNatS := lams ⟪tNat; tNat⟫ (cnode 7 ⟪tRel 0⟫).
-
 Lemma cQNatS_closed : forall σ, subst_term σ cQNatS = cQNatS.
 Proof. closed_tac cQNatS. Qed.
 #[export] Hint Rewrite cQNatS_closed : closed.
-Arguments cQNatS : simpl never.
-
-Definition cQNat := lams ⟪tNat⟫ (tNatElim tNat (cnode 6 nil) cQNatS (tRel 0)).
 
 Lemma cQNat_closed : forall σ, subst_term σ cQNat = cQNat.
 Proof. closed_tac cQNat. Qed.
 #[export] Hint Rewrite cQNat_closed : closed.
-Arguments cQNat : simpl never.
 
 Lemma cQNat_spec : forall u n, RNat u n -> RNat (apps cQNat ⟪u⟫) (quote (qNat n)).
 Proof.
@@ -2078,11 +1639,6 @@ refine (natElim_ind (fun n t => R N t (quote (qNat n))) _ _ _ _ _ _).
   apply (cnode_spec 7 ⟪r⟫ ⟪_⟫); rnats; tea.
 Qed.
 
-Definition code_nat := cnode 5 nil.
-Definition code_zero := cnode 6 nil.
-Definition code_IdZZ := cnode 15 ⟪code_nat; code_zero; code_zero⟫.
-Definition code_ReflZ := cnode 16 ⟪code_nat; code_zero⟫.
-
 Lemma code_IdZZ_spec : RNat code_IdZZ (quote (tId tNat tZero tZero)).
 Proof.
 apply (cnode_spec 15 ⟪_; _; _⟫ ⟪_; _; _⟫); rnats; apply (cnode_spec _ nil nil); constructor.
@@ -2093,21 +1649,13 @@ Proof.
 apply (cnode_spec 16 ⟪_; _⟫ ⟪_; _⟫); rnats; apply (cnode_spec _ nil nil); constructor.
 Qed.
 
-(** [λ _ r. code (tAnd (tId tNat tZero tZero) r)] *)
-Definition cQEvalTyS := lams ⟪tNat; tNat⟫ (cnode 11 ⟪code_IdZZ; tRel 0⟫).
-
 Lemma cQEvalTyS_closed : forall σ, subst_term σ cQEvalTyS = cQEvalTyS.
 Proof. closed_tac cQEvalTyS. Qed.
 #[export] Hint Rewrite cQEvalTyS_closed : closed.
-Arguments cQEvalTyS : simpl never.
-
-Definition cQEvalTy := lams ⟪tNat; tNat⟫
-  (tNatElim tNat (cnode 15 ⟪code_nat; cnode 7 ⟪apps cQNat ⟪tRel 0⟫⟫; cnode 7 ⟪apps cQNat ⟪tRel 0⟫⟫⟫) cQEvalTyS (tRel 1)).
 
 Lemma cQEvalTy_closed : forall σ, subst_term σ cQEvalTy = cQEvalTy.
 Proof. closed_tac cQEvalTy. Qed.
 #[export] Hint Rewrite cQEvalTy_closed : closed.
-Arguments cQEvalTy : simpl never.
 
 Lemma quote_qEvalTy_S : forall n v,
   quote (qEvalTy (S n) v) = node 11 (lcode ⟪quote (tId tNat tZero tZero); quote (qEvalTy n v)⟫).
@@ -2132,22 +1680,13 @@ refine (natElim_ind (fun n t => R N t (quote (qEvalTy n v))) _ _ _ _ _ _).
   apply (cnode_spec 11 ⟪_; _⟫ ⟪_; _⟫); rnats; [apply code_IdZZ_spec|tea].
 Qed.
 
-(** [λ v n r. code (tPair (tId tNat tZero tZero) (qEvalTy n v) (tRefl tNat tZero) r)] *)
-Definition cQEvalTmS := lams ⟪tNat; tNat; tNat⟫
-  (cnode 12 ⟪code_IdZZ; apps cQEvalTy ⟪tRel 1; tRel 2⟫; code_ReflZ; tRel 0⟫).
-
 Lemma cQEvalTmS_closed : forall σ, subst_term σ cQEvalTmS = cQEvalTmS.
 Proof. closed_tac cQEvalTmS. Qed.
 #[export] Hint Rewrite cQEvalTmS_closed : closed.
-Arguments cQEvalTmS : simpl never.
-
-Definition cQEvalTm := lams ⟪tNat; tNat⟫
-  (tNatElim tNat (cnode 16 ⟪code_nat; cnode 7 ⟪apps cQNat ⟪tRel 0⟫⟫⟫) (apps cQEvalTmS ⟪tRel 0⟫) (tRel 1)).
 
 Lemma cQEvalTm_closed : forall σ, subst_term σ cQEvalTm = cQEvalTm.
 Proof. closed_tac cQEvalTm. Qed.
 #[export] Hint Rewrite cQEvalTm_closed : closed.
-Arguments cQEvalTm : simpl never.
 
 Lemma cQEvalTm_spec : forall w n z v, RNat w n -> RNat z v ->
   RNat (apps cQEvalTm ⟪w; z⟫) (quote (qEvalTm n v)).
@@ -2169,9 +1708,6 @@ Qed.
 Definition encO (o : option term) : nat := match o with None => 0 | Some t => S (quote t) end.
 Definition encM (o : option (nat × term)) : nat := match o with None => 0 | Some (n, t) => S (npair n (quote t)) end.
 Definition encH (o : option (option term)) : nat := match o with None => 0 | Some o => S (encO o) end.
-
-(** Specification of the internal evaluator of the previous step and of the minimization function *)
-Definition EvTy := Arr N (Arr N N).
 
 Definition EvSpec (E : term) (ev : bool -> term -> option term) :=
   forall d b x t, RNat d (b2n b) -> RNat x (quote t) -> RNat (apps E ⟪d; x⟫) (encO (ev b t)).
@@ -2204,24 +1740,13 @@ induction l as [|[t|] l IHl]; cbn [seqo osequence map encO]; [reflexivity| |refl
 rewrite IHl; destruct (osequence l); reflexivity.
 Qed.
 
-(** [λ rec l. if l = 0 then 1 else if hd l = 0 then 0 else if rec (tl l) = 0 then 0 else S (cons (pred (hd l)) (pred (rec (tl l))))] *)
-Definition cSeqAlg := lams ⟪ety (Arr N N); tNat⟫
-  (apps (cIfz N) ⟪tRel 0; tSucc tZero;
-    apps (cIfz N) ⟪apps cHd ⟪tRel 0⟫; tZero;
-      apps (cIfz N) ⟪apps (tRel 1) ⟪apps cTl ⟪tRel 0⟫⟫; tZero;
-        tSucc (apps cCons ⟪apps cPred ⟪apps cHd ⟪tRel 0⟫⟫; apps cPred ⟪apps (tRel 1) ⟪apps cTl ⟪tRel 0⟫⟫⟫⟫)⟫⟫⟫).
-
 Lemma cSeqAlg_closed : forall σ, subst_term σ cSeqAlg = cSeqAlg.
 Proof. closed_tac cSeqAlg. Qed.
 #[export] Hint Rewrite cSeqAlg_closed : closed.
-Arguments cSeqAlg : simpl never.
-
-Definition cSeq := lams ⟪tNat⟫ (apps (cRec N) ⟪cSeqAlg; tRel 0⟫).
 
 Lemma cSeq_closed : forall σ, subst_term σ cSeq = cSeq.
 Proof. closed_tac cSeq. Qed.
 #[export] Hint Rewrite cSeq_closed : closed.
-Arguments cSeq : simpl never.
 
 Lemma cSeq_spec : forall z l, RNat z (lcode l) -> RNat (apps cSeq ⟪z⟫) (seqo l).
 Proof.
@@ -2255,23 +1780,13 @@ Definition deepall_code (ev : bool -> term -> option term) (g : nat) (fs : list 
   | Some fs' => S (node g (lcode (map quote fs')))
   end.
 
-(** [λ E x i y. if ign (tag x) i then S y else E true y] *)
-Definition cDeepF := lams ⟪ety EvTy; tNat; tNat; tNat⟫
-  (apps (cIte N) ⟪apps cIgn ⟪apps cHd ⟪tRel 2⟫; tRel 1⟫; tSucc (tRel 0); apps (tRel 3) ⟪tSucc tZero; tRel 0⟫⟫).
-
 Lemma cDeepF_closed : forall σ, subst_term σ cDeepF = cDeepF.
 Proof. closed_tac cDeepF. Qed.
 #[export] Hint Rewrite cDeepF_closed : closed.
-Arguments cDeepF : simpl never.
-
-Definition cDeep := lams ⟪ety EvTy; tNat⟫
-  (apps (cIfz N) ⟪apps cSeq ⟪apps cMapi ⟪apps cDeepF ⟪tRel 1; tRel 0⟫; tZero; apps cTl ⟪tRel 0⟫⟫⟫; tZero;
-    tSucc (apps cCons ⟪apps cHd ⟪tRel 0⟫; apps cPred ⟪apps cSeq ⟪apps cMapi ⟪apps cDeepF ⟪tRel 1; tRel 0⟫; tZero; apps cTl ⟪tRel 0⟫⟫⟫⟫⟫)⟫).
 
 Lemma cDeep_closed : forall σ, subst_term σ cDeep = cDeep.
 Proof. closed_tac cDeep. Qed.
 #[export] Hint Rewrite cDeep_closed : closed.
-Arguments cDeep : simpl never.
 
 Lemma cDeep_spec : forall E ev x g fs, EvSpec E ev -> RNat x (node g (lcode (map quote fs))) ->
   RNat (apps cDeep ⟪E; x⟫) (deepall_code ev g fs).
@@ -2299,13 +1814,9 @@ Qed.
 
 (** *** Canonical forms *)
 
-Definition cCanon := lams ⟪ety EvTy; tNat; tNat⟫
-  (apps (cIte N) ⟪tRel 1; apps cDeep ⟪tRel 2; tRel 0⟫; tSucc (tRel 0)⟫).
-
 Lemma cCanon_closed : forall σ, subst_term σ cCanon = cCanon.
 Proof. closed_tac cCanon. Qed.
 #[export] Hint Rewrite cCanon_closed : closed.
-Arguments cCanon : simpl never.
 
 Lemma cCanon_spec : forall E ev d b x t, EvSpec E ev -> RNat d (b2n b) -> RNat x (quote t) -> tag_of t <> 0 ->
   RNat (apps cCanon ⟪E; d; x⟫) (if b then deepall_code ev (tag_of t) (fields t) else S (quote t)).
@@ -2335,14 +1846,9 @@ Definition elim_code (ev : bool -> term -> option term) (b : bool) (g s : nat) (
     end
   end.
 
-(** [λ s r i y. if i = s then r else y] *)
-Definition cReplF := lams ⟪tNat; tNat; tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪tRel 1; tRel 3⟫; tRel 2; tRel 0⟫).
-
 Lemma cReplF_closed : forall σ, subst_term σ cReplF = cReplF.
 Proof. closed_tac cReplF. Qed.
 #[export] Hint Rewrite cReplF_closed : closed.
-Arguments cReplF : simpl never.
 
 Lemma cRepl_spec : forall w s z r l fs, RNat w s -> RNat z (quote r) -> RNat l (lcode (map quote fs)) ->
   RNat (apps cMapi ⟪apps cReplF ⟪w; z⟫; tZero; l⟫) (lcode (map quote (repl s r fs))).
@@ -2353,22 +1859,9 @@ rewrite (if_app quote).
 apply (cIte_spec N); [now apply cEqb_spec|tea|tea].
 Qed.
 
-Definition cElim := lams ⟪ety EvTy; tNat; tNat; tNat; ety (Arr N N)⟫
-  (apps (cIfz N) ⟪apps (tRel 4) ⟪tZero; apps cNth ⟪tRel 1; apps cTl ⟪tRel 2⟫⟫⟫; tZero;
-    apps (cIfz N) ⟪apps (tRel 0) ⟪apps cPred ⟪apps (tRel 4) ⟪tZero; apps cNth ⟪tRel 1; apps cTl ⟪tRel 2⟫⟫⟫⟫⟫;
-      apps (cIte N) ⟪apps cWhne ⟪apps cPred ⟪apps (tRel 4) ⟪tZero; apps cNth ⟪tRel 1; apps cTl ⟪tRel 2⟫⟫⟫⟫⟫;
-        apps (cIte N) ⟪tRel 3;
-          apps cDeep ⟪tRel 4; apps cCons ⟪apps cHd ⟪tRel 2⟫;
-            apps cMapi ⟪apps cReplF ⟪tRel 1; apps cPred ⟪apps (tRel 4) ⟪tZero; apps cNth ⟪tRel 1; apps cTl ⟪tRel 2⟫⟫⟫⟫⟫; tZero; apps cTl ⟪tRel 2⟫⟫⟫⟫;
-          tSucc (apps cCons ⟪apps cHd ⟪tRel 2⟫;
-            apps cMapi ⟪apps cReplF ⟪tRel 1; apps cPred ⟪apps (tRel 4) ⟪tZero; apps cNth ⟪tRel 1; apps cTl ⟪tRel 2⟫⟫⟫⟫⟫; tZero; apps cTl ⟪tRel 2⟫⟫⟫)⟫;
-        tZero⟫;
-      apps cPred ⟪apps (tRel 0) ⟪apps cPred ⟪apps (tRel 4) ⟪tZero; apps cNth ⟪tRel 1; apps cTl ⟪tRel 2⟫⟫⟫⟫⟫⟫⟫⟫).
-
 Lemma cElim_closed : forall σ, subst_term σ cElim = cElim.
 Proof. closed_tac cElim. Qed.
 #[export] Hint Rewrite cElim_closed : closed.
-Arguments cElim : simpl never.
 
 Lemma cElim_spec : forall E ev d b x t w s h hm,
   EvSpec E ev -> RNat d (b2n b) -> RNat x (quote t) -> tag_of t <> 0 -> RNat w s -> s < length (fields t) ->
@@ -2397,8 +1890,6 @@ Qed.
 
 (** Redex handlers *)
 
-Definition F (i : nat) (x : term) := apps cNth ⟪qNat i; apps cTl ⟪x⟫⟫.
-
 Lemma RNat_F : forall i x t, tag_of t <> 0 -> RNat x (quote t) -> i < length (fields t) ->
   RNat (F i x) (quote (nth i (fields t) (tRel 0))).
 Proof.
@@ -2408,14 +1899,9 @@ Qed.
 Definition hm_app (ev : bool -> term -> option term) (b : bool) (u r : term) : option (option term) :=
   match r with tLambda _ body => Some (ev b (subst_at 0 u body)) | _ => None end.
 
-Definition cHApp := lams ⟪ety EvTy; tNat; tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 3⟫;
-    tSucc (apps (tRel 3) ⟪tRel 2; apps cSubst ⟪tZero; F 1 (tRel 1); F 1 (tRel 0)⟫⟫); tZero⟫).
-
 Lemma cHApp_closed : forall σ, subst_term σ cHApp = cHApp.
 Proof. closed_tac cHApp. Qed.
 #[export] Hint Rewrite cHApp_closed : closed.
-Arguments cHApp : simpl never.
 
 Lemma cHApp_spec : forall E ev d b x t u r v, EvSpec E ev -> RNat d (b2n b) -> RNat x (quote (tApp t u)) ->
   RNat v (quote r) -> RNat (apps cHApp ⟪E; d; x; v⟫) (encH (hm_app ev b u r)).
@@ -2438,17 +1924,9 @@ Definition hm_nat (ev : bool -> term -> option term) (b : bool) (P hz hs r : ter
   | _ => None
   end.
 
-Definition cHNat := lams ⟪ety EvTy; tNat; tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 6⟫; tSucc (apps (tRel 3) ⟪tRel 2; F 1 (tRel 1)⟫);
-    apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 7⟫;
-      tSucc (apps (tRel 3) ⟪tRel 2; cnode 4 ⟪cnode 4 ⟪F 2 (tRel 1); F 0 (tRel 0)⟫;
-        cnode 8 ⟪F 0 (tRel 1); F 1 (tRel 1); F 2 (tRel 1); F 0 (tRel 0)⟫⟫⟫);
-      tZero⟫⟫).
-
 Lemma cHNat_closed : forall σ, subst_term σ cHNat = cHNat.
 Proof. closed_tac cHNat. Qed.
 #[export] Hint Rewrite cHNat_closed : closed.
-Arguments cHNat : simpl never.
 
 Lemma cHNat_spec : forall E ev d b x P hz hs n r v, EvSpec E ev -> RNat d (b2n b) ->
   RNat x (quote (tNatElim P hz hs n)) ->
@@ -2472,12 +1950,9 @@ destruct r; try (apply cIte_false; [apply (Htag 6)|apply cIte_false; [apply (Hta
   - apply (cnode_spec 8 ⟪_; _; _; _⟫ ⟪_; _; _; _⟫); rnats; try tea; [apply (HF 0)|apply (HF 1)|apply (HF 2)]; lia.
 Qed.
 
-Definition cHNone := lams ⟪tNat⟫ tZero.
-
 Lemma cHNone_closed : forall σ, subst_term σ cHNone = cHNone.
 Proof. closed_tac cHNone. Qed.
 #[export] Hint Rewrite cHNone_closed : closed.
-Arguments cHNone : simpl never.
 
 Lemma cHNone_spec : forall r v, RNat v (quote r) -> RNat (apps cHNone ⟪v⟫) (encH None).
 Proof.
@@ -2490,15 +1965,9 @@ Definition hm_fst (ev : bool -> term -> option term) (b : bool) (r : term) : opt
 Definition hm_snd (ev : bool -> term -> option term) (b : bool) (r : term) : option (option term) :=
   match r with tPair _ _ _ b' => Some (ev b b') | _ => None end.
 
-(** [λ E d i r. if tag r = 12 then S (E d (field i r)) else 0] *)
-Definition cHProj := lams ⟪ety EvTy; tNat; tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 12⟫;
-    tSucc (apps (tRel 3) ⟪tRel 2; apps cNth ⟪tRel 1; apps cTl ⟪tRel 0⟫⟫⟫); tZero⟫).
-
 Lemma cHProj_closed : forall σ, subst_term σ cHProj = cHProj.
 Proof. closed_tac cHProj. Qed.
 #[export] Hint Rewrite cHProj_closed : closed.
-Arguments cHProj : simpl never.
 
 Lemma cHProj_spec : forall E ev d b r v, EvSpec E ev -> RNat d (b2n b) -> RNat v (quote r) ->
   RNat (apps cHProj ⟪E; d; qNat 2; v⟫) (encH (hm_fst ev b r)) ×
@@ -2517,13 +1986,9 @@ Qed.
 Definition hm_id (ev : bool -> term -> option term) (b : bool) (hr r : term) : option (option term) :=
   match r with tRefl _ _ => Some (ev b hr) | _ => None end.
 
-Definition cHId := lams ⟪ety EvTy; tNat; tNat; tNat⟫
-  (apps (cIte N) ⟪apps cEqb ⟪apps cHd ⟪tRel 0⟫; qNat 16⟫; tSucc (apps (tRel 3) ⟪tRel 2; F 3 (tRel 1)⟫); tZero⟫).
-
 Lemma cHId_closed : forall σ, subst_term σ cHId = cHId.
 Proof. closed_tac cHId. Qed.
 #[export] Hint Rewrite cHId_closed : closed.
-Arguments cHId : simpl never.
 
 Lemma cHId_spec : forall E ev d b x A a P hr y e r v, EvSpec E ev -> RNat d (b2n b) ->
   RNat x (quote (tIdElim A a P hr y e)) ->
@@ -2551,16 +2016,9 @@ Definition quote_code (ev : bool -> term -> option term) (t : term) : nat :=
   | Some t' => if is_closedn 0 t' then S (quote (qNat (quote (erase t')))) else S (quote (tQuote t'))
   end.
 
-Definition cQuoteB := lams ⟪ety EvTy; tNat⟫
-  (apps (cIfz N) ⟪apps (tRel 1) ⟪tSucc tZero; F 0 (tRel 0)⟫; tZero;
-    apps (cIte N) ⟪apps cClosed ⟪apps cPred ⟪apps (tRel 1) ⟪tSucc tZero; F 0 (tRel 0)⟫⟫; tZero⟫;
-      tSucc (apps cQNat ⟪apps cErase ⟪apps cPred ⟪apps (tRel 1) ⟪tSucc tZero; F 0 (tRel 0)⟫⟫⟫⟫);
-      tSucc (cnode 18 ⟪apps cPred ⟪apps (tRel 1) ⟪tSucc tZero; F 0 (tRel 0)⟫⟫⟫)⟫⟫).
-
 Lemma cQuoteB_closed : forall σ, subst_term σ cQuoteB = cQuoteB.
 Proof. closed_tac cQuoteB. Qed.
 #[export] Hint Rewrite cQuoteB_closed : closed.
-Arguments cQuoteB : simpl never.
 
 Lemma cQuoteB_spec : forall E ev x t, EvSpec E ev -> RNat x (quote (tQuote t)) ->
   RNat (apps cQuoteB ⟪E; x⟫) (quote_code ev t).
@@ -2602,17 +2060,9 @@ Definition step_code (ev : bool -> term -> option term) (mu : term -> option (na
     end
   end.
 
-Definition cStepCore := lams ⟪ety (Arr N N); tNat; tNat; ety EvTy⟫
-  (apps (cIfz N) ⟪apps cUNat ⟪tRel 1⟫; tZero;
-    apps (cIfz N) ⟪apps (tRel 3) ⟪cnode 4 ⟪apps cErase ⟪tRel 2⟫; apps cQNat ⟪apps cPred ⟪apps cUNat ⟪tRel 1⟫⟫⟫⟫⟫; tZero;
-      apps (cIfz N) ⟪apps cUNat ⟪apps cSnd ⟪apps cPred ⟪apps (tRel 3) ⟪cnode 4 ⟪apps cErase ⟪tRel 2⟫; apps cQNat ⟪apps cPred ⟪apps cUNat ⟪tRel 1⟫⟫⟫⟫⟫⟫⟫⟫; tZero;
-        apps (tRel 0) ⟪apps cFst ⟪apps cPred ⟪apps (tRel 3) ⟪cnode 4 ⟪apps cErase ⟪tRel 2⟫; apps cQNat ⟪apps cPred ⟪apps cUNat ⟪tRel 1⟫⟫⟫⟫⟫⟫⟫;
-          apps cPred ⟪apps cUNat ⟪apps cSnd ⟪apps cPred ⟪apps (tRel 3) ⟪cnode 4 ⟪apps cErase ⟪tRel 2⟫; apps cQNat ⟪apps cPred ⟪apps cUNat ⟪tRel 1⟫⟫⟫⟫⟫⟫⟫⟫⟫⟫⟫⟫⟫).
-
 Lemma cStepCore_closed : forall σ, subst_term σ cStepCore = cStepCore.
 Proof. closed_tac cStepCore. Qed.
 #[export] Hint Rewrite cStepCore_closed : closed.
-Arguments cStepCore : simpl never.
 
 Definition FinSpec (fin : term) (finm : nat -> nat -> option term) :=
   forall a st c v, RNat a st -> RNat c v -> RNat (apps fin ⟪a; c⟫) (encO (finm st v)).
@@ -2644,20 +2094,9 @@ apply Hfin.
 + now apply (cPred_spec _ (S _)).
 Qed.
 
-Definition cStepB := lams ⟪ety EvTy; ety (Arr N N); tNat; tNat; ety EvTy⟫
-  (apps (cIfz N) ⟪apps (tRel 4) ⟪tSucc tZero; F 0 (tRel 2)⟫; tZero;
-    apps (cIfz N) ⟪apps (tRel 4) ⟪tSucc tZero; F 1 (tRel 2)⟫; tZero;
-      apps (cIte N) ⟪apps cAndb ⟪apps cClosed ⟪apps cPred ⟪apps (tRel 4) ⟪tSucc tZero; F 0 (tRel 2)⟫⟫; tZero⟫;
-                                 apps cClosed ⟪apps cPred ⟪apps (tRel 4) ⟪tSucc tZero; F 1 (tRel 2)⟫⟫; tZero⟫⟫;
-        apps cStepCore ⟪tRel 3; apps cPred ⟪apps (tRel 4) ⟪tSucc tZero; F 0 (tRel 2)⟫⟫;
-          apps cPred ⟪apps (tRel 4) ⟪tSucc tZero; F 1 (tRel 2)⟫⟫; tRel 0⟫;
-        tSucc (apps cCons ⟪tRel 1; clist ⟪apps cPred ⟪apps (tRel 4) ⟪tSucc tZero; F 0 (tRel 2)⟫⟫;
-          apps cPred ⟪apps (tRel 4) ⟪tSucc tZero; F 1 (tRel 2)⟫⟫⟫⟫)⟫⟫⟫).
-
 Lemma cStepB_closed : forall σ, subst_term σ cStepB = cStepB.
 Proof. closed_tac cStepB. Qed.
 #[export] Hint Rewrite cStepB_closed : closed.
-Arguments cStepB : simpl never.
 
 Lemma cStepB_spec : forall E ev M mu x t0 t u w g fin finm,
   EvSpec E ev -> MuSpec M mu -> FinSpec fin finm ->
@@ -2685,12 +2124,9 @@ apply (cIte_spec N).
   apply (clist_spec ⟪_; _⟫ ⟪_; _⟫); rnats; tea.
 Qed.
 
-Definition cFinStep := lams ⟪tNat; tNat⟫ (tSucc (apps cQNat ⟪tRel 1⟫)).
-
 Lemma cFinStep_closed : forall σ, subst_term σ cFinStep = cFinStep.
 Proof. closed_tac cFinStep. Qed.
 #[export] Hint Rewrite cFinStep_closed : closed.
-Arguments cFinStep : simpl never.
 
 Lemma cFinStep_spec : FinSpec cFinStep (fun st _ => Some (qNat st)).
 Proof.
@@ -2698,12 +2134,9 @@ intros a st c v Ha Hc; beta_tac cFinStep.
 now apply RNat_succ, cQNat_spec.
 Qed.
 
-Definition cFinRefl := lams ⟪tNat; tNat⟫ (tSucc (apps cQEvalTm ⟪tRel 1; tRel 0⟫)).
-
 Lemma cFinRefl_closed : forall σ, subst_term σ cFinRefl = cFinRefl.
 Proof. closed_tac cFinRefl. Qed.
 #[export] Hint Rewrite cFinRefl_closed : closed.
-Arguments cFinRefl : simpl never.
 
 Lemma cFinRefl_spec : FinSpec cFinRefl (fun st v => Some (qEvalTm st v)).
 Proof.
@@ -2717,26 +2150,10 @@ Arguments quote : simpl never.
 
 (** Branches of the evaluator, indexed by the tag of the evaluated term.
     Variables: [E] = 3, [M] = 2, [d] = 1, [x] = 0. *)
-Definition br_atom := tSucc (tRel 0).
-Definition br_canon := apps cCanon ⟪tRel 3; tRel 1; tRel 0⟫.
-Definition br_elim (s : nat) (h : term) := apps cElim ⟪tRel 3; tRel 1; tRel 0; qNat s; h⟫.
-
-Definition body_branches : list term :=
-  ⟪br_atom; br_atom; br_canon; br_canon; br_elim 0 (apps cHApp ⟪tRel 3; tRel 1; tRel 0⟫); br_atom⟫ ++
-  ⟪br_atom; br_canon; br_elim 3 (apps cHNat ⟪tRel 3; tRel 1; tRel 0⟫); br_atom; br_elim 1 cHNone; br_canon⟫ ++
-  ⟪br_canon; br_elim 0 (apps cHProj ⟪tRel 3; tRel 1; qNat 2⟫); br_elim 0 (apps cHProj ⟪tRel 3; tRel 1; qNat 3⟫);
-    br_canon; br_canon; br_elim 5 (apps cHId ⟪tRel 3; tRel 1; tRel 0⟫)⟫ ++
-  ⟪apps cQuoteB ⟪tRel 3; tRel 0⟫;
-   apps cStepB ⟪tRel 3; tRel 2; tRel 0; qNat 19; cFinStep⟫;
-   apps cStepB ⟪tRel 3; tRel 2; tRel 0; qNat 20; cFinRefl⟫⟫.
-
-Definition cBody := lams ⟪ety EvTy; ety (Arr N N); tNat; tNat⟫
-  (switch N (apps cHd ⟪tRel 0⟫) body_branches tZero).
 
 Lemma cBody_closed : forall σ, subst_term σ cBody = cBody.
 Proof. closed_tac cBody. Qed.
 #[export] Hint Rewrite cBody_closed : closed.
-Arguments cBody : simpl never.
 
 Ltac meta_destruct ev :=
   repeat match goal with
@@ -2820,7 +2237,6 @@ Qed.
 (** The state after [k] iterations packs the evaluator [eval · · (k - 1)] and the
     minimization up to [k] into a single function [λ sel d x. …] where [sel = 0]
     selects the evaluator and [sel = 1] the minimization. *)
-Definition ST := Arr N (Arr N (Arr N N)).
 
 Definition evprev (k : nat) (b : bool) (t : term) : option term :=
   match k with 0 => None | S k => eval b t k end.
@@ -2860,26 +2276,13 @@ intros k F F' Hr [HE HM]; split.
   apply (redalg_apps _ _ ⟪_; _; _⟫ Hr).
 Qed.
 
-(** [λ m F sel d x. if sel = 0 then body (F 0) (F 1 0) d x else (update of the minimization)] *)
-Definition cStateS := lams ⟪tNat; ety ST; tNat; tNat; tNat⟫
-  (apps (cIfz N) ⟪tRel 2;
-    apps cBody ⟪apps (tRel 3) ⟪tZero⟫; apps (tRel 3) ⟪tSucc tZero; tZero⟫; tRel 1; tRel 0⟫;
-    apps (cIfz N) ⟪apps (tRel 3) ⟪tSucc tZero; tZero; tRel 0⟫;
-      apps (cIfz N) ⟪apps cBody ⟪apps (tRel 3) ⟪tZero⟫; apps (tRel 3) ⟪tSucc tZero; tZero⟫; tSucc tZero; tRel 0⟫; tZero;
-        apps cCons ⟪tRel 4; apps cPred ⟪apps cBody ⟪apps (tRel 3) ⟪tZero⟫; apps (tRel 3) ⟪tSucc tZero; tZero⟫; tSucc tZero; tRel 0⟫⟫⟫⟫;
-      apps (tRel 3) ⟪tSucc tZero; tZero; tRel 0⟫⟫⟫).
-
 Lemma cStateS_closed : forall σ, subst_term σ cStateS = cStateS.
 Proof. closed_tac cStateS. Qed.
 #[export] Hint Rewrite cStateS_closed : closed.
-Arguments cStateS : simpl never.
-
-Definition cState := lams ⟪tNat⟫ (tNatElim (ety ST)⟨↑⟩ (dflt ST) cStateS (tRel 0)).
 
 Lemma cState_closed : forall σ, subst_term σ cState = cState.
 Proof. closed_tac cState. Qed.
 #[export] Hint Rewrite cState_closed : closed.
-Arguments cState : simpl never.
 
 Lemma cStateS_spec : forall m n F, RNat n m -> StateSpec m F -> StateSpec (S m) (apps cStateS ⟪n; F⟫).
 Proof.
@@ -2921,9 +2324,6 @@ revert w k Hw; refine (natElim_ind StateSpec _ _ _ _ _ _).
 Qed.
 
 (** ** The internal evaluator *)
-
-Definition tRun := lams ⟪tNat; tNat⟫
-  (apps cBody ⟪apps cState ⟪tRel 0; tZero⟫; apps cState ⟪tRel 0; tSucc tZero; tZero⟫; tSucc tZero; tRel 1⟫).
 
 Lemma tRun_spec : forall x t w k, RNat x (quote t) -> RNat w k ->
   RNat (apps tRun ⟪x; w⟫) (encO (eval true t k)).

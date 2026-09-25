@@ -10,6 +10,7 @@ theories/AutoSubst/unscoped.v
 theories/AutoSubst/Ast.v
 theories/AutoSubst/Extra.v
 
+theories/Syntax/Quote.v
 theories/Syntax/Computation.v
 theories/Syntax/Closed.v
 theories/Syntax/NormalEq.v
